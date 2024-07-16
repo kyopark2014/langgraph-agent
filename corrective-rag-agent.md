@@ -3,7 +3,7 @@
 [Corrective-RAG(CRAG)는 [검색된 문서에 대한 Self Refection / Self Grading](https://langchain-ai.github.io/langgraph/tutorials/rag/langgraph_crag/)을 포함하고 있는 RAG Strategy입니다. 
 
 - [Corrective Retrieval Augmented Generation - 2024/02](https://arxiv.org/pdf/2401.15884)
-    - 문서로 답변을 생성하기 전에 knowledge refinement을 수행합니다. 이를 위해 문서를 knowledge strip으로 분할하고 평가(grade)하여 관련 없는 문서는 제외합니다. 모든 문서가 임계치 이하이거나 평가를 확신할 수 없는 경우에는 추가 데이터 소스를 찾거나 웹 검색(Web search)를 수행합니다.
+    - 문서로 답변을 생성하기 전에 knowledge refinement을 수행합니다. 이를 위해 문서를 knowledge strip으로 분할하고 평가(grade)하여 관련 없는 문서는 제외합니다. 모든 문서가 임계치 이하이거나 평가를 확신할 수 없는 경우에는 Knowledge Search를 하거나 웹 검색(Web search)를 수행합니다.
       
 <img src="https://github.com/user-attachments/assets/1e065d21-88fb-43fa-b904-9d42b50f5762" width="600">
 
