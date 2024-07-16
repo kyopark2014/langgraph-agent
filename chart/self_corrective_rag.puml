@@ -1,0 +1,30 @@
+@startuml Self-Corrective RAG
+
+skinparam shadowing false
+skinparam activity {
+    StartColor limegreen
+    EndColor darkblue
+    BackgroundColor #d4de5e
+    BorderColor #5e94de
+    ArrowColor black
+}
+skinparam activityDiamond {
+    BackgroundColor #5ede68
+    BorderColor #5e94de
+    fontSize 16
+}
+
+start
+-> start;
+
+:retrieve;
+
+:generate;
+
+while (hallucination) is (no)    
+  while (grade_answer) is (no)
+  endwhile(yes)
+endwhile (yes)
+
+stop
+@enduml

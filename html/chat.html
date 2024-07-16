@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title id="title">LLM Chatbot</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.js"></script>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css'>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/material-design-icons/3.0.1/iconfont/material-icons.min.css'>
+    <link rel="stylesheet", href="chat-style.css">    
+  </head>
+  <body translate="no">
+    <div class="container">
+          <div class="settings-tray">
+            <div class="friend-drawer no-gutters friend-drawer--grey">
+              <img class="profile-image" src="basicprofile.jpg" alt="">
+              <div class="text">
+                <h6 id="calleeName"></h6>
+                <p class="text-muted" id=calleeId></p>
+              </div>
+              <span class="settings-tray--right">
+                <i class="material-icons" id="refreshChatWindow">cached</i>
+            <!--    <i class="material-icons" id="refer">add</i> 
+                <i class="material-icons" id="menu">menu</i> -->
+               <i class="material-icons" id="depart">exit_to_app</i>
+              </span>
+            </div>
+          </div>
+
+          <div class="chat-panel" id="chatPanel">            
+            <div id="msgLog0"></div>
+            <div id="msgLog1"></div>
+            <div id="msgLog2"></div>
+            <div id="msgLog3"></div>
+            <div id="msgLog4"></div>
+            <div id="msgLog5"></div>
+            <div id="msgLog6"></div>
+            <div id="msgLog7"></div>
+            <div id="msgLog8"></div>
+            <div id="msgLog9"></div>
+            <div id="msgLog10"></div>
+            <div id="msgLog11"></div>
+            <div id="msgLog12"></div>
+            <div id="msgLog13"></div>
+            <div id="msgLog14"></div>
+            <div id="msgLog15"></div>
+            <div id="msgLog16"></div>
+            <div id="msgLog17"></div>
+            <div id="msgLog18"></div>
+            <div id="msgLog19"></div>
+            <div id="msgLog20"></div>
+            <div id="msgLog21"></div>
+            <div id="msgLog22"></div>
+            <div id="msgLog23"></div>
+            <div id="msgLog24"></div>
+            <div id="msgLog25"></div>
+            <div id="msgLog26"></div>
+            <div id="msgLog27"></div>
+            <div id="msgLog28"></div>
+            <div id="msgLog29"></div>    
+            <div id="msgLog30"></div>
+            <div id="msgLog31"></div>
+            <div id="msgLog32"></div>
+            <div id="msgLog33"></div>
+            <div id="msgLog34"></div>
+            <div id="msgLog35"></div>
+            <div id="msgLog36"></div>
+            <div id="msgLog37"></div>
+            <div id="msgLog38"></div>
+            <div id="msgLog39"></div>
+            <div id="msgLog40"></div>
+            <div id="msgLog41"></div>
+            <div id="msgLog42"></div>
+            <div id="msgLog43"></div>
+            <div id="msgLog44"></div>
+            <div id="msgLog45"></div>
+            <div id="msgLog46"></div>
+            <div id="msgLog47"></div>
+            <div id="msgLog48"></div>
+            <div id="msgLog49"></div>               
+            <div id="msgLog50"></div>
+            <div id="msgLog51"></div>
+            <div id="msgLog52"></div>
+            <div id="msgLog53"></div>
+            <div id="msgLog54"></div>
+            <div id="msgLog55"></div>
+            <div id="msgLog56"></div>
+            <div id="msgLog57"></div>
+            <div id="msgLog58"></div>
+            <div id="msgLog59"></div>
+            <div id="msgLog60"></div>
+            <div id="msgLog61"></div>
+            <div id="msgLog62"></div>
+            <div id="msgLog63"></div>
+            <div id="msgLog64"></div>
+            <div id="msgLog65"></div>
+            <div id="msgLog66"></div>
+            <div id="msgLog67"></div>
+            <div id="msgLog68"></div>
+            <div id="msgLog69"></div>
+            <div id="msgLog70"></div>
+            <div id="msgLog71"></div>
+            <div id="msgLog72"></div>
+            <div id="msgLog73"></div>
+            <div id="msgLog74"></div>
+            <div id="msgLog75"></div>
+            <div id="msgLog76"></div>
+            <div id="msgLog77"></div>
+            <div id="msgLog78"></div>
+            <div id="msgLog79"></div>
+            <div id="msgLog80"></div>
+            <div id="msgLog81"></div>
+            <div id="msgLog82"></div>
+            <div id="msgLog83"></div>
+            <div id="msgLog84"></div>
+            <div id="msgLog85"></div>
+            <div id="msgLog86"></div>
+            <div id="msgLog87"></div>
+            <div id="msgLog88"></div>
+            <div id="msgLog89"></div>    
+            <div id="msgLog90"></div>
+            <div id="msgLog91"></div>
+            <div id="msgLog92"></div>
+            <div id="msgLog93"></div>
+            <div id="msgLog94"></div>
+            <div id="msgLog95"></div>
+            <div id="msgLog96"></div>
+            <div id="msgLog97"></div>
+            <div id="msgLog98"></div>
+            <div id="msgLog99"></div>
+            <div id="msgLog100"></div>
+            <div id="msgLog101"></div>
+            <div id="msgLog102"></div>
+            <div id="msgLog103"></div>
+            <div id="msgLog104"></div>
+            <div id="msgLog105"></div>
+            <div id="msgLog106"></div>
+            <div id="msgLog107"></div>
+            <div id="msgLog108"></div>
+            <div id="msgLog109"></div>
+            <div id="msgLog110"></div>
+            <div id="msgLog111"></div>
+            <div id="msgLog112"></div>
+            <div id="msgLog113"></div>
+            <div id="msgLog114"></div>
+            <div id="msgLog115"></div>
+            <div id="msgLog116"></div>
+            <div id="msgLog117"></div>
+            <div id="msgLog118"></div>
+            <div id="msgLog119"></div>
+            <div id="msgLog120"></div>
+            <div id="msgLog121"></div>
+            <div id="msgLog122"></div>
+            <div id="msgLog123"></div>
+            <div id="msgLog124"></div>
+            <div id="msgLog125"></div>
+            <div id="msgLog126"></div>
+            <div id="msgLog127"></div>
+            <div id="msgLog128"></div>
+            <div id="msgLog129"></div>    
+            <div id="msgLog130"></div>
+            <div id="msgLog131"></div>
+            <div id="msgLog132"></div>
+            <div id="msgLog133"></div>
+            <div id="msgLog134"></div>
+            <div id="msgLog135"></div>
+            <div id="msgLog136"></div>
+            <div id="msgLog137"></div>
+            <div id="msgLog138"></div>
+            <div id="msgLog139"></div>
+            <div id="msgLog140"></div>
+            <div id="msgLog141"></div>
+            <div id="msgLog142"></div>
+            <div id="msgLog143"></div>
+            <div id="msgLog144"></div>
+            <div id="msgLog145"></div>
+            <div id="msgLog146"></div>
+            <div id="msgLog147"></div>
+            <div id="msgLog148"></div>
+            <div id="msgLog149"></div>               
+            <div id="msgLog150"></div>
+            <div id="msgLog151"></div>
+            <div id="msgLog152"></div>
+            <div id="msgLog153"></div>
+            <div id="msgLog154"></div>
+            <div id="msgLog155"></div>
+            <div id="msgLog156"></div>
+            <div id="msgLog157"></div>
+            <div id="msgLog158"></div>
+            <div id="msgLog159"></div>
+            <div id="msgLog160"></div>
+            <div id="msgLog161"></div>
+            <div id="msgLog162"></div>
+            <div id="msgLog163"></div>
+            <div id="msgLog164"></div>
+            <div id="msgLog165"></div>
+            <div id="msgLog166"></div>
+            <div id="msgLog167"></div>
+            <div id="msgLog168"></div>
+            <div id="msgLog169"></div>
+            <div id="msgLog170"></div>
+            <div id="msgLog171"></div>
+            <div id="msgLog172"></div>
+            <div id="msgLog173"></div>
+            <div id="msgLog174"></div>
+            <div id="msgLog175"></div>
+            <div id="msgLog176"></div>
+            <div id="msgLog177"></div>
+            <div id="msgLog178"></div>
+            <div id="msgLog179"></div>
+            <div id="msgLog180"></div>
+            <div id="msgLog181"></div>
+            <div id="msgLog182"></div>
+            <div id="msgLog183"></div>
+            <div id="msgLog184"></div>
+            <div id="msgLog185"></div>
+            <div id="msgLog186"></div>
+            <div id="msgLog187"></div>
+            <div id="msgLog188"></div>
+            <div id="msgLog189"></div>    
+            <div id="msgLog190"></div>
+            <div id="msgLog191"></div>
+            <div id="msgLog192"></div>
+            <div id="msgLog193"></div>
+            <div id="msgLog194"></div>
+            <div id="msgLog195"></div>
+            <div id="msgLog196"></div>
+            <div id="msgLog197"></div>
+            <div id="msgLog198"></div>
+            <div id="msgLog199"></div>
+            <div id="msgLog200"></div>            
+          </div>
+          
+         <div class="row">
+            <div class="col-12">
+              <div div class="istyping" id="feedback"> <i>typing a message...</i></div> 
+              <div class="chat-box-tray">
+                <i class="material-icons">sentiment_very_satisfied</i>
+                <input type="text" id="chatInput" placeholder="Type your message here...">
+
+                <span class="settings-tray--right">
+                <i class="material-icons" id="attachFile">attach_file</i>       
+                </span>
+                <span class="settings-tray--right">
+                <i class="material-icons" id="sendBtn">send</i>       
+                </span>
+              </div>
+            </div>
+          </div>
+    </div>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js'></script>
+    <script src="chat.js"></script>
+    <script id="rendered-js">
+      $('.friend-drawer--onhover').on('click', function (e) {
+        $('.chat-bubble').hide('slow').show('slow');
+        //console.log('selected:'+document.querySelector($('.friend-drawer--onhover')).textContent);
+      });
+    </script>
+  </body>
+</html>

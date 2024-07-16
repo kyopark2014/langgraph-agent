@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>LLM</title>
+        <link rel="stylesheet", href="login.css">
+    </head>
+    <body>
+        <header> 
+            <h1>LLM Chatbot</h1>
+        </header>
+        <section class="container">
+            <form id="my-form">
+                <div class="msg">For login, use your own ID which should represent your identity.</div>
+                <div class="input">
+                    <label for="userId">User Id:</label>
+                    <input type="text" id="userId">
+                    <text>Conversation Type: </text>
+                    <select name="conversationType" id="convtype">
+                        <option type="text" value="normal" selected>1. General Conversation</option>
+                        <option value="agent-react">2-1. Agent Executor (LangChain)</option>
+                        <option value="agent-react-chat">2-2. Agent Executor Chat (LangChain)</option>
+                        <option value="agent-executor">3-1. Agent Executor (LangGraph)</option>
+                        <option value="agent-executor-chat">3-2. Agent Executor Chat (LangGraph)</option>
+                        <option value="reflection-agent">4-1. Reflection Agent</option>
+                        <option value="translation">5. Translation</option>
+                        <option value="grammar">6. Grammatical Error Correction</option>
+                        <option value="agent-executor-from-scratch">8-1. Agent Executor from Scratch (LangGraph</option>
+                        <option value="agent-executor-chat-from-scratch">8-2. Agent Executor from Scratch (Chat)</option>
+                        <option value="agent-toolcalling">9-1. Agent (ToolCalling)</option>
+                        <option value="agent-toolcalling-chat">9-2. Agent (ToolCalling Chat)</option>                        
+                    </select>
+                </div>
+                <input class="btn" type="submit" value="Submit">                
+            </form>
+        </section>        
+        <script src="login.js"></script>
+    </body>
+</html>
+
