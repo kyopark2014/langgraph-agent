@@ -1,5 +1,9 @@
 # LangGraph로 구현하는 Agent
 
+## LangGraph Agent 
+
+[langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph Agent의 기본 구성을 설명하고 있습니다.
+
 LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 정확한 결과를 얻고 싶을 때에 Agent을 사용합니다. 어떤 상황에 어떤 API를 쓸지를 판단하기 위해서는 상황 인식(Context-Aware)에 기반한 Reasoning(추론: 상황에 대한 인식을 바탕으로 새로운 사실을 유도)이 필요합니다. 여기에서는 Agent를 이용하여 여러개의 API를 선택적으로 사용하는 한국어 Chatbot을 구현합니다. 이를 위한 Architecture는 아래와 같습니다. 
 
 1) 사용자가 채팅창에서 질문을 입력하면 WebSocket 방식으로 Lambda(chat)에 전달됩니다.
@@ -12,10 +16,6 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 ![image](https://github.com/kyopark2014/llm-agent/assets/52392004/c372c125-4e05-41f8-b691-784e4c2028af)
 
 아래에서 구현한 Agent는 zero-shot agent로 사용자의 질문에 따라 tools 리스트로부터 적절한 tool을 선택하여 활용합니다. tool은 함수 또는 API로 구현됩니다. 선택된 tool로 원하는 작업을 완료하지 못하면 다른 tool을 추가로 활용합니다.
-
-## LangGraph Agent
-
-[langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph Agent의 기본 구성을 설명하고 있습니다.
 
 
 ## Agent를 이용한 RAG 기능 향상
@@ -74,8 +74,6 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 
 - [Essay Writer](https://github.com/kyopark2014/llm-agent/blob/main/essay-writer.md)에서는 essay를 작성하는 Agent를 생성합니다.
   
-
-
 
 ## 직접 실습 해보기
 
