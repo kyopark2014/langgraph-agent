@@ -219,7 +219,7 @@ cd ~/environment/llm-agent/cdk-llm-agent/ && cdk destroy --all
 
 ## 결론
 
-LangChain과 LangGraph를 이용해 한국어 Chatbot Agent을 만들었습니다. Agent를 사용함으로써 다양한 API를 문맥(Context)에 따라 활용할 수 있었습니다. 다만 API를 여러번 호출함으로 인한 지연시간이 증가하고, prompt에 넣을 수 있는 Context 길이 제한으로 검색이나 RAG 결과를 일부만 넣게 되는 제한이 있습니다.
+LangGraph를 이용해 한국어 Chatbot Agent을 만들었습니다. Agent를 사용함으로써 다양한 API를 문맥(Context)에 따라 활용할 수 있었습니다. 다만 API를 여러번 호출함으로 인한 지연시간이 증가하고, prompt에 넣을 수 있는 Context 길이 제한으로 검색이나 RAG 결과를 일부만 넣게 되는 제한이 있습니다.
 
 ## Reference
 
