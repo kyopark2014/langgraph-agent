@@ -36,13 +36,13 @@ chmod a+rx resize.sh && ./resize.sh 80
 4) 소스를 다운로드합니다.
 
 ```java
-git clone https://github.com/kyopark2014/llm-agent
+git clone https://github.com/kyopark2014/langgraph-agent
 ```
 
 5) cdk 폴더로 이동하여 필요한 라이브러리를 설치합니다.
 
 ```java
-cd llm-agent/cdk-llm-agent/ && npm install
+cd langgraph-agent/cdk-langgraph-agent/ && npm install
 ```
 
 7) CDK 사용을 위해 Boostraping을 수행합니다.
@@ -75,7 +75,7 @@ cdk deploy --all
 - 날씨 검색을 위하여 [openweathermap](https://home.openweathermap.org/api_keys)에 접속하여 API Key를 발급합니다.
 - [langsmith.md](./langsmith.md)를 참조하여 [LangSmith](https://www.langchain.com/langsmith)에 가입후 API Key를 발급 받습니다.
 
-[Secret manger](https://ap-northeast-2.console.aws.amazon.com/secretsmanager/listsecrets?region=ap-northeast-2)에 접속하여, [openweathermap-llm-agent](https://ap-northeast-2.console.aws.amazon.com/secretsmanager/secret?name=openweathermap-llm-agent&region=ap-northeast-2), [tavilyapikey-llm-agent](https://ap-northeast-2.console.aws.amazon.com/secretsmanager/secret?name=tavilyapikey-llm-agent&region=ap-northeast-2), [langsmithapikey-llm-agent](https://ap-northeast-2.console.aws.amazon.com/secretsmanager/secret?name=langsmithapikey-llm-agent&region=ap-northeast-2)에 접속하여, [Retrieve secret value]를 선택 후, api key를 입력합니다.
+[Secret manger](https://ap-northeast-2.console.aws.amazon.com/secretsmanager/listsecrets?region=ap-northeast-2)에 접속하여, [openweathermap-langgraph-agent](https://ap-northeast-2.console.aws.amazon.com/secretsmanager/secret?name=openweathermap-langgraph-agent&region=ap-northeast-2), [tavilyapikey-langgraph-agent](https://ap-northeast-2.console.aws.amazon.com/secretsmanager/secret?name=tavilyapikey-langgraph-agent&region=ap-northeast-2), [langsmithapikey-langgraph-agent](https://ap-northeast-2.console.aws.amazon.com/secretsmanager/secret?name=langsmithapikey-langgraph-agent&region=ap-northeast-2)에 접속하여, [Retrieve secret value]를 선택 후, api key를 입력합니다.
 
 10) Output의 WebUrlforstreamchatbot의 URL로 접속합니다. 만약 Credential을 입력 전에 URL을 접속을 했다면, Lambda를 재배포하거나 일정 시간후에 Lamba가 내려갈때까지 기다렸다가 재접속하여야 하므로, Credential들을 입력 후에 URL로 접속하는것이 좋습니다. 
 
