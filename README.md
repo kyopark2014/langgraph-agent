@@ -120,8 +120,6 @@ for event in app.stream({"messages": inputs}, stream_mode="values"):
 
 [breakpoints.ipynb](./agent/breakpoints.ipynb)에서는 breakpoint의 개념과 사용예를 보여줍니다. 상세한 내용은 [breakpoints.md](./breakpoints.md)를 참조합니다. 
 
-
-
 #### Checkpoint
 
 [Checkpoint는 thread의 state](https://langchain-ai.github.io/langgraph/concepts/#checkpoints)를 의미합니다. [LangGraph Tutorial](https://langchain-ai.github.io/langgraph/how-tos/)와 [Memory를 이용해 checkpoint](https://langchain-ai.github.io/langgraph/tutorials/introduction/#part-3-adding-memory-to-the-chatbot)를 참조하여 아래처럼 memory_task를 정의합니다. 
@@ -177,11 +175,21 @@ def execute_tools(state: AgentState):
 
 3) Reflexion: [reflexion-agent.md](./reflexion-agent.md)에서는 Reflexion방식의 Agent에 대해 설명합니다.
 
-4) Corrective RAG: [corrective-rag-agent.md](./corrective-rag-agent.md)에서는 Self reflection을 이용한 RAG 성능 강화에 대해 설명합니다.
 
-5) Self-Corrective RAG: [self-corrective-rag.md](./self-corrective-rag.md)에서는 Self Corrective RAGf를 Agent로 구현하는것을 설명합니다.
+## RAG 
 
-6) Self RAG: [Self RAG](https://github.com/kyopark2014/llm-agent/blob/main/self-rag.md)에서는 RAG의 결과를 Grade하고 Hallucination을 방지하기 위한 task를 활용해 RAG의 성능을 높입니다.
+### Corrective RAG
+
+[corrective-rag-agent.md](./corrective-rag-agent.md)에서는 Self reflection을 이용한 RAG 성능 강화에 대해 설명합니다.
+
+### Self-Corrective RAG
+
+[self-corrective-rag.md](./self-corrective-rag.md)에서는 Self Corrective RAGf를 Agent로 구현하는것을 설명합니다.
+
+### Self RAG
+
+[Self RAG](https://github.com/kyopark2014/llm-agent/blob/main/self-rag.md)에서는 RAG의 결과를 Grade하고 Hallucination을 방지하기 위한 task를 활용해 RAG의 성능을 높입니다.
+
 
 
 ## Use Cases
