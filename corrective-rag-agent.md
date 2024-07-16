@@ -18,7 +18,7 @@ Corrective-RAG(CRAG)는 검색된 문서에 대한 Self Refection / Self Grading
 
 여기서 구현하려는 Corrective RAG의 형태는 아래와 같습니다. 상세한 코드는 [corrective-rag.ipynb](./agent/corrective-rag.ipynb)와 [corrective-rag-kor.ipynb](./agent/corrective-rag-kor.ipynb)를 참조합니다. 
 
-![image](https://github.com/user-attachments/assets/dc495cc0-2912-4bb3-a1f8-807d05d7b35a)
+<img src="https://github.com/user-attachments/assets/dc495cc0-2912-4bb3-a1f8-807d05d7b35a" width="200">
 
 기본 채팅을 위한 chat을 정의합니다. 
 
