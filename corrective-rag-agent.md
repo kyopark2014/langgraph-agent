@@ -12,7 +12,7 @@
 
 여기서 구현하려는 Corrective RAG의 형태는 아래와 같습니다. 상세한 코드는 [corrective-rag.ipynb](./agent/corrective-rag.ipynb)을 참조합니다. 
 
-<img width="185" alt="image" src="https://github.com/user-attachments/assets/456e6bfe-89fa-4eb0-b6a1-997af3724858">
+![image](https://github.com/user-attachments/assets/dc495cc0-2912-4bb3-a1f8-807d05d7b35a)
 
 기본 채팅을 위한 chat을 정의합니다. 
 
