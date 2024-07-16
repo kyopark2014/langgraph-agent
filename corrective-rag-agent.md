@@ -1,6 +1,8 @@
 # Corrective RAG Agent
 
-[Corrective-RAG(CRAG)는 [검색된 문서에 대한 Self Refection / Self Grading](https://langchain-ai.github.io/langgraph/tutorials/rag/langgraph_crag/)을 포함하고 있는 RAG Strategy입니다. 
+## Corrective RAG 란?
+
+Corrective-RAG(CRAG)는 [검색된 문서에 대한 Self Refection / Self Grading](https://langchain-ai.github.io/langgraph/tutorials/rag/langgraph_crag/)을 포함하고 있는 RAG Strategy입니다. 
 
 - [Corrective Retrieval Augmented Generation - 2024/02](https://arxiv.org/pdf/2401.15884)
     - 문서로 답변을 생성하기 전에 knowledge refinement을 수행합니다. 이를 위해 문서를 knowledge strip으로 분할하고 평가(grade)하여 관련 없는 문서는 제외합니다. 모든 문서가 임계치 이하이거나 평가를 확신할 수 없는 경우에는 Knowledge Search를 하거나 웹 검색(Web search)를 수행합니다.
@@ -9,8 +11,9 @@
 
 - [Advance RAG control flow with Mistral and LangChain: Corrective RAG, Self-RAG, Adaptive RAG](https://www.youtube.com/watch?v=sgnrL7yo1TE)에서는 Self Reflection을 이용해 RAG의 성능을 향상시킵니다.
 
+## Corrective RAG의 구현
 
-여기서 구현하려는 Corrective RAG의 형태는 아래와 같습니다. 상세한 코드는 [corrective-rag.ipynb](./agent/corrective-rag.ipynb)을 참조합니다. 
+여기서 구현하려는 Corrective RAG의 형태는 아래와 같습니다. 상세한 코드는 [corrective-rag.ipynb](./agent/corrective-rag.ipynb)와 [corrective-rag-kor.ipynb](./agent/corrective-rag-kor.ipynb)를 참조합니다. 
 
 ![image](https://github.com/user-attachments/assets/dc495cc0-2912-4bb3-a1f8-807d05d7b35a)
 
