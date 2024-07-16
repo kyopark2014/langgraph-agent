@@ -15,165 +15,7 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 
 ## LangGraph Agent
 
-### Agent의 정의
-
-[Agent란](https://terms.tta.or.kr/dictionary/dictionaryView.do?word_seq=171384-1%29) 주변 환경을 탐지하여 자율적으로 동작하는 장치 또는 프로그램을 의미합니다. 인공지능을 이용한 지능형 에이전트는 센서를 이용하여 주변 환경을 자각하여 Actuator를 이용하여 적절한 행동을 합니다. agent의 라틴어 어원인 [agere의 뜻](https://m.blog.naver.com/skyopenus/221783830658)은 to do 또는 to act의 의미를 가지고 있습니다. Agent를 이용하면 LLM 결과를 향상시킬 수 있습니다. 
-
-LangGraph는 agent를 생성하고 여러개의 Agent가 있을때의 흐름을 관리하기 위한 LangChain의 Extention입니다. 이를 통해 cycle flow를 생성할 수 있으며, 메모리가 내장되어 Agent를 생성에 도움을 줍니다. 상세한 내용은 [LangGraph guide](https://langchain-ai.github.io/langgraph/how-tos/)을 참조합니다.
-
-### LangChain Agent와 비교
-
-- LangChain Agent는 Resoning/Action을 효과적으로 수행하고 매우 powerful 합니다.
-- LLM의 성능이 매우 중요하므로 LLM 모델을 잘 선택하여야 합니다. 성능이 더 좋은 모델은 일반적으로 더 많은 연산시간을 필요로 합니다. (예 지연시간: Opus > Sonnet > Haiku)
-- 각 Tool의 invocation을 위해서 매번 LLM을 호출하여야 합니다. Tool을 연속적으로 실행(Observation 없이)할 때에는 불필요한 시간이 될 수 있습니다. 
-- 한번에 한개의 step을 수행하고 parallel call을 지원하지 않습니다.
-- LangGraph를 이용한 Agent는 복잡한 process를 State Machine을 이용해 구현할 수 있으며, Multi-Agent 구조에 적합합니다.
-
-### Components
-
-- Memory: Shared state across the graph
-- Tools: Nodes can call tools and modify state
-- Planning: Edges can route control flow based on LLM decisions
-
-참조: [Building and Testing Reliable Agents](https://www.youtube.com/watch?v=XiySC-d346E): chain/agent 비교하여 개념 설명 매우 좋음
-
-
-
-### LangGraph Agent의 구현
-
-[Introduction to LangGraph](https://langchain-ai.github.io/langgraph/tutorials/introduction/)은 Agent 종류별로 설명하고 있습니다. 또한, [agent-executor.md](./agent-executor.md)에서는 LangGraph를 이용하여 Tool을 실행하는 Agent Executor에 대해 설명하고 있습니다. 자세한 구현한 코드는 [agent-executor.ipynb](./agent-executor.ipynb)와 [lambda-chat](./lambda-chat-ws/lambda_function.py)를 참조합니다. 
-
-Agent를 위한 Class인 AgentState와 tool을 비롯한 각 노드를 정의합니다.
-
-```python
-class ChatAgentState(TypedDict):
-    messages: Annotated[list, add_messages]
-    
-tool_node = ToolNode(tools)
-
-def should_continue(state: ChatAgentState) -> Literal["continue", "end"]:
-    messages = state["messages"]
-    last_message = messages[-1]
-    if not last_message.tool_calls:
-        return "end"
-    else:
-        return "continue"
-
-def call_model(state: ChatAgentState):
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system",
-                "다음의 Human과 Assistant의 친근한 이전 대화입니다."
-                "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-                "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
-                "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
-            ),
-            MessagesPlaceholder(variable_name="messages"),
-        ]
-    )
-    chain = prompt | model
-        
-    response = chain.invoke(state["messages"])
-    return {"messages": [response]}   
-```
-
-각 Node state를 정의합니다. 
-
-```python
-workflow = StateGraph(AgentState)
-
-workflow.add_node("agent", call_model)
-workflow.add_node("action", tool_node)
-workflow.add_edge(START, "agent")
-workflow.add_conditional_edges(
-    "agent",
-    should_continue,
-    {
-        "continue": "action",
-        "end": END,
-    },
-)
-workflow.add_edge("action", "agent")
-
-app = workflow.compile()
-```
-
-Graph로 Agent를 정의하고 아래와 같이 실행합니다. 
-
-```python
-from langchain_core.messages import HumanMessage
-
-inputs = [HumanMessage(content="강남역 맛집 알려줘")]
-
-for event in app.stream({"messages": inputs}, stream_mode="values"):    
-    event["messages"][-1].pretty_print()
-```
-
-생성된 Graph는 아래와 같습니다.
-
-![image](https://github.com/kyopark2014/llm-agent/assets/52392004/9383094f-0507-4a64-96b3-278e3f6e8d3e)
-
-
-### Checkpoint 활용
-
-#### Breakpoints
-
-[breakpoints.ipynb](./agent/breakpoints.ipynb)에서는 breakpoint의 개념과 사용예를 보여줍니다. 상세한 내용은 [breakpoints.md](./breakpoints.md)를 참조합니다. 
-
-#### Checkpoint
-
-[Checkpoint는 thread의 state](https://langchain-ai.github.io/langgraph/concepts/#checkpoints)를 의미합니다. [LangGraph Tutorial](https://langchain-ai.github.io/langgraph/how-tos/)와 [Memory를 이용해 checkpoint](https://langchain-ai.github.io/langgraph/tutorials/introduction/#part-3-adding-memory-to-the-chatbot)를 참조하여 아래처럼 memory_task를 정의합니다. 
-
-```python
-from langgraph.checkpoint.sqlite import SqliteSaver
-
-memory_task = SqliteSaver.from_conn_string(":memory:")
-```
-
-실제 Lambda 환경에서 구성할때에는 사용자(userId)별로 memory를 관리하여야 하므로, 아래와 같이 map_task를 정의한 후, userId 존재여부에 따라 기존 memory를 재사용할 있도록 해줍니다.
-
-```python
-map_task = dict()
-
-if userId in map_task:  
-    print('memory_task exist. reuse it!')        
-    memory_task = map_task[userId]
-else: 
-    print('memory_task does not exist. create new one!')                
-    memory_task = SqliteSaver.from_conn_string(":memory:")
-    map_task[userId] = memory_task
-```
-
-[LangGraph](https://langchain-ai.github.io/langgraph/)와 같이 "action"이 호출될 때에 state machine이 멈추도록 "interrupt_before"을 설정할 수도 있습니다. 
-
-```python
-app = workflow.compile(checkpointer=memory, interrupt_before=["action"])
-```
-
-
-### Human-in-the-loop
-
-[Human-in-the-loop](https://langchain-ai.github.io/langgraph/tutorials/introduction/#part-4-human-in-the-loop)에서는 human의 approval을 수행할 수 있습니다. 
-
-아래와 같이 사용자의 confirm을 받은 후에 agent_action을 수행하도록 할 수 있습니다.
-
-```python
-def execute_tools(state: AgentState):
-    agent_action = state["agent_outcome"]
-    response = input(prompt=f"[y/n] continue with: {agent_action}?")
-    if response == "n":
-        raise ValueError
-    output = tool_executor.invoke(agent_action)
-    return {"intermediate_steps": [(agent_action, str(output))]}
-```
-
-### Agent Case Studies
-
-1) Reflection: [reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다.
-
-2) Plan and Execution: [planning-agents.md](./planning-agents.md)에서는 plan-and-execution 형태의 agent를 생성하는 방법을 설명합니다.
-
-3) Reflexion: [reflexion-agent.md](./reflexion-agent.md)에서는 Reflexion방식의 Agent에 대해 설명합니다.
+[langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph Agent의 기본 구성을 설명하고 있습니다.
 
 
 ## RAG 
@@ -193,6 +35,16 @@ def execute_tools(state: AgentState):
 
 
 ## Use Cases
+
+### Agent Case Studies
+
+1) Reflection: [reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다.
+
+2) Plan and Execution: [planning-agents.md](./planning-agents.md)에서는 plan-and-execution 형태의 agent를 생성하는 방법을 설명합니다.
+
+3) Reflexion: [reflexion-agent.md](./reflexion-agent.md)에서는 Reflexion방식의 Agent에 대해 설명합니다.
+
+### Agent Reference
 
 - [langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph를 이용해 Agent를 생성하는 방법을 설명합니다. 
 
