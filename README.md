@@ -1,4 +1,4 @@
-# LangChain과 LangGraph로 한국어 Agent Bot 만들기
+# LangGraph로 구현한 Agent Bot 
 
 LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 정확한 결과를 얻고 싶을 때에 Agent을 사용합니다. 어떤 상황에 어떤 API를 쓸지를 판단하기 위해서는 상황 인식(Context-Aware)에 기반한 Reasoning(추론: 상황에 대한 인식을 바탕으로 새로운 사실을 유도)이 필요합니다. 여기에서는 Agent를 이용하여 여러개의 API를 선택적으로 사용하는 한국어 Chatbot을 구현합니다. 이를 위한 Architecture는 아래와 같습니다. 
 
