@@ -18,7 +18,7 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 [langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph Agent의 기본 구성을 설명하고 있습니다.
 
 
-## RAG 
+## Agent를 이용한 RAG 기능 향상
 
 ### Corrective RAG
 
