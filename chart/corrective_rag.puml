@@ -1,14 +1,39 @@
 @startuml Corrective RAG
-skinparam monochrome true
 
-[*] -> retrieve : Start
-retrieve -> grade_documents : Retrieve
-grade_documents -> websearch
-websearch -> generate
-grade_documents -> generate
-generate -> [*] : Stop 
+'skinparam monochrome true
+skinparam shadowing false
+skinparam activity {
+    StartColor limegreen
+    EndColor darkblue
+    'BackgroundColor #d4de5e
+    'BorderColor #5e94de
+    BackgroundColor #lightblue
+    BorderColor #lightblue
+    ArrowColor black
+}
+skinparam activityDiamond {
+    'BackgroundColor #5ede68
+    'BorderColor #5e94de
+    BackgroundColor #Pink
+    BorderColor #Pink
+    fontSize 12
+}
 
-'State1 : Description 1
-'State2 : Description 2
-'State3 : Description 3
+start
+-> start;
+
+:retrieve;
+
+:grade_document;
+
+if (decide_to_generate) then (yes)    
+else (no)
+  :rewrite query;
+  :web search;
+endif
+
+:generate;
+
+-> end;
+stop
 @enduml
