@@ -189,7 +189,8 @@ pprint(value["generation"])
 
 [corrective_rag_mistral.ipynb](https://github.com/mistralai/cookbook/blob/main/third_party/langchain/corrective_rag_mistral.ipynb)에서는 문서를 검색할 때에 self-reflection /self-grading을 적용합니다.
 
-![image](https://github.com/kyopark2014/llm-agent/assets/52392004/dcb682f5-35e4-4478-8189-5db5cdbb266d)
+<img src="https://github.com/kyopark2014/llm-agent/assets/52392004/dcb682f5-35e4-4478-8189-5db5cdbb266d" width="600">
+   
 
 ```python
 class GraphState(TypedDict):
