@@ -37,9 +37,6 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 
 <img src="https://github.com/user-attachments/assets/996d6671-1782-4968-be4f-0ade60b0316d" width="300">
 
-### Self-Corrective RAG
-
-![image](https://github.com/user-attachments/assets/5769e8ed-6e76-4fda-a932-a1d3c461de50)
 
 ### Self RAG
 
@@ -47,6 +44,9 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 
 ![image](https://github.com/user-attachments/assets/55672f1a-0b8e-4566-a604-6e5534d9e7d9)
 
+### Self-Corrective RAG
+
+![image](https://github.com/user-attachments/assets/5769e8ed-6e76-4fda-a932-a1d3c461de50)
 
 ## Reference
 
