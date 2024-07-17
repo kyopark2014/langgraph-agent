@@ -27,7 +27,7 @@ Corrective RAG의 동작 Flow는 아래와 같습니다.
 5) web search()에서는 인터넷을 검색하여 새로운 관련된 문서를 찾아 추가합니다.
 6) generate()에서는 관련된 문서를 context로 활용하여 적절한 답변을 생성합니다. 
 
-<img src="https://github.com/user-attachments/assets/996d6671-1782-4968-be4f-0ade60b0316d" width="400">
+<img src="https://github.com/user-attachments/assets/996d6671-1782-4968-be4f-0ade60b0316d" width="300">
 
 기본 채팅을 위한 chat을 정의합니다. 
 
