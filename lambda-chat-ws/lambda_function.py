@@ -1126,6 +1126,7 @@ def web_search(state: CragState):
     docs = web_search_tool.invoke({"query": question})
     web_results = "\n".join([d["content"] for d in docs])
     web_results = Document(page_content=web_results)
+    print("web_results: ", web_results)
     
     if documents is not None:
         documents.append(web_results)
