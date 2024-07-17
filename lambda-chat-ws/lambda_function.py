@@ -962,7 +962,7 @@ def get_rewrite():
     re_write_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
-            ("human", "질문: {question}"),
+            ("human", "{question}"),
         ]
     )
     #question_rewriter = re_write_prompt | structured_llm_rewriter
@@ -1105,7 +1105,7 @@ def rewrite(state: CragState):
     question_rewriter = get_rewrite()
     
     better_question = question_rewriter.invoke({"question": question})
-    print("better_question: ", better_question.question)
+    print("better_question: ", better_question)
 
     return {"question": better_question.question}
 
