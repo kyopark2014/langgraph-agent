@@ -1152,8 +1152,8 @@ def run_corrective_rag(connectionId, requestId, app, query):
     
     msg = ""
     
-    #for output in app.stream(inputs, config, stream_mode="values"):   
-    for output in app.stream(inputs):   
+    for output in app.stream(inputs, config, stream_mode="values"):   
+    #for output in app.stream(inputs):   
         for key, value in output.items():
             print(f"Finished running: {key}:")
             print("value: ", value)
