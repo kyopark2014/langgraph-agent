@@ -1138,40 +1138,52 @@ def buildCorrectiveAgent():
 
 crag_app = buildCorrectiveAgent()
 
-inputs = {"question": "이미지를 분석하기 위한 서비스에 대해 설명해줘."}
-for output in crag_app.stream(inputs):
-    for key, value in output.items():
-        print(f"Finished running: {key}:")
-print('output: ', value["generation"])
+#inputs = {"question": "이미지를 분석하기 위한 서비스에 대해 설명해줘."}
+#for output in crag_app.stream(inputs):
+#    for key, value in output.items():
+#        print(f"Finished running: {key}:")
+#print('output: ', value["generation"])
 
 def run_corrective_rag(connectionId, requestId, app, query):
     isTyping(connectionId, requestId)
     
+    inputs = {"question": query}
     config = {"recursion_limit": 50}
     
     msg = ""
     
-    for event in app.stream({"question": query}, config, stream_mode="values"):   
-        print('event: ', event)
+    for output in app.stream(inputs, config, stream_mode="values"):   
+        for key, value in output.items():
+            print(f"Finished running: {key}:")
+            
+    print('output: ', value["generation"])
         
-        message = event["messages"][-1]
-        print('message: ', message)
+#        message = event["messages"][-1]
+#        print('message: ', message)
         
-        if len(event["messages"])>1:
-            if msg == "":
-                msg = message.content
-            else:
-                msg = f"{msg}\n\n{message.content}"
+#        if len(event["messages"])>1:
+#            if msg == "":
+#                msg = message.content
+#            else:
+#                msg = f"{msg}\n\n{message.content}"
 
-            result = {
-                'request_id': requestId,
-                'msg': msg,
-                'status': 'proceeding'
-            }
+#            result = {
+#                'request_id': requestId,
+#                'msg': msg,
+#                'status': 'proceeding'
+#            }
             #print('result: ', json.dumps(result))
-            sendMessage(connectionId, result)
+            
+#    sendMessage(connectionId, result)
+    result = {
+        'request_id': requestId,
+        'msg': value["generation"],
+        'status': 'proceeding'
+    }
+    #print('result: ', json.dumps(result))
+    sendMessage(connectionId, result)
 
-    return msg
+    return value["generation"]
 
 
 def traslation(chat, text, input_language, output_language):
