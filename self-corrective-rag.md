@@ -4,6 +4,8 @@
 
 ## Self Corrective RAG
 
+![image](https://github.com/user-attachments/assets/5769e8ed-6e76-4fda-a932-a1d3c461de50)
+
 
 
 
