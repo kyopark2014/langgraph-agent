@@ -5,7 +5,6 @@
 ## Self Corrective RAG
 
 
-<img width="255" alt="image" src="https://github.com/user-attachments/assets/e9f024b5-3425-48be-822f-0ca1738dd27f">
 
 
 ## Self Corrective RAG by LangGraph
