@@ -24,7 +24,7 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 
 [reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다. Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제공할 수 있습니다. 
 
-![image](https://github.com/user-attachments/assets/7cf51ebe-66fc-4ca1-bbbd-d35457732788)
+![image](https://github.com/user-attachments/assets/8ca02018-56b8-4272-a8d1-f71aa6b6f0ca)
 
 
 ### Corrective RAG
