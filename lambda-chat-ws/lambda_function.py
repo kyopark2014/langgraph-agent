@@ -1152,12 +1152,13 @@ def run_corrective_rag(connectionId, requestId, app, query):
     
     msg = ""
     
-    for output in app.stream(inputs, config, stream_mode="values"):   
+    #for output in app.stream(inputs, config, stream_mode="values"):   
+    for output in app.stream(inputs):   
         for key, value in output.items():
             print(f"Finished running: {key}:")
             print("value: ", value)
             
-    print('output: ', value.content)
+    print('value: ', value)
         
 #        message = event["messages"][-1]
 #        print('message: ', message)
@@ -1178,13 +1179,13 @@ def run_corrective_rag(connectionId, requestId, app, query):
 #    sendMessage(connectionId, result)
     result = {
         'request_id': requestId,
-        'msg': value["generation"],
+        'msg': value["generation"].content,
         'status': 'proceeding'
     }
     #print('result: ', json.dumps(result))
     sendMessage(connectionId, result)
 
-    return value["generation"]
+    return value["generation"].content
 
 
 def traslation(chat, text, input_language, output_language):
