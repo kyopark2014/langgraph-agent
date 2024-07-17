@@ -87,3 +87,92 @@ stop
 
 @enduml
 ```
+
+## C4-PlantUML
+
+[C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML)을 참조합니다.
+
+![image](https://github.com/user-attachments/assets/f77820fb-9391-4af1-bfef-7b24e91bc791)
+
+
+```text
+@startuml Self RAG
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+skinparam wrapWidth 200
+skinparam maxMessageSize 200
+
+!$BLACK = "#black"
+!$COLOR_A_6 = "#d4de5e"
+!$COLOR_A_5 = "#7f3b08"
+!$COLOR_A_4 = "#b35806"
+!$COLOR_A_3 = "#e08214"
+!$COLOR_A_2 = "#fdb863"
+!$COLOR_A_1 = "#fee0b6"
+!$COLOR_NEUTRAL = "#f7f7f7"
+!$COLOR_B_1 = "#d8daeb"
+!$COLOR_B_2 = "#b2abd2"
+!$COLOR_B_3 = "#8073ac"
+!$COLOR_B_4 = "#542788"
+!$COLOR_B_5 = "#2d004b"
+!$COLOR_REL_LINE = "#8073ac"
+!$COLOR_REL_TEXT = "#8073ac"
+
+UpdateElementStyle("container", $bgColor=$COLOR_A_6, $fontColor=$BLACK, $borderColor=$COLOR_A_1, $shadowing="false", $legendText="Internal user")
+UpdateElementStyle("system", $bgColor=$COLOR_A_4, $fontColor=$COLOR_NEUTRAL, $borderColor=$COLOR_A_2, $sprite="robot", $legendText="Our chatbot based system")
+UpdateElementStyle("system", $bgColor=$COLOR_B_4, $fontColor=$COLOR_NEUTRAL, $borderColor=$COLOR_B_2, $legendText="External system")
+UpdateRelStyle($lineColor=$COLOR_REL_LINE, $textColor=$COLOR_REL_TEXT)
+
+LAYOUT_WITH_LEGEND()
+
+Container(start, "Start")
+
+
+'System_Boundary("start", ""){
+    Container(retrieve, "retrieve")
+    
+    Container(grade_documents, "grade documents")
+
+    SystemQueue_Ext(decide_to_generate, "decide_to_generate")
+
+    Container(generate, "generate")
+
+    SystemQueue_Ext(grade_generation, "grade generation")
+'}
+
+Container(rewrite, "rewrite")
+
+
+Rel(start, retrieve, "question")
+
+Rel(retrieve, grade_documents, "documents")
+
+Rel(grade_documents, decide_to_generate, "grade")
+
+Rel(decide_to_generate, rewrite, "no")
+
+Rel(decide_to_generate, generate, "yes")
+
+Rel(rewrite, retrieve, "update \nquestion")
+
+Rel(generate, grade_generation, "answer")
+
+Rel(grade_generation, generate, "not support")
+
+Rel(grade_generation, END, "useful")
+
+Rel(grade_generation, rewrite, "not useful")
+
+
+'Container(websearch, "web search")
+
+
+
+
+' fight the layout engine
+'auth -[hidden]right-> shop
+
+
+@enduml
+```
