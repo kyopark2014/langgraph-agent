@@ -949,6 +949,8 @@ def get_rewrite():
         
     structured_llm_rewriter = chat.with_structured_output(RewriteQuestion)
     
+    print('langMode: ', langMode)
+    
     if langMode:
         system = """당신은 웹 검색에 최적화된 더 나은 버전의 질문으로 변환하는 질문 re-writer입니다. semantic intent와 meaning을 잘 알 수 있도록 질문을 변환하세요."""
     else:
