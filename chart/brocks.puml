@@ -6,7 +6,7 @@ skinparam maxMessageSize 200
 
 LAYOUT_WITH_LEGEND()
 
-'Person_Ext(person, "Start")
+System(start, "Start")
 
 'Container(www, "Web Site")
 
@@ -18,7 +18,14 @@ Rel(start, retrieve, "search")
 
 Container(generate, "generate")
 
+Container(websearch, "web search")
+
+Container(rewrite, "rewrite")
+
+
 Rel(retrieve, generate, "generate")
+
+Rel(generate, start, "generate")
 
 ' fight the layout engine
 'auth -[hidden]right-> shop

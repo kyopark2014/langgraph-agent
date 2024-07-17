@@ -8,7 +8,7 @@ skinparam activity {
     BackgroundColor #d4de5e
     'BorderColor #5e94de
     'BackgroundColor #lightcyan
-    BorderColor #lightblue
+    BorderColor #cyan
     ArrowColor black
 }
 skinparam activityDiamond {
