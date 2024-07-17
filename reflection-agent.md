@@ -14,15 +14,19 @@ LangGraph를 사용하여 3가지 반영 기술을 구축하는 방법을 설명
 
 상세한 동작을 설명하기 위해 Activity Diagram을 그려보면 아래와 같습니다. 
 
+1) "START"가 "generat"에 사용자의 input을 전달하면, "generate"는 LLM으로 답변(generation)을 생성하여 "should_continue"에 전달합니다.
+2) "should_continue"는 일정 숫자만큼만 reflection을 수행하도록 제어합니다. 여기서는 메시지의 길이가 6이하인 경우에는 "reflect"에 보내고, 이상인 경우에는 "END"로 보내서 동작을 종료하도록 하고 있습니다. 메시지는 Human/AI 형태로 저장되므로 6이하라면 모두 3회 반복하게 됩니다. 
+3) "generate"가 생성한 답변(generation)이 "reflect"에 전달되면, Prompt를 이용해 반영된 답변(reflection)을 "generation"에 전달합니다.
+4) 이 동작을 3회 반복 수행합니다. 
+
 <img src="https://github.com/user-attachments/assets/8ca02018-56b8-4272-a8d1-f71aa6b6f0ca" width="350">
    
-
-
-[agent-reflection-kor.ipynb](./agent/agent-reflection-kor.ipynb)
+상세한 코도는 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다. 동작은 [agent-reflection-kor.ipynb](./agent/agent-reflection-kor.ipynb)에서 확인할 수 있습니다. 그밖에 참고할 만한 자료는 아래와 같습니다. 
 
 - [agent-reflection.ipynb](./agent/agent-reflection.ipynb) 에서는 MessageGraph()로 LangGraph Agent 만드는것을 설명합니다.
 
-- [reflection.ipynb](https://github.com/langchain-ai/langgraph/blob/main/examples/reflection/reflection.ipynb)에서는 LangGraph로 Reflection을 이용한 Agent를 설명하고 있습니다. 이것은 re-planning, search, evalution에 활용될 수 있습니다. 
+- [reflection.ipynb](https://github.com/langchain-ai/langgraph/blob/main/examples/reflection/reflection.ipynb)에서는 LangGraph로 Reflection에 대한 노트북입니다.
+  
 
 ### Node의 정의
 
