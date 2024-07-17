@@ -4,8 +4,8 @@
 
 ## Self Corrective RAG
 
-![image](https://github.com/user-attachments/assets/9aeb268b-59e3-4749-9a36-0aeec22bb60e)
 
+<img width="255" alt="image" src="https://github.com/user-attachments/assets/e9f024b5-3425-48be-822f-0ca1738dd27f">
 
 
 ## Self Corrective RAG by LangGraph
