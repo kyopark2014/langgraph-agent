@@ -22,7 +22,12 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 
 ### Reflection
 
-[reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다. Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제공할 수 있습니다. 
+Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제공할 수 있습니다. [reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다. 이를 activity diagram으로 그려보면 아래와 같습니다. 
+
+1) "START"가 "generat"에 사용자의 input을 전달하면, "generate"는 LLM으로 답변(generation)을 생성하여 "should_continue"에 전달합니다.
+2) "should_continue"는 일정 숫자만큼만 reflection을 수행하도록 제어합니다. 여기서는 메시지의 길이가 6이하인 경우에는 "reflect"에 보내고, 이상인 경우에는 "END"로 보내서 동작을 종료하도록 하고 있습니다. 메시지는 Human/AI 형태로 저장되므로 6이하라면 모두 3회 반복하게 됩니다. 
+3) "generate"가 생성한 답변(generation)이 "reflect"에 전달되면, Prompt를 이용해 반영된 답변(reflection)을 "generation"에 전달합니다.
+4) 이 동작을 3회 반복 수행합니다. 
 
 <img src="https://github.com/user-attachments/assets/8ca02018-56b8-4272-a8d1-f71aa6b6f0ca" width="350">
    
