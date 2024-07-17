@@ -1,5 +1,8 @@
-@startuml Self-Corrective RAG
+@startuml Corrective RAG
 
+'skinparam monochrome true
+
+'skinparam monochrome true
 skinparam shadowing false
 skinparam activity {
     StartColor limegreen
@@ -7,24 +10,44 @@ skinparam activity {
     BackgroundColor #d4de5e
     BorderColor #5e94de
     ArrowColor black
+    fontSize 13
 }
 skinparam activityDiamond {
     BackgroundColor #5ede68
     BorderColor #5e94de
-    fontSize 16
+    fontSize 13
 }
 
 start
 -> start;
 
-:retrieve;
+repeat :retrieve;
 
-:generate;
+:generation;
 
-while (hallucination) is (no)    
-  while (grade_answer) is (no)
-  endwhile(yes)
-endwhile (yes)
+if (hallucination?) then (yes)
+  if (max_retries?) then (no)    
+    :generate;
+  else (yes)
+    :websearch;
+  endif
+else (no)
+endif
 
+
+-> answer;
+
+backward :rewrite;
+
+if (answer?) then (no)    
+  if (max_retries?) then (no)    
+    :rewrite;
+  else (yes)
+    :websearch;
+  endif  
+else (yes)
+endif
+
+-> end;
 stop
 @enduml

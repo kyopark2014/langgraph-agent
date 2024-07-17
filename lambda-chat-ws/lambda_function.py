@@ -1106,6 +1106,7 @@ def generate(state: CragState):
 def rewrite(state: CragState):
     print("###### rewrite ######")
     question = state["question"]
+    documents = state["documents"]
 
     # Prompt
     question_rewriter = get_rewrite()
@@ -1113,7 +1114,7 @@ def rewrite(state: CragState):
     better_question = question_rewriter.invoke({"question": question})
     print("better_question: ", better_question.question)
 
-    return {"question": better_question.question}
+    return {"question": better_question.question, "documents": documents}
 
 def web_search(state: CragState):
     print("###### web_search ######")

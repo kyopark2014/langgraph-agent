@@ -1,22 +1,21 @@
 @startuml Corrective RAG
 
 'skinparam monochrome true
+
+'skinparam monochrome true
 skinparam shadowing false
 skinparam activity {
     StartColor limegreen
     EndColor darkblue
-    'BackgroundColor #d4de5e
-    'BorderColor #5e94de
-    BackgroundColor #lightblue
-    BorderColor #lightblue
+    BackgroundColor #d4de5e
+    BorderColor #5e94de
     ArrowColor black
+    fontSize 13
 }
 skinparam activityDiamond {
-    'BackgroundColor #5ede68
-    'BorderColor #5e94de
-    BackgroundColor #Pink
-    BorderColor #Pink
-    fontSize 12
+    BackgroundColor #5ede68
+    BorderColor #5e94de
+    fontSize 13
 }
 
 start
