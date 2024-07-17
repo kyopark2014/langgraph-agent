@@ -957,10 +957,12 @@ def get_rewrite():
         system = """You a question re-writer that converts an input question to a better version that is optimized \n 
         for web search. Look at the input and try to reason about the underlying semantic intent / meaning."""
         
+    print('system: ', system)
+        
     re_write_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
-            ("human", "Question: {question}"),
+            ("human", "질문: {question}"),
         ]
     )
     question_rewriter = re_write_prompt | structured_llm_rewriter
