@@ -16,7 +16,16 @@ Corrective-RAG(CRAG)는 검색된 문서에 대한 Self Refection / Self Grading
 
 ## Corrective RAG의 구현
 
-여기서 구현하려는 Corrective RAG의 형태는 아래와 같습니다. 상세한 코드는 [corrective-rag.ipynb](./agent/corrective-rag.ipynb)와 [corrective-rag-kor.ipynb](./agent/corrective-rag-kor.ipynb)를 참조합니다. 
+여기서 구현하려는 Corrective RAG의 형태는 아래와 같습니다. 상세한 코드는 [lambda_function.py](lambda-chat-ws)을 참조합니다. 더불어 동작을 [corrective-rag.ipynb](./agent/corrective-rag.ipynb)와 [corrective-rag-kor.ipynb](./agent/corrective-rag-kor.ipynb)를 이용해 확인할 수 있습니다.
+
+Corrective RAG의 동작 Flow는 아래와 같습니다. 
+
+1) 사용자가 질문(Question)을 읽어오면 RAG의 Vector Store로 retrieve 동작을 수행합니다. 이때 k개의 관련된 문서(relevant docuements)을 가져옵니다.
+2) grade_document()는 LLM prompt를 이용하여 Vector Store에가 가져온 문서가 실제로 관련이 있는지 확인합니다. 관련이 있으면 "yes", 없으면 "no"를 판별(grade)하는데, "no"인 경우에 관련된 문서에서 제외합니다. 만약 관련된 문서가 관련성이 없어 제외되면, "websearch"를 True로 설정합니다. 
+3) decide_to_geenerate()는 모든 문서가 관련성이 있으면, 답변을 생성하는 generate()로 이동하고, 하나의 문서라도 제외되면 websearch로 이동합니다.
+4) web search가 필요할 경우에 기존 질문이 충분히 의도(sementic intent)와 의미(meaning)을 가지도록 새로운 질문으로 변경(re-write)합니다.
+5) web search()에서는 인터넷을 검색하여 새로운 관련된 문서를 찾아 추가합니다.
+6) generate()에서는 관련된 문서를 context로 활용하여 적절한 답변을 생성합니다. 
 
 <img src="https://github.com/user-attachments/assets/dc495cc0-2912-4bb3-a1f8-807d05d7b35a" width="200">
 
@@ -42,7 +51,7 @@ chain = prompt | chat
 GradeDocuments Class를 정의하고 structed out을 이용하여, document가 관련된 문서인지를 yes/no로 응답하도록 합니다. 
 
 ```python
-class GradeDocuments(BaseModel):
+**class GradeDocuments(BaseModel):
     """Binary score for relevance check on retrieved documents."""
 
     binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
@@ -58,7 +67,7 @@ grade_prompt = ChatPromptTemplate.from_messages(
         ("system", system),
         ("human", "Retrieved document: \n\n {document} \n\n User question: {question}"),
     ]
-)
+)**
 
 retrieval_grader = grade_prompt | structured_llm_grader
 ```
@@ -66,39 +75,61 @@ retrieval_grader = grade_prompt | structured_llm_grader
 RAG을 위한 Prompt를 정의합니다.
 
 ```python
-system = (
-"""다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
-                        
-<context>
-{context}
-</context>""")
-human = "{question}"
-    
-prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-                   
-rag_chain = prompt | chat
+def get_reg_chain():
+    if langMode:
+        system = (
+        """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
+
+        <context>
+        {context}
+        </context>""")
+    else: 
+        system = (
+        """Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+        
+        <context>
+        {context}
+        </context>""")
+        
+    human = "{question}"
+        
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+                    
+    chat = get_chat()
+    rag_chain = prompt | chat
+    return rag_chain
 ```
 
 ReWrite를 위한 Prompt를 정의합니다.
 
 ```python
-class RewriteQuestion(BaseModel):
-    """rewrited question that is well optimized for retrieval."""
+def get_rewrite():
+    class RewriteQuestion(BaseModel):
+        """rewrited question that is well optimized for retrieval."""
 
-    question: str = Field(description="The new question is optimized for web search")
+        question: str = Field(description="The new question is optimized for web search")
     
-structured_llm_rewriter = chat.with_structured_output(RewriteQuestion)
-
-system = """You a question re-writer that converts an input question to a better version that is optimized \n 
-     for web search. Look at the input and try to reason about the underlying semantic intent / meaning."""
-re_write_prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system", system),
-        ("human", "Here is the initial question: \n\n {question} \n Formulate an improved question."),
-    ]
-)
-
-question_rewriter = re_write_prompt | structured_llm_rewriter
+    chat = get_chat()
+    structured_llm_rewriter = chat.with_structured_output(RewriteQuestion)
+    
+    print('langMode: ', langMode)
+    
+    if langMode:
+        system = """당신은 웹 검색에 최적화된 더 나은 버전의 Question으로 변환하는 질문 re-writer입니다. 질문의 의도와 의미을 잘 표현할 수 있는 한국어 질문을 생성하세요."""
+    else:
+        system = """You a question re-writer that converts an input question to a better version that is optimized \n 
+        for web search. Look at the input and try to reason about the underlying semantic intent / meaning."""
+        
+    print('system: ', system)
+        
+    re_write_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("human", "Question: {question}"),
+        ]
+    )
+    question_rewriter = re_write_prompt | structured_llm_rewriter
+    return question_rewriter
 ```
 
 Graph State를 정의합니다.
@@ -114,111 +145,200 @@ class GraphState(TypedDict):
     documents : List[str]
 ```
 
-각 노드를 정의합니다.
+OpenSeach를 이용해 vector 검색으로 관련된 문서를 찾습니다. 여기서는 관련된 문서를 parent/child chunking을 한 후에 child chunk를 이용해 검색 정확도를 높이고, parent chunk를 이용해 context를 풍부하게 활용합니다. 
 
 ```python
-def retrieve(state: GraphState):
+def retrieve(state: CragState):
+    print("###### retrieve ######")
     question = state["question"]
 
     # Retrieval
-    documents = retriever.invoke(question)
-    return {"documents": documents, "question": question}
+    bedrock_embedding = get_embedding()
+        
+    vectorstore_opensearch = OpenSearchVectorSearch(
+        index_name = "idx-*", # all
+        is_aoss = False,
+        ef_search = 1024, # 512(default)
+        m=48,
+        #engine="faiss",  # default: nmslib
+        embedding_function = bedrock_embedding,
+        opensearch_url=opensearch_url,
+        http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
+    ) 
+    
+    top_k = 4
+    docs = []    
+    if enalbeParentDocumentRetrival == 'true':
+        relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, question, top_k)
 
-def grade_documents(state: GraphState):
+        for i, document in enumerate(relevant_documents):
+            print(f'## Document(opensearch-vector) {i+1}: {document}')
+            
+            parent_doc_id = document[0].metadata['parent_doc_id']
+            doc_level = document[0].metadata['doc_level']
+            print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
+                
+            excerpt, name, uri, doc_level = get_parent_document(parent_doc_id) # use pareant document
+            print(f"parent: name: {name}, uri: {uri}, doc_level: {doc_level}")
+            
+            docs.append(
+                Document(
+                    page_content=excerpt,
+                    metadata={
+                        'name': name,
+                        'uri': uri,
+                        'doc_level': doc_level,
+                    },
+                )
+            )
+    return {"documents": docs, "question": question}
+```
+
+각 노드를 정의합니다. 
+
+```python
+def grade_documents(state: CragState):
+    print("###### grade_documents ######")
     question = state["question"]
     documents = state["documents"]
     
+    # Score each doc
     filtered_docs = []
     web_search = "No"
+    
+    retrieval_grader = get_grader()
     for doc in documents:
         score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
         grade = score.binary_score
+        # Document relevant
         if grade.lower() == "yes":
+            print("---GRADE: DOCUMENT RELEVANT---")
             filtered_docs.append(doc)
+        # Document not relevant
         else:
+            print("---GRADE: DOCUMENT NOT RELEVANT---")
+            # We do not include the document in filtered_docs
+            # We set a flag to indicate that we want to run web search
             web_search = "Yes"
             continue
-    return {"question": question, "documents": filtered_docs, "web_search": web_search}
+    print('len(docments): ', len(filtered_docs))
+    print('web_search: ', web_search)
 
-def decide_to_generate(state: GraphState):
-    question = state["question"]
-    filtered_documents = state["documents"]
+def decide_to_generate(state: CragState):
+    print("###### decide_to_generate ######")
     web_search = state["web_search"]
     
     if web_search == "Yes":
+        # All documents have been filtered check_relevance
+        # We will re-generate a new query
+        print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
         return "rewrite"
     else:
+        # We have relevant documents, so generate answer
+        print("---DECISION: GENERATE---")
         return "generate"
 
-def generate(state: GraphState):
+def generate(state: CragState):
+    print("###### generate ######")
     question = state["question"]
     documents = state["documents"]
     
-    generation = rag_chain.invoke({"context": docs, "question": question})    
+    # RAG generation
+    rag_chain = get_reg_chain()
+    
+    generation = rag_chain.invoke({"context": documents, "question": question})
+    print('generation: ', generation.content)
+    
     return {"documents": documents, "question": question, "generation": generation}
 
-def rewrite(state: GraphState):
+def rewrite(state: CragState):
+    print("###### rewrite ######")
     question = state["question"]
 
+    # Prompt
+    question_rewriter = get_rewrite()
+    
     better_question = question_rewriter.invoke({"question": question})
+    print("better_question: ", better_question.question)
+
     return {"question": better_question.question}
 
-def web_search(state: GraphState):
+def web_search(state: CragState):
+    print("###### web_search ######")
     question = state["question"]
     documents = state["documents"]
 
+    # Web search
+    web_search_tool = TavilySearchResults(k=3)
+    
     docs = web_search_tool.invoke({"query": question})
     web_results = "\n".join([d["content"] for d in docs])
     web_results = Document(page_content=web_results)
+    print("web_results: ", web_results)
     
     if documents is not None:
         documents.append(web_results)
     else:
-        documents = [web_results]    
+        documents = [web_results]
+    
     return {"question": question, "documents": documents}
 ```
 
 이제 Graph를 이용하여 Workflow를 정의합니다.
 
 ```python
-from langgraph.graph import END, StateGraph
+def buildCorrectiveAgent():
+    workflow = StateGraph(CragState)
+        
+    # Define the nodes
+    workflow.add_node("retrieve", retrieve)  
+    workflow.add_node("grade_documents", grade_documents)
+    workflow.add_node("generate", generate)
+    workflow.add_node("rewrite", rewrite)
+    workflow.add_node("websearch", web_search)
 
-workflow = StateGraph(GraphState)
+    # Build graph
+    workflow.set_entry_point("retrieve")
+    workflow.add_edge("retrieve", "grade_documents")
+    workflow.add_conditional_edges(
+        "grade_documents",
+        decide_to_generate,
+        {
+            "rewrite": "rewrite",
+            "generate": "generate",
+        },
+    )
+    workflow.add_edge("rewrite", "websearch")
+    workflow.add_edge("websearch", "generate")
+    workflow.add_edge("generate", END)
 
-workflow.add_node("retrieve", retrieve)  
-workflow.add_node("grade_documents", grade_documents)
-workflow.add_node("generate", generate)
-workflow.add_node("rewrite", rewrite)
-workflow.add_node("websearch", web_search)
+    return workflow.compile()
 
-# Build graph
-workflow.set_entry_point("retrieve")
-workflow.add_edge("retrieve", "grade_documents")
-workflow.add_conditional_edges(
-    "grade_documents",
-    decide_to_generate,
-    {
-        "rewrite": "rewrite",
-        "generate": "generate",
-    },
-)
-workflow.add_edge("rewrite", "websearch")
-workflow.add_edge("websearch", "generate")
-workflow.add_edge("generate", END)
-
-# Compile
-app = workflow.compile()
+crag_app = buildCorrectiveAgent()
 ```
 
 아래와 같이 실행할 수 있습니다.
 
 ```python
-from pprint import pprint
-inputs = {"question": "이미지를 분석하기 위한 서비스에 대해 설명해줘."}
-for output in app.stream(inputs):
-    for key, value in output.items():
-        pprint(f"Finished running: {key}:")
-pprint(value["generation"])
+def run_corrective_rag(connectionId, requestId, app, query):
+    global langMode
+    langMode = isKorean(query)
+    
+    isTyping(connectionId, requestId)
+    
+    inputs = {"question": query}
+    config = {"recursion_limit": 50}
+    
+    for output in app.stream(inputs, config):   
+        for key, value in output.items():
+            print(f"Finished running: {key}:")
+            print("value: ", value)
+            
+    print('value: ', value)
+        
+    readStreamMsg(connectionId, requestId, value["generation"].content)
+    
+    return value["generation"].content
 ```
 
 이때의 결과의 예는 아래와 같습니다.
