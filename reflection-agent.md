@@ -6,13 +6,19 @@ Reflection은 Agent을 포함한 AI 시스템의 품질과 성공률을 높이�
 
 LangGraph를 사용하여 3가지 반영 기술을 구축하는 방법을 설명하고 있으며, Reflexion과 Language Agent Tree Search의 구현 방법도 포함되어 있습니다. 
 
-## Simple Reflection
+## Reflection 동작 
 
-[agent-reflection-kor.ipynb](./agent/agent-reflection-kor.ipynb)에서는 Reflection을 구현하는 방법에 대해 설명합니다. 이때의 개념도는 아래와 같습니다. 
+[LangChain - Reflection](https://github.com/langchain-ai/langgraph/blob/main/examples/reflection/reflection.ipynb)에서는 아래와 같이 Reflection의 동작을 설명하고 있습니다. 
 
 ![image](https://github.com/user-attachments/assets/2a77a177-5be9-4a7d-97a8-4d5a19f9709e)
 
-### 참고문헌
+상세한 동작을 설명하기 위해 Activity Diagram을 그려보면 아래와 같습니다. 
+
+<img src="https://github.com/user-attachments/assets/8ca02018-56b8-4272-a8d1-f71aa6b6f0ca" width="350">
+   
+
+
+[agent-reflection-kor.ipynb](./agent/agent-reflection-kor.ipynb)
 
 - [agent-reflection.ipynb](./agent/agent-reflection.ipynb) 에서는 MessageGraph()로 LangGraph Agent 만드는것을 설명합니다.
 
