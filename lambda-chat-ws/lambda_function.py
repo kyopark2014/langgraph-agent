@@ -1138,6 +1138,12 @@ def buildCorrectiveAgent():
 
 crag_app = buildCorrectiveAgent()
 
+inputs = {"question": "이미지를 분석하기 위한 서비스에 대해 설명해줘."}
+for output in crag_app.stream(inputs):
+    for key, value in output.items():
+        print(f"Finished running: {key}:")
+print('output: ', value["generation"])
+
 def run_corrective_rag(connectionId, requestId, app, query):
     isTyping(connectionId, requestId)
     
