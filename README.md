@@ -24,6 +24,9 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 
 [reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다. Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제공할 수 있습니다. 
 
+![image](https://github.com/user-attachments/assets/7cf51ebe-66fc-4ca1-bbbd-d35457732788)
+
+
 ### Corrective RAG
 
 [corrective-rag-agent.md](./corrective-rag-agent.md)에서는 Corrective RAG을 이용한 RAG 성능 강화에 대해 설명합니다. Corrective RAG는 Vector Store에서 가져온 문서를 Refine하고 관련성이 적은 문서는 제외하고, 다른 데이터 소스나 Web 검색을 통해 RAG의 성능을 향상시킬 수 있습니다. 
