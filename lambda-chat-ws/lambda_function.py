@@ -1073,7 +1073,7 @@ def generate(state: CragState):
     # RAG generation
     rag_chain = get_reg_chain()
     
-    generation = rag_chain.invoke({"context": docs, "question": question})
+    generation = rag_chain.invoke({"context": documents, "question": question})
     print('generation: ', generation.content)
     
     return {"documents": documents, "question": question, "generation": generation}
