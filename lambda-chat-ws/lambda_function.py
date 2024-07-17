@@ -1152,8 +1152,8 @@ def run_corrective_rag(connectionId, requestId, app, query):
     
     msg = ""
     
-    for output in app.stream(inputs, config, stream_mode="values"):   
-    #for output in app.stream(inputs):   
+    #for output in app.stream(inputs, config, stream_mode="values"):   
+    for output in app.stream(inputs):   
         for key, value in output.items():
             print(f"Finished running: {key}:")
             print("value: ", value)
@@ -1177,13 +1177,15 @@ def run_corrective_rag(connectionId, requestId, app, query):
             #print('result: ', json.dumps(result))
             
 #    sendMessage(connectionId, result)
-    result = {
-        'request_id': requestId,
-        'msg': value["generation"].content,
-        'status': 'proceeding'
-    }
+    readStreamMsg(connectionId, requestId, value["generation"].content)
+    
+    #result = {
+    #    'request_id': requestId,
+    #    'msg': value["generation"].content,
+    #    'status': 'proceeding'
+    #}
     #print('result: ', json.dumps(result))
-    sendMessage(connectionId, result)
+    #sendMessage(connectionId, result)
 
     return value["generation"].content
 
