@@ -1141,12 +1141,11 @@ crag_app = buildCorrectiveAgent()
 def run_corrective_rag(connectionId, requestId, app, query):
     isTyping(connectionId, requestId)
     
-    inputs = [HumanMessage(content=query)]
     config = {"recursion_limit": 50}
     
     msg = ""
     
-    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
+    for event in app.stream({"question": query}, config, stream_mode="values"):   
         print('event: ', event)
         
         message = event["messages"][-1]
