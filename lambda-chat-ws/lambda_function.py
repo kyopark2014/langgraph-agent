@@ -1150,43 +1150,15 @@ def run_corrective_rag(connectionId, requestId, app, query):
     inputs = {"question": query}
     config = {"recursion_limit": 50}
     
-    msg = ""
-    
-    #for output in app.stream(inputs, config, stream_mode="values"):   
-    for output in app.stream(inputs):   
+    for output in app.stream(inputs, config):   
         for key, value in output.items():
             print(f"Finished running: {key}:")
             print("value: ", value)
             
     print('value: ', value)
         
-#        message = event["messages"][-1]
-#        print('message: ', message)
-        
-#        if len(event["messages"])>1:
-#            if msg == "":
-#                msg = message.content
-#            else:
-#                msg = f"{msg}\n\n{message.content}"
-
-#            result = {
-#                'request_id': requestId,
-#                'msg': msg,
-#                'status': 'proceeding'
-#            }
-            #print('result: ', json.dumps(result))
-            
-#    sendMessage(connectionId, result)
     readStreamMsg(connectionId, requestId, value["generation"].content)
     
-    #result = {
-    #    'request_id': requestId,
-    #    'msg': value["generation"].content,
-    #    'status': 'proceeding'
-    #}
-    #print('result: ', json.dumps(result))
-    #sendMessage(connectionId, result)
-
     return value["generation"].content
 
 
