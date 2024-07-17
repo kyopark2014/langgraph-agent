@@ -711,9 +711,9 @@ tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, se
 ####################### LangGraph #######################
 # Chat Agent Executor
 #########################################################
-chat = get_chat() 
+chatModel = get_chat() 
 
-model = chat.bind_tools(tools)
+model = chatModel.bind_tools(tools)
 
 class ChatAgentState(TypedDict):
     # messages: Annotated[Sequence[BaseMessage], operator.add]
@@ -792,6 +792,8 @@ def run_agent_executor(connectionId, requestId, app, query):
 # Reflection Agent
 #########################################################
 def generation_node(state: ChatAgentState):    
+    chat = get_chat()
+    
     prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -812,6 +814,7 @@ def generation_node(state: ChatAgentState):
 def reflection_node(state: ChatAgentState):
     messages = state["messages"]
     
+    chat = get_chat()
     reflection_prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -902,8 +905,6 @@ class GradeDocuments(BaseModel):
 
     binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
 
-structured_llm_grader = chat.with_structured_output(GradeDocuments)
-
 def get_grader():
     system = """You are a grader assessing relevance of a retrieved document to a user question. \n 
     If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant. \n
@@ -915,6 +916,10 @@ def get_grader():
             ("human", "Retrieved document: \n\n {document} \n\n User question: {question}"),
         ]
     )
+    
+    chat = get_chat()
+    structured_llm_grader = chat.with_structured_output(GradeDocuments)
+    
     retrieval_grader = grade_prompt | structured_llm_grader
     return retrieval_grader
 
@@ -937,7 +942,8 @@ def get_reg_chain():
     human = "{question}"
         
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-                    
+                   
+    chat = get_chat() 
     rag_chain = prompt | chat
     return rag_chain
 
@@ -947,6 +953,7 @@ def get_rewrite():
 
         question: str = Field(description="The new question is optimized for web search")
         
+    chat = get_chat() 
     structured_llm_rewriter = chat.with_structured_output(RewriteQuestion)
     
     print('langMode: ', langMode)
@@ -1107,7 +1114,7 @@ def rewrite(state: CragState):
     better_question = question_rewriter.invoke({"question": question})
     print("better_question: ", better_question)
 
-    return {"question": better_question.question}
+    return {"question": better_question.content}
 
 def web_search(state: CragState):
     print("###### web_search ######")
