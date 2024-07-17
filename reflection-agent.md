@@ -1,10 +1,6 @@
 # Reflection Agent
 
- 이와 관련된 [Blog - Reflection Agents](https://blog.langchain.dev/reflection-agents/)을 참조합니다. 
-
-Reflection은 Agent을 포함한 AI 시스템의 품질과 성공률을 높이기 위해 사용되는 프롬프트 전략(prompting strategy)입니다. 
-
-LangGraph를 사용하여 3가지 반영 기술을 구축하는 방법을 설명하고 있으며, Reflexion과 Language Agent Tree Search의 구현 방법도 포함되어 있습니다. 
+Reflection은 Agent을 포함한 AI 시스템의 품질과 성공률을 높이기 위해 사용되는 프롬프트 전략(prompting strategy)입니다. 여기에서는 LangGraph의 [Blog - Reflection Agents](https://blog.langchain.dev/reflection-agents/)을 참조하여 Reflection Agent를 구현합니다. 
 
 ## Reflection 동작 
 
