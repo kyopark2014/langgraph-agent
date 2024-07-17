@@ -18,15 +18,15 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 아래에서 구현한 Agent는 zero-shot agent로 사용자의 질문에 따라 tools 리스트로부터 적절한 tool을 선택하여 활용합니다. tool은 함수 또는 API로 구현됩니다. 선택된 tool로 원하는 작업을 완료하지 못하면 다른 tool을 추가로 활용합니다.
 
 
-## Agent를 이용한 RAG 기능 향상
+## Agent를 활용 케이스
+
+### Reflection
+
+[reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다. Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제공할 수 있습니다. 
 
 ### Corrective RAG
 
-[corrective-rag-agent.md](./corrective-rag-agent.md)에서는 Self reflection을 이용한 RAG 성능 강화에 대해 설명합니다.
-
-### Self-Corrective RAG
-
-[self-corrective-rag.md](./self-corrective-rag.md)에서는 Self Corrective RAGf를 Agent로 구현하는것을 설명합니다.
+[corrective-rag-agent.md](./corrective-rag-agent.md)에서는 Corrective RAG을 이용한 RAG 성능 강화에 대해 설명합니다. Corrective RAG는 Vector Store에서 가져온 문서를 Refine하고 관련성이 적은 문서는 제외하고, 다른 데이터 소스나 Web 검색을 통해 RAG의 성능을 향상시킬 수 있습니다. 
 
 ### Self RAG
 
@@ -36,15 +36,11 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 
 ## Use Cases
 
-### Agent Case Studies
+- [self-corrective-rag.md](./self-corrective-rag.md)에서는 Self Corrective RAGf를 Agent로 구현하는것을 설명합니다.
 
-1) Reflection: [reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다.
+- Plan and Execution: [planning-agents.md](./planning-agents.md)에서는 plan-and-execution 형태의 agent를 생성하는 방법을 설명합니다.
 
-2) Plan and Execution: [planning-agents.md](./planning-agents.md)에서는 plan-and-execution 형태의 agent를 생성하는 방법을 설명합니다.
-
-3) Reflexion: [reflexion-agent.md](./reflexion-agent.md)에서는 Reflexion방식의 Agent에 대해 설명합니다.
-
-### Agent Reference
+- Reflexion: [reflexion-agent.md](./reflexion-agent.md)에서는 Reflexion방식의 Agent에 대해 설명합니다.
 
 - [langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph를 이용해 Agent를 생성하는 방법을 설명합니다. 
 
