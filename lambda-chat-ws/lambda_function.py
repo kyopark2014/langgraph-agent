@@ -792,8 +792,6 @@ def run_agent_executor(connectionId, requestId, app, query):
 # Reflection Agent
 #########################################################
 def generation_node(state: ChatAgentState):    
-    chat = get_chat()
-    
     prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -806,6 +804,8 @@ def generation_node(state: ChatAgentState):
             MessagesPlaceholder(variable_name="messages"),
         ]
     )
+    
+    chat = get_chat()
     chain = prompt | chat
 
     response = chain.invoke(state["messages"])
@@ -814,7 +814,6 @@ def generation_node(state: ChatAgentState):
 def reflection_node(state: ChatAgentState):
     messages = state["messages"]
     
-    chat = get_chat()
     reflection_prompt = ChatPromptTemplate.from_messages(
         [
             (
@@ -827,6 +826,8 @@ def reflection_node(state: ChatAgentState):
             MessagesPlaceholder(variable_name="messages"),
         ]
     )
+    
+    chat = get_chat()
     reflect = reflection_prompt | chat
     
     cls_map = {"ai": HumanMessage, "human": AIMessage}
@@ -919,7 +920,6 @@ def get_grader():
     
     chat = get_chat()
     structured_llm_grader = chat.with_structured_output(GradeDocuments)
-    
     retrieval_grader = grade_prompt | structured_llm_grader
     return retrieval_grader
 
@@ -942,8 +942,8 @@ def get_reg_chain():
     human = "{question}"
         
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-                   
-    chat = get_chat() 
+                    
+    chat = get_chat()
     rag_chain = prompt | chat
     return rag_chain
 
@@ -952,8 +952,8 @@ def get_rewrite():
         """rewrited question that is well optimized for retrieval."""
 
         question: str = Field(description="The new question is optimized for web search")
-        
-    chat = get_chat() 
+    
+    chat = get_chat()
     structured_llm_rewriter = chat.with_structured_output(RewriteQuestion)
     
     print('langMode: ', langMode)
@@ -969,11 +969,10 @@ def get_rewrite():
     re_write_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
-            ("human", "{question}"),
+            ("human", "Question: {question}"),
         ]
     )
-    #question_rewriter = re_write_prompt | structured_llm_rewriter
-    question_rewriter = re_write_prompt | chat
+    question_rewriter = re_write_prompt | structured_llm_rewriter
     return question_rewriter
 
 class CragState(TypedDict):
@@ -1112,9 +1111,9 @@ def rewrite(state: CragState):
     question_rewriter = get_rewrite()
     
     better_question = question_rewriter.invoke({"question": question})
-    print("better_question: ", better_question)
+    print("better_question: ", better_question.question)
 
-    return {"question": better_question.content}
+    return {"question": better_question.question}
 
 def web_search(state: CragState):
     print("###### web_search ######")
