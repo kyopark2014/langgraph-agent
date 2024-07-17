@@ -959,7 +959,7 @@ def get_rewrite():
     print('langMode: ', langMode)
     
     if langMode:
-        system = """당신은 웹 검색에 최적화된 더 나은 버전의 질문으로 변환하는 질문 re-writer입니다. semantic intent와 meaning을 잘 알 수 있도록 질문을 변환하세요."""
+        system = """당신은 웹 검색에 최적화된 더 나은 버전의 질문으로 변환하는 질문 re-writer입니다. semantic intent와 meaning을 잘 알 수 있도록 질문을 한국어로 변환하세요."""
     else:
         system = """You a question re-writer that converts an input question to a better version that is optimized \n 
         for web search. Look at the input and try to reason about the underlying semantic intent / meaning."""
@@ -969,7 +969,7 @@ def get_rewrite():
     re_write_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
-            ("human", "Question: {question}"),
+            ("human", "{question}"),
         ]
     )
     question_rewriter = re_write_prompt | structured_llm_rewriter
