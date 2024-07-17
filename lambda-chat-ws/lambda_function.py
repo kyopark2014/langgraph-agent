@@ -895,6 +895,7 @@ def run_reflection_agent(connectionId, requestId, app, query):
 # Corrective RAG
 #########################################################
 from langchain_core.pydantic_v1 import BaseModel, Field
+langMode = False
 
 class GradeDocuments(BaseModel):
     """Binary score for relevance check on retrieved documents."""
@@ -905,8 +906,9 @@ structured_llm_grader = chat.with_structured_output(GradeDocuments)
 
 def get_grader():
     system = """You are a grader assessing relevance of a retrieved document to a user question. \n 
-        If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant. \n
-        Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."""
+    If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant. \n
+    Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."""
+
     grade_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
@@ -917,13 +919,21 @@ def get_grader():
     return retrieval_grader
 
 def get_reg_chain():
-    system = (
-    #"""Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
-    """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
-                            
-    <context>
-    {context}
-    </context>""")
+    if langMode:
+        system = (
+        """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
+
+        <context>
+        {context}
+        </context>""")
+    else: 
+        system = (
+        """Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+        
+        <context>
+        {context}
+        </context>""")
+        
     human = "{question}"
         
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
@@ -939,8 +949,12 @@ def get_rewrite():
         
     structured_llm_rewriter = chat.with_structured_output(RewriteQuestion)
     
-    system = """You a question re-writer that converts an input question to a better version that is optimized \n 
-     for web search. Look at the input and try to reason about the underlying semantic intent / meaning."""
+    if langMode:
+        system = """당신은 웹 검색에 최적화된 더 나은 버전의 질문으로 변환하는 질문 re-writer입니다. semantic intent와 meaning을 잘 알 수 있도록 질문을 변환하세요."""
+    else:
+        system = """You a question re-writer that converts an input question to a better version that is optimized \n 
+        for web search. Look at the input and try to reason about the underlying semantic intent / meaning."""
+        
     re_write_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
@@ -1031,7 +1045,7 @@ def grade_documents(state: CragState):
     filtered_docs = []
     web_search = "No"
     
-    retrieval_grader = get_grader()        
+    retrieval_grader = get_grader()
     for doc in documents:
         score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
         grade = score.binary_score
@@ -1145,6 +1159,9 @@ crag_app = buildCorrectiveAgent()
 #print('output: ', value["generation"])
 
 def run_corrective_rag(connectionId, requestId, app, query):
+    global langMode
+    langMode = isKorean(query)
+    
     isTyping(connectionId, requestId)
     
     inputs = {"question": query}
