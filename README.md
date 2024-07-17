@@ -28,10 +28,24 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 
 [corrective-rag-agent.md](./corrective-rag-agent.md)에서는 Corrective RAG을 이용한 RAG 성능 강화에 대해 설명합니다. Corrective RAG는 Vector Store에서 가져온 문서를 Refine하고 관련성이 적은 문서는 제외하고, 다른 데이터 소스나 Web 검색을 통해 RAG의 성능을 향상시킬 수 있습니다. 
 
+1) 사용자가 질문(Question)을 읽어오면 RAG의 Vector Store로 retrieve 동작을 수행합니다. 이때 k개의 관련된 문서(relevant docuements)을 가져옵니다.
+2) grade_document()는 LLM prompt를 이용하여 Vector Store에가 가져온 문서가 실제로 관련이 있는지 확인합니다. 관련이 있으면 "yes", 없으면 "no"를 판별(grade)하는데, "no"인 경우에 관련된 문서에서 제외합니다. 만약 관련된 문서가 관련성이 없어 제외되면, "websearch"를 True로 설정합니다. 
+3) decide_to_geenerate()는 모든 문서가 관련성이 있으면, 답변을 생성하는 generate()로 이동하고, 하나의 문서라도 제외되면 websearch로 이동합니다.
+4) web search가 필요할 경우에 기존 질문이 충분히 의도(sementic intent)와 의미(meaning)을 가지도록 새로운 질문으로 변경(re-write)합니다.
+5) web search()에서는 인터넷을 검색하여 새로운 관련된 문서를 찾아 추가합니다.
+6) generate()에서는 관련된 문서를 context로 활용하여 적절한 답변을 생성합니다. 
+
+<img src="https://github.com/user-attachments/assets/996d6671-1782-4968-be4f-0ade60b0316d" width="300">
+
+### Self-Corrective RAG
+
+![image](https://github.com/user-attachments/assets/5769e8ed-6e76-4fda-a932-a1d3c461de50)
+
 ### Self RAG
 
 [Self RAG](https://github.com/kyopark2014/llm-agent/blob/main/self-rag.md)에서는 RAG의 결과를 Grade하고 Hallucination을 방지하기 위한 task를 활용해 RAG의 성능을 높입니다.
 
+![image](https://github.com/user-attachments/assets/55672f1a-0b8e-4566-a604-6e5534d9e7d9)
 
 
 ## Reference
