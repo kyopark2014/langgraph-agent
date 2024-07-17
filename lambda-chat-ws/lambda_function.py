@@ -965,7 +965,8 @@ def get_rewrite():
             ("human", "질문: {question}"),
         ]
     )
-    question_rewriter = re_write_prompt | structured_llm_rewriter
+    #question_rewriter = re_write_prompt | structured_llm_rewriter
+    question_rewriter = re_write_prompt | chat
     return question_rewriter
 
 class CragState(TypedDict):
