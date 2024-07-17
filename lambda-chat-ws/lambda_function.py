@@ -960,7 +960,7 @@ def get_rewrite():
     re_write_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
-            ("human", "Here is the initial question: \n\n {question} \n Formulate an improved question."),
+            ("human", "Question: {question}"),
         ]
     )
     question_rewriter = re_write_prompt | structured_llm_rewriter
