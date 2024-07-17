@@ -18,7 +18,7 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 아래에서 구현한 Agent는 zero-shot agent로 사용자의 질문에 따라 tools 리스트로부터 적절한 tool을 선택하여 활용합니다. tool은 함수 또는 API로 구현됩니다. 선택된 tool로 원하는 작업을 완료하지 못하면 다른 tool을 추가로 활용합니다.
 
 
-## Agent를 활용 케이스
+## Agent Use Cases
 
 ### Reflection
 
@@ -34,7 +34,7 @@ LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 �
 
 
 
-## Use Cases
+## Reference
 
 - [self-corrective-rag.md](./self-corrective-rag.md)에서는 Self Corrective RAGf를 Agent로 구현하는것을 설명합니다.
 
