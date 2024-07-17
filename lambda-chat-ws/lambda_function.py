@@ -891,6 +891,284 @@ def run_reflection_agent(connectionId, requestId, app, query):
 
     return msg
 
+####################### LangGraph #######################
+# Corrective RAG
+#########################################################
+from langchain_core.pydantic_v1 import BaseModel, Field
+
+class GradeDocuments(BaseModel):
+    """Binary score for relevance check on retrieved documents."""
+
+    binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
+
+structured_llm_grader = chat.with_structured_output(GradeDocuments)
+
+def get_grader():
+    system = """You are a grader assessing relevance of a retrieved document to a user question. \n 
+        If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant. \n
+        Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."""
+    grade_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("human", "Retrieved document: \n\n {document} \n\n User question: {question}"),
+        ]
+    )
+    retrieval_grader = grade_prompt | structured_llm_grader
+    return retrieval_grader
+
+def get_reg_chain():
+    system = (
+    #"""Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+    """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
+                            
+    <context>
+    {context}
+    </context>""")
+    human = "{question}"
+        
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+                    
+    rag_chain = prompt | chat
+    return rag_chain
+
+def get_rewrite():
+    class RewriteQuestion(BaseModel):
+        """rewrited question that is well optimized for retrieval."""
+
+        question: str = Field(description="The new question is optimized for web search")
+        
+    structured_llm_rewriter = chat.with_structured_output(RewriteQuestion)
+    
+    system = """You a question re-writer that converts an input question to a better version that is optimized \n 
+     for web search. Look at the input and try to reason about the underlying semantic intent / meaning."""
+    re_write_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("human", "Here is the initial question: \n\n {question} \n Formulate an improved question."),
+        ]
+    )
+    question_rewriter = re_write_prompt | structured_llm_rewriter
+    return question_rewriter
+
+class CragState(TypedDict):
+    question : str
+    generation : str
+    web_search : str
+    documents : List[str]
+
+def retrieve(state: CragState):
+    print("###### retrieve ######")
+    question = state["question"]
+
+    # Retrieval
+    bedrock_embedding = get_embedding()
+        
+    vectorstore_opensearch = OpenSearchVectorSearch(
+        index_name = "idx-*", # all
+        is_aoss = False,
+        ef_search = 1024, # 512(default)
+        m=48,
+        #engine="faiss",  # default: nmslib
+        embedding_function = bedrock_embedding,
+        opensearch_url=opensearch_url,
+        http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
+    ) 
+    
+    top_k = 4
+    docs = []    
+    if enalbeParentDocumentRetrival == 'true':
+        relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, question, top_k)
+
+        for i, document in enumerate(relevant_documents):
+            print(f'## Document(opensearch-vector) {i+1}: {document}')
+            
+            parent_doc_id = document[0].metadata['parent_doc_id']
+            doc_level = document[0].metadata['doc_level']
+            print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
+                
+            excerpt, name, uri, doc_level = get_parent_document(parent_doc_id) # use pareant document
+            print(f"parent: name: {name}, uri: {uri}, doc_level: {doc_level}")
+            
+            docs.append(
+                Document(
+                    page_content=excerpt,
+                    metadata={
+                        'name': name,
+                        'uri': uri,
+                        'doc_level': doc_level,
+                    },
+                )
+            )
+    else: 
+        relevant_documents = vectorstore_opensearch.similarity_search_with_score(
+            query = question,
+            k = top_k,
+        )
+
+        for i, document in enumerate(relevant_documents):
+            print(f'## Document(opensearch-vector) {i+1}: {document}')
+            
+            excerpt = document[0].page_content        
+            uri = document[0].metadata['uri']
+                            
+            docs.append(
+                Document(
+                    page_content=excerpt,
+                    metadata={
+                        'name': name,
+                        'uri': uri,
+                    },
+                )
+            )    
+    return {"documents": docs, "question": question}
+
+def grade_documents(state: CragState):
+    print("###### grade_documents ######")
+    question = state["question"]
+    documents = state["documents"]
+    
+    # Score each doc
+    filtered_docs = []
+    web_search = "No"
+    
+    retrieval_grader = get_grader()        
+    for doc in documents:
+        score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+        grade = score.binary_score
+        # Document relevant
+        if grade.lower() == "yes":
+            print("---GRADE: DOCUMENT RELEVANT---")
+            filtered_docs.append(doc)
+        # Document not relevant
+        else:
+            print("---GRADE: DOCUMENT NOT RELEVANT---")
+            # We do not include the document in filtered_docs
+            # We set a flag to indicate that we want to run web search
+            web_search = "Yes"
+            continue
+    print('len(docments): ', len(filtered_docs))
+    print('web_search: ', web_search)
+    
+    return {"question": question, "documents": filtered_docs, "web_search": web_search}
+
+def decide_to_generate(state: CragState):
+    print("###### decide_to_generate ######")
+    web_search = state["web_search"]
+    
+    if web_search == "Yes":
+        # All documents have been filtered check_relevance
+        # We will re-generate a new query
+        print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
+        return "rewrite"
+    else:
+        # We have relevant documents, so generate answer
+        print("---DECISION: GENERATE---")
+        return "generate"
+
+def generate(state: CragState):
+    print("###### generate ######")
+    question = state["question"]
+    documents = state["documents"]
+    
+    # RAG generation
+    rag_chain = get_reg_chain()
+    
+    generation = rag_chain.invoke({"context": docs, "question": question})
+    print('generation: ', generation.content)
+    
+    return {"documents": documents, "question": question, "generation": generation}
+
+def rewrite(state: CragState):
+    print("###### rewrite ######")
+    question = state["question"]
+
+    # Prompt
+    question_rewriter = get_rewrite()
+    
+    better_question = question_rewriter.invoke({"question": question})
+    print("better_question: ", better_question.question)
+
+    return {"question": better_question.question}
+
+def web_search(state: CragState):
+    print("###### web_search ######")
+    question = state["question"]
+    documents = state["documents"]
+
+    # Web search
+    web_search_tool = TavilySearchResults(k=3)
+    
+    docs = web_search_tool.invoke({"query": question})
+    web_results = "\n".join([d["content"] for d in docs])
+    web_results = Document(page_content=web_results)
+    
+    if documents is not None:
+        documents.append(web_results)
+    else:
+        documents = [web_results]
+    
+    return {"question": question, "documents": documents}
+
+def buildCorrectiveAgent():
+    workflow = StateGraph(CragState)
+        
+    # Define the nodes
+    workflow.add_node("retrieve", retrieve)  
+    workflow.add_node("grade_documents", grade_documents)
+    workflow.add_node("generate", generate)
+    workflow.add_node("rewrite", rewrite)
+    workflow.add_node("websearch", web_search)
+
+    # Build graph
+    workflow.set_entry_point("retrieve")
+    workflow.add_edge("retrieve", "grade_documents")
+    workflow.add_conditional_edges(
+        "grade_documents",
+        decide_to_generate,
+        {
+            "rewrite": "rewrite",
+            "generate": "generate",
+        },
+    )
+    workflow.add_edge("rewrite", "websearch")
+    workflow.add_edge("websearch", "generate")
+    workflow.add_edge("generate", END)
+
+    return workflow.compile()
+
+crag_app = buildCorrectiveAgent()
+
+def run_corrective_rag(connectionId, requestId, app, query):
+    isTyping(connectionId, requestId)
+    
+    inputs = [HumanMessage(content=query)]
+    config = {"recursion_limit": 50}
+    
+    msg = ""
+    
+    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
+        print('event: ', event)
+        
+        message = event["messages"][-1]
+        print('message: ', message)
+        
+        if len(event["messages"])>1:
+            if msg == "":
+                msg = message.content
+            else:
+                msg = f"{msg}\n\n{message.content}"
+
+            result = {
+                'request_id': requestId,
+                'msg': msg,
+                'status': 'proceeding'
+            }
+            #print('result: ', json.dumps(result))
+            sendMessage(connectionId, result)
+
+    return msg
+
+
 def traslation(chat, text, input_language, output_language):
     system = (
         "You are a helpful assistant that translates {input_language} to {output_language} in <article> tags. Put it in <result> tags."
@@ -1384,8 +1662,10 @@ def getResponse(connectionId, jsonBody):
                     revised_question = revise_question(connectionId, requestId, chat, text)     
                     print('revised_question: ', revised_question)  
                     msg = run_agent_executor(connectionId, requestId, chat_app, revised_question)                                      
-                elif convType == 'reflection-agent':
+                elif convType == 'agent-reflection':
                     msg = run_reflection_agent(connectionId, requestId, reflection_app, text)      
+                elif convType == 'agent-crag':
+                    msg = run_corrective_rag(connectionId, requestId, crag_app, text)
                         
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
