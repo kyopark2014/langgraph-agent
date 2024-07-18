@@ -51,12 +51,12 @@ Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제
 Self RAG는 RAG의 Vector Store에서 얻어진 문서들의 관련성을 확인(Grade)하여 관련성이 적은 문서를 제외합니다. 또한 얻어진 답변이 환각(Hallucination)인지, 충분한 잘 작성된 답변인지 확인하여, 답변이 충분하지 않으면 질문을 re-write하여 RAG 동작을 재수행합니다. 이를 통해 RAG의 결과를 향상 시킬수 있습니다. 상세한 내용은 [Self RAG](https://github.com/kyopark2014/llm-agent/blob/main/self-rag.md)에서 설명합니다. 아래는 Self RAG에 대한 activity diagram입니다. 
 
 1) "retrive"는 질문(question)을 이용하여 Vector Store에 관련된 문서를 조회(retrieve)합니다.
-2) "grade_documents"는 LLM Prompt를 이용하여 문서(documents)의 관련성을 확인(Grade)합니다. 관련이 없는 문서는 제외하여 "filtered documents"로 제조합합니다. 
+2) "grade_documents"는 LLM Prompt를 이용하여 문서(documents)의 관련성을 확인(grade)합니다. 관련이 없는 문서는 제외하여 "filtered documents"로 제조합합니다. 
 3) "decide_to_generate"는 "filtered document"를 "generate"로 보내서 답변을 생성하도록 합니다. "filtered document"가 없다면 새로운 질문을 생성하기 위해 "rewrite" 동작을 수행하도록 요청합니다.
 4) "rewrite"는 기존 질문(question)을 이용하여 LLM Prompt로 새로운 질문을 생성합니다. 새로운 질문(better question)은 "retrieve"에 전달되어, 새로운 질문으로 RAG 동작을 재수행할 수 있습니다.  
 5) "generate"는 "filtered documents"를 이용하여 적절한 답변(generation)을 생성합니다.
-6) "grade_generation"은 생성된 답변이 hallucination인지 확인하여, 만약 환각(hallucination)이라면 다시 "generator"에 보내 답변을 새로 생성하고, 환각이 아니라면 답변이 적절한지 "answer_question"로 검증합니다. 이때, 답변이 적절하다면(useful) 최종 결과를 전달하고, 적절하지 않다면(not_useful) 질문을 새로 생성하기 위해 "re-write"보냅니다. 새로 생성된 질문은 "retrieve"에 전달되어 RAG 조회 과정부터 전체 동작을 반복하게 됩니다. 
-
+6) "grade_generation"은 생성된 답변이 환각(hallucination)인지 확인하여, 만약 환각이라면 "generator"에 보내 다시 답변을 생성하고, 환각이 아니라면 답변이 적절한지 "answer_question"로 검증합니다. 이때, 답변이 적절하다면(useful) 최종 결과를 전달하고, 적절하지 않다면(not_useful) 질문을 새로 생성하기 위해 "re-write"보냅니다. 새로 생성된 질문은 "retrieve"에 전달되어 RAG 조회 과정부터 전체 동작을 반복합니다.
+   
 ![image](https://github.com/user-attachments/assets/55672f1a-0b8e-4566-a604-6e5534d9e7d9)
 
 ### Self-Corrective RAG
