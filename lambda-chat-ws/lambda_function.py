@@ -1094,6 +1094,7 @@ def generate(state: CragState):
     print("###### generate ######")
     question = state["question"]
     documents = state["documents"]
+    retries = state["retries"] if state.get("retries") is not None else -1
     
     # RAG generation
     rag_chain = get_reg_chain()
@@ -1101,7 +1102,7 @@ def generate(state: CragState):
     generation = rag_chain.invoke({"context": documents, "question": question})
     print('generation: ', generation.content)
     
-    return {"documents": documents, "question": question, "generation": generation}
+    return {"documents": documents, "question": question, "generation": generation, "retries": retries + 1}
 
 def rewrite(state: CragState):
     print("###### rewrite ######")
@@ -1188,11 +1189,16 @@ def run_corrective_rag(connectionId, requestId, app, query):
 ####################### LangGraph #######################
 # Self RAG
 #########################################################
+MAX_RETRIES = 3
 
 class SelfRagState(TypedDict):
     question : str
     generation : str
+    retries: int
     documents : List[str]
+    
+class GraphConfig(TypedDict):
+    max_retries: int    
 
 def get_hallucination_grader():
     class GradeHallucinations(BaseModel):
@@ -1277,17 +1283,23 @@ def grade_documents_for_srag(state: SelfRagState):
     print('len(docments): ', len(filtered_docs))    
     return {"question": question, "documents": filtered_docs}
 
-def grade_generation(state):
+def grade_generation(state: SelfRagState, config):
     print("###### grade_generation ######")
     question = state["question"]
     documents = state["documents"]
     generation = state["generation"]
+    
+    retries = state["retries"] if state.get("retries") is not None else -1
+    max_retries = config.get("configurable", {}).get("max_retries", MAX_RETRIES)
 
-    hallucination_grader = get_hallucination_grader()
-    score = hallucination_grader.invoke(
+    hallucination_grade = get_hallucination_grader()
+    score = hallucination_grade.invoke(
         {"documents": documents, "generation": generation}
     )
     grade = score.binary_score
+    
+    print("hallucination_grade: ", hallucination_grade)
+    print("retries: ", retries)
 
     # Check hallucination
     answer_grader = get_answer_grader()    
@@ -1299,13 +1311,13 @@ def grade_generation(state):
         grade = score.binary_score
         if grade == "yes":
             print("---DECISION: GENERATION ADDRESSES QUESTION---")
-            return "useful"
+            return "useful" 
         else:
             print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
-            return "not useful"
+            return "not useful" if retries < max_retries else "not available"
     else:
         print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
-        return "not supported"
+        return "not supported" if retries < max_retries else "not available"
     
 def buildSelfRAG():
     workflow = StateGraph(SelfRagState)
@@ -1335,6 +1347,7 @@ def buildSelfRAG():
             "not supported": "generate",
             "useful": END,
             "not useful": "rewrite",
+            "not available": END,
         },
     )
 
