@@ -23,7 +23,7 @@ Self RAG는 Self Reflection을 베이스로 [(2023.10) Self-RAG: Learning to Ret
 ![image](https://github.com/user-attachments/assets/55672f1a-0b8e-4566-a604-6e5534d9e7d9)
 
 
-![Uploading image.png…]()
+![image](https://github.com/user-attachments/assets/266de2c8-1927-4d02-81ca-bad7de2237fe)
 
 
 ## Reference 
