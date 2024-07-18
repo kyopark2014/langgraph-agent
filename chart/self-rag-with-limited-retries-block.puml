@@ -64,9 +64,9 @@ Boundary(c2, "grade generation") {
 
     SystemQueue_Ext(answers_question, "answers question?")
 
-    SystemQueue_Ext(hallucination_retry, "max_retries?")
+    SystemQueue_Ext(hallucination_retry, "retries<max_retries?")
 
-    SystemQueue_Ext(answers_retry, "max_retries?")
+    SystemQueue_Ext(answers_retry, "retires<max_retries?")
 }
 
 Rel(generate, hallucination, "generation\nretries+1")

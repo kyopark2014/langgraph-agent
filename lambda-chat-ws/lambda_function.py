@@ -1292,24 +1292,24 @@ def grade_generation(state: SelfRagState, config):
     retries = state["retries"] if state.get("retries") is not None else -1
     max_retries = config.get("configurable", {}).get("max_retries", MAX_RETRIES)
 
-    hallucination_grade = get_hallucination_grader()
-    score = hallucination_grade.invoke(
+    hallucination_grader = get_hallucination_grader()
+    score = hallucination_grader.invoke(
         {"documents": documents, "generation": generation}
     )
-    grade = score.binary_score
+    hallucination_grade = score.binary_score
     
     print("hallucination_grade: ", hallucination_grade)
     print("retries: ", retries)
 
     # Check hallucination
     answer_grader = get_answer_grader()    
-    if grade == "yes":
+    if hallucination_grade == "yes":
         print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
         # Check question-answering
         print("---GRADE GENERATION vs QUESTION---")
         score = answer_grader.invoke({"question": question, "generation": generation})
-        grade = score.binary_score
-        if grade == "yes":
+        answer_grade = score.binary_score
+        if answer_grade == "yes":
             print("---DECISION: GENERATION ADDRESSES QUESTION---")
             return "useful" 
         else:
