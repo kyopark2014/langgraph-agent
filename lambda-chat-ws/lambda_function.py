@@ -1246,7 +1246,7 @@ def get_answer_grader():
     answer_grader = answer_prompt | structured_llm_grade_answer
     return answer_grader
 
-def generate_for_srag(state: CragState):
+def generate_with_retires(state: CragState):
     print("###### generate ######")
     question = state["question"]
     documents = state["documents"]
@@ -1260,7 +1260,7 @@ def generate_for_srag(state: CragState):
     
     return {"documents": documents, "question": question, "generation": generation, "retries": retries + 1}
         
-def grade_documents_for_srag(state: SelfRagState):
+def grade_documents_with_count(state: SelfRagState):
     print("###### grade_documents ######")
     question = state["question"]
     documents = state["documents"]
@@ -1285,7 +1285,7 @@ def grade_documents_for_srag(state: SelfRagState):
     print('len(docments): ', len(filtered_docs))    
     return {"question": question, "documents": filtered_docs, "count": count + 1}
 
-def decide_to_generate_for_srag(state: SelfRagState, config):
+def decide_to_generate_with_retires(state: SelfRagState, config):
     print("###### decide_to_generate ######")
     filtered_documents = state["documents"]
     
@@ -1344,8 +1344,8 @@ def buildSelfRAG():
         
     # Define the nodes
     workflow.add_node("retrieve", retrieve)  
-    workflow.add_node("grade_documents", grade_documents_for_srag)
-    workflow.add_node("generate", generate_for_srag)
+    workflow.add_node("grade_documents", grade_documents_with_count)
+    workflow.add_node("generate", generate_with_retires)
     workflow.add_node("rewrite", rewrite)
 
     # Build graph
@@ -1353,7 +1353,7 @@ def buildSelfRAG():
     workflow.add_edge("retrieve", "grade_documents")
     workflow.add_conditional_edges(
         "grade_documents",
-        decide_to_generate_for_srag,
+        decide_to_generate_with_retires,
         {
             "rewrite": "rewrite",
             "generate": "generate",
