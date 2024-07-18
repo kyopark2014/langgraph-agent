@@ -78,7 +78,7 @@ Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제
 
 ### Self RAG
 
-Self RAG는 RAG의 Vector Store에서 얻어진 문서들의 관련성을 확인(Grade)하여 관련성이 적은 문서를 제외합니다. 또한 얻어진 답변이 환각(Hallucination)인지, 충분한 잘 작성된 답변인지 확인하여, 답변이 충분하지 않으면 질문을 re-write하여 RAG 동작을 재수행합니다. 이를 통해 RAG의 결과를 향상 시킬수 있습니다. 상세한 내용은 [Self RAG](https://github.com/kyopark2014/llm-agent/blob/main/self-rag.md)에서 설명합니다. 아래는 Self RAG에 대한 activity diagram입니다. 
+Self RAG는 RAG의 Vector Store에서 얻어진 문서들의 관련성을 확인(Grade)하여 관련성이 적은 문서를 제외합니다. 또한 얻어진 답변이 환각(Hallucination)인지, 충분한 잘 작성된 답변인지 확인하여, 답변이 충분하지 않으면 질문을 re-write하여 RAG 동작을 재수행합니다. 이를 통해 RAG의 결과를 향상 시킬수 있습니다. 상세한 내용은 [Self RAG](./self-rag.md)에서 설명합니다. 아래는 Self RAG에 대한 activity diagram입니다. 
 
 1) "retrive"는 질문(question)을 이용하여 Vector Store에 관련된 문서를 조회(retrieve)합니다.
 2) "grade_documents"는 LLM Prompt를 이용하여 문서(documents)의 관련성을 확인(grade)합니다. 관련이 없는 문서는 제외하여 "filtered documents"로 제조합합니다. 
