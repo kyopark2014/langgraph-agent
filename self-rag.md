@@ -1,6 +1,6 @@
 # Self RAG
 
-[LangGraph - Self-RAG](https://github.com/langchain-ai/langgraph/blob/main/examples/rag/langgraph_self_rag.ipynb?ref=blog.langchain.dev)와 같이 Self RAG는 RAG를 grade 한 후에 얻어진 결과가 환각(hallucination)을 하는지 확인하는 절차를 포함합니다. 결과가 만족하지 않을 경우에는 cycle을 통해 반복적으로 Answer를 찾습니다. 아래는 Self RAG에 대한 activity diagram입니다. 
+[LangGraph - Self-RAG](https://github.com/langchain-ai/langgraph/blob/main/examples/rag/langgraph_self_rag.ipynb?ref=blog.langchain.dev)와 같이 Self RAG는 Vector Store의 검색 결과의 관련성을 LLM으로 검증(grade)하고, 생성된 결과가 환각(hallucination)인지, 답변이 적절한지를 검증하는 절차를 포함합니다. 결과가 만족하지 않을 경우에는 cycle을 통해 반복적으로 Answer를 찾습니다. 아래는 Self RAG에 대한 activity diagram입니다. 
 
 1) "retrive"는 질문(question)을 이용하여 Vector Store에 관련된 문서를 조회(retrieve)합니다.
 2) "grade_documents"는 LLM Prompt를 이용하여 문서(documents)의 관련성을 확인(grade)합니다. 관련이 없는 문서는 제외하여 "filtered documents"로 제조합합니다. 
