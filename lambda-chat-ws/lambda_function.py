@@ -1297,11 +1297,11 @@ def decide_to_generate_with_retires(state: SelfRagState, config):
         # All documents have been filtered check_relevance
         # We will re-generate a new query
         print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
-        return "rewrite" if count < max_count else "not available"
+        return "no document" if count < max_count else "not available"
     else:
         # We have relevant documents, so generate answer
         print("---DECISION: GENERATE---")
-        return "generate"
+        return "document"
 
 def grade_generation(state: SelfRagState, config):
     print("###### grade_generation ######")
@@ -1355,8 +1355,8 @@ def buildSelfRAG():
         "grade_documents",
         decide_to_generate_with_retires,
         {
-            "rewrite": "rewrite",
-            "generate": "generate",
+            "no document": "rewrite",
+            "document": "generate",
             "not available": END,
         },
     )
