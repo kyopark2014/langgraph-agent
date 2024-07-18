@@ -1402,6 +1402,152 @@ def run_self_rag(connectionId, requestId, app, query):
 # Self-Corrective RAG
 #########################################################
 
+class SelfCorrectiveRagState(TypedDict):
+    messages: Annotated[list[BaseMessage], add_messages]
+    question: str
+    documents: list[Document]
+    candidate_answer: str
+    retries: int
+    web_fallback: bool
+
+def retrieve_for_scrag(state: SelfCorrectiveRagState):
+    print("###### retrieve ######")
+    question = state["question"]
+
+    # Retrieval
+    bedrock_embedding = get_embedding()
+        
+    vectorstore_opensearch = OpenSearchVectorSearch(
+        index_name = "idx-*", # all
+        is_aoss = False,
+        ef_search = 1024, # 512(default)
+        m=48,
+        #engine="faiss",  # default: nmslib
+        embedding_function = bedrock_embedding,
+        opensearch_url=opensearch_url,
+        http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
+    ) 
+    
+    top_k = 4
+    docs = []    
+    if enalbeParentDocumentRetrival == 'true':
+        relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, question, top_k)
+
+        for i, document in enumerate(relevant_documents):
+            print(f'## Document(opensearch-vector) {i+1}: {document}')
+            
+            parent_doc_id = document[0].metadata['parent_doc_id']
+            doc_level = document[0].metadata['doc_level']
+            print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
+                
+            excerpt, name, uri, doc_level = get_parent_document(parent_doc_id) # use pareant document
+            print(f"parent: name: {name}, uri: {uri}, doc_level: {doc_level}")
+            
+            docs.append(
+                Document(
+                    page_content=excerpt,
+                    metadata={
+                        'name': name,
+                        'uri': uri,
+                        'doc_level': doc_level,
+                    },
+                )
+            )
+    else: 
+        relevant_documents = vectorstore_opensearch.similarity_search_with_score(
+            query = question,
+            k = top_k,
+        )
+
+        for i, document in enumerate(relevant_documents):
+            print(f'## Document(opensearch-vector) {i+1}: {document}')
+            
+            excerpt = document[0].page_content        
+            uri = document[0].metadata['uri']
+                            
+            docs.append(
+                Document(
+                    page_content=excerpt,
+                    metadata={
+                        'name': name,
+                        'uri': uri,
+                    },
+                )
+            )    
+    return {"documents": docs, "question": question, "web_fallback": True}
+
+def generate_for_scrag(state: SelfCorrectiveRagState):
+    print("###### generate ######")
+    question = state["question"]
+    documents = state["documents"]
+    retries = state["retries"] if state.get("retries") is not None else -1
+    
+    # RAG generation
+    rag_chain = get_reg_chain()
+    
+    generation = rag_chain.invoke({"context": documents, "question": question})
+    print('generation: ', generation.content)
+    
+    return {"retries": retries + 1, "candidate_answer": generation.content}
+
+def finalize_response(state: SelfCorrectiveRagState):
+    return {"messages": [AIMessage(content=state["candidate_answer"])]}
+    
+def buildSelCorrectivefRAG():
+    workflow = StateGraph(SelfCorrectiveRagState)
+        
+    # Define the nodes
+    workflow.add_node("retrieve", retrieve_for_scrag)  
+    workflow.add_node("generate", generate_for_scrag) 
+    workflow.add_node("rewrite", rewrite)
+    workflow.add_node("websearch", web_search)
+    workflow.add_node("finalize_response", finalize_response)
+
+    # Build graph
+    workflow.set_entry_point("retrieve")
+    workflow.add_edge("retrieve", "generate")
+    workflow.add_edge("rewrite", "retrieve")
+    workflow.add_edge("websearch", "generate")
+    workflow.add_edge("finalize_response", END)
+
+    workflow.add_conditional_edges(
+        "generate",
+        grade_generation,
+        {
+            "generate": "generate",
+            "websearch": "websearch",
+            "rewrite": "rewrite",
+            "finalize_response": "finalize_response",
+        },
+    )
+
+    # Compile
+    return workflow.compile()
+
+scrag_app = buildSelfRAG()
+
+def run_self_corrective_rag(connectionId, requestId, app, query):
+    global langMode
+    langMode = isKorean(query)
+    
+    isTyping(connectionId, requestId)
+    
+    inputs = {"question": query}
+    config = {"recursion_limit": 50}
+    
+    for output in app.stream(inputs, config):   
+        for key, value in output.items():
+            print(f"Finished running: {key}:")
+            print("value: ", value)
+            
+    print('value: ', value)
+        
+    readStreamMsg(connectionId, requestId, value["generation"].content)
+    
+    return value["generation"].content
+
+
+#########################################################
 def traslation(chat, text, input_language, output_language):
     system = (
         "You are a helpful assistant that translates {input_language} to {output_language} in <article> tags. Put it in <result> tags."
@@ -1895,13 +2041,15 @@ def getResponse(connectionId, jsonBody):
                     revised_question = revise_question(connectionId, requestId, chat, text)     
                     print('revised_question: ', revised_question)  
                     msg = run_agent_executor(connectionId, requestId, chat_app, revised_question)                                      
-                elif convType == 'agent-reflection':
+                elif convType == 'agent-reflection':  # reflection
                     msg = run_reflection_agent(connectionId, requestId, reflection_app, text)      
-                elif convType == 'agent-crag':
+                elif convType == 'agent-crag':  # corrective RAG
                     msg = run_corrective_rag(connectionId, requestId, crag_app, text)
-                elif convType == 'agent-srag':
+                elif convType == 'agent-srag':  # self RAG 
                     msg = run_self_rag(connectionId, requestId, srag_app, text)
-                        
+                elif convType == 'agent-scrag':  # self-corrective RAG
+                    msg = run_self_corrective_rag(connectionId, requestId, scrag_app, text)        
+                                                
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
                 elif convType == "grammar":
