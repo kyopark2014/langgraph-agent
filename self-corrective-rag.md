@@ -16,6 +16,9 @@ Self-Corrective RAG는 Corrective RAG처럼 Vector Store로 부터 얻어진 문
 
 ![image](https://github.com/user-attachments/assets/5769e8ed-6e76-4fda-a932-a1d3c461de50)
 
+이때 생성되는 Graph는 아래와 같습니다.
+
+![image](https://github.com/user-attachments/assets/766c27fe-a943-4262-a72b-486c69578f83)
 
 
 
