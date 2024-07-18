@@ -951,7 +951,7 @@ def get_rewrite():
     class RewriteQuestion(BaseModel):
         """rewrited question that is well optimized for retrieval."""
 
-        question: str = Field(description="The new question is optimized for web search")
+        question: str = Field(description="The new question is optimized to represent semantic intent and meaning of the user")
     
     chat = get_chat()
     structured_llm_rewriter = chat.with_structured_output(RewriteQuestion)
