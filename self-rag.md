@@ -30,10 +30,7 @@ Self RAG는 Self Reflection을 베이스로 [(2023.10) Self-RAG: Learning to Ret
 
 RAG의 Vector Store에 질문과 관련된 문서가 없는 경우에는 recursion_limit만큰 반복후에 exception error와 함께 실패하게 됩니다. 따라서 아래와 같이 retries를 count하도록 구조를 변경하였습니다. 
 
-
-
-![image](https://github.com/user-attachments/assets/d020aa90-2c5b-40a5-a8e8-27f8a62ec073)
-
+![image](https://github.com/user-attachments/assets/94e8743e-5505-41e9-953b-9e4e01b5f2b0)
 
 ## Reference 
 
