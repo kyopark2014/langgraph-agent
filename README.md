@@ -34,9 +34,9 @@ Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제
 
 ### Corrective RAG
 
-[corrective-rag-agent.md](./corrective-rag-agent.md)에서는 Corrective RAG을 이용한 RAG 성능 강화에 대해 설명합니다. Corrective RAG는 Vector Store에서 가져온 문서를 Refine하고 관련성이 적은 문서는 제외하고, 다른 데이터 소스나 Web 검색을 통해 RAG의 성능을 향상시킬 수 있습니다. 
+[corrective-rag-agent.md](./corrective-rag-agent.md)에서는 Corrective RAG을 이용한 RAG 성능 강화에 대해 설명합니다. Corrective RAG는 Vector Store에서 가져온 문서를 Refine하고 관련성이 적은 문서는 제외하고, 다른 데이터 소스나 Web 검색을 통해 RAG의 성능을 향상시킬 수 있습니다. 아래 그림은 Corrective RAG에 대한 activity diagram입니다. 
 
-1) "retrieve"는 질문(Question)을 이용하여, RAG의 Vector Store로 retrieve 동작을 수행합니다. 이때 k개의 관련된 문서(relevant docuements)을 가져옵니다.
+1) "retrieve"는 질문(Question)을 이용하여, RAG의 Vector Store로 조회(retrieve) 동작을 수행합니다. 이때 k개의 관련된 문서(relevant docuements)을 가져옵니다.
 2) "grade_documents"는 LLM prompt를 이용하여 Vector Store에서 가져온 문서가 실제로 관련이 있는지 확인합니다. 관련이 있으면 "yes", 없으면 "no"를 판별(grade)하는데, "no"인 경우에 관련된 문서에서 제외합니다. 만약 관련된 문서가 관련성이 없어 제외되면, "web_search"를 True로 설정합니다. 
 3) "decide_to_generate"는 Vector Store에서 가져온 모든 문서가 관련이 있다면, "web_search"를 "yes"로 설정하고, 아니라면 "no로 설정합니다. 이와같이 관련된 문서중에 일부라도 관련이 적다고 판정되면, 웹 검색을 수행하여 관련된 문서를 보강합니다.
 4) "web_search"가 "yes"라면 (웹 검색이 필요한 경우), 기존 질문으로 부터 향상된 질문(better_question)을 생성하는 re-write를 동작을 수행합니다. 이를 위해 "rewrite"는 LLM Prompt를 이용하여, 충분히 의도(sementic intent)와 의미(meaning)을 가지도록 향상된 질문(better_question)을 생성합니다.
@@ -48,7 +48,14 @@ Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제
 
 ### Self RAG
 
-[Self RAG](https://github.com/kyopark2014/llm-agent/blob/main/self-rag.md)에서는 RAG의 결과를 Grade하고 Hallucination을 방지하기 위한 task를 활용해 RAG의 성능을 높입니다.
+Self RAG는 RAG의 Vector Store에서 얻어진 문서들의 관련성을 확인(Grade)하여 관련성이 적은 문서를 제외합니다. 또한 얻어진 답변이 환각(Hallucination)인지, 충분한 잘 작성된 답변인지 확인하여, 답변이 충분하지 않으면 질문을 re-write하여 RAG 동작을 재수행합니다. 이를 통해 RAG의 결과를 향상 시킬수 있습니다. 상세한 내용은 [Self RAG](https://github.com/kyopark2014/llm-agent/blob/main/self-rag.md)에서 설명합니다. 아래는 Self RAG에 대한 activity diagram입니다. 
+
+1) "retrive"는 질문(question)을 이용하여 Vector Store에 관련된 문서를 조회(retrieve)합니다.
+2) "grade_documents"는 LLM Prompt를 이용하여 문서(documents)의 관련성을 확인(Grade)합니다. 관련이 없는 문서는 제외하여 "filtered documents"로 제조합합니다. 
+3) "decide_to_generate"는 "filtered document"를 "generate"로 보내서 답변을 생성하도록 합니다. "filtered document"가 없다면 새로운 질문을 생성하기 위해 "rewrite" 동작을 수행하도록 요청합니다.
+4) "rewrite"는 기존 질문(question)을 이용하여 LLM Prompt로 새로운 질문을 생성합니다. 새로운 질문은 다시 "retrive" 전달하여 반복적으로 RAG 검색부터 전체를 재수행합니다. 
+5) "generate"는 "filtered documents"를 이용하여 적절한 답변(generation)을 생성합니다.
+6) "grade_generation"은 생성된 답변이 hallucination인지 확인하여, 만약 hallucination이라면 다시 "generator"에 보내 답변을 새로 생성하고, 아니라면 답변이 적절한지 "answer_question"으로 확인합니다. 답변이 적절하다면(useful) 최종 결과를 전달하고, 적절하지 않다면(not_useful) 질문을 새로 생성하기 위해 "rewrite"보내고, 이후로 전체 동작을 반복하게 됩니다. 
 
 ![image](https://github.com/user-attachments/assets/55672f1a-0b8e-4566-a604-6e5534d9e7d9)
 
