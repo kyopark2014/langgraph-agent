@@ -28,7 +28,7 @@ Self RAG는 Self Reflection을 베이스로 [(2023.10) Self-RAG: Learning to Ret
 
 ## 재시도 숫자 제한
 
-답변을 얻지 못하면 recursion_limit만큼 반복한 후에 exception error와 함께 실패하게 됩니다. 따라서 아래와 같이 retries, count를 이용해 재시도 숫자를 제한하였습니다. 질문으로 Vector Store 조회시 max_count만큼 "rewrite"를 반복해도 관련된 문서(docuemnts)를 얻지 못하는 경우에는 문서 없이 "generate"에서 답변을 생성합니다. 또한 "generate"에서 생성한 답변이 환각(Hallucination)이면 max_retries만큼 반복하고, 최종으로 실패가 되면 동작을 종료 합니다. 
+답변을 얻지 못하면 recursion_limit만큼 반복한 후에 exception error와 함께 실패하게 됩니다. 따라서 아래와 같이 retries, count를 이용해 재시도 숫자를 제한하였습니다. 질문으로 Vector Store 조회시 max_count만큼 "rewrite"를 반복해도 관련된 문서(docuemnts)를 얻지 못하는 경우에는 문서 없이 "generate"에서 답변을 생성합니다. 또한 "generate"에서 생성한 답변이 환각(Hallucination) 또는 적절하지 않은(not usueful)이라면, max_retries만큼 재시도하다가 생성된 답변을 최종 답변으로 전달합니다. 
 
 ![image](https://github.com/user-attachments/assets/4dc8a762-70f5-4e1b-9d2e-d082cc9e74a5)
 
