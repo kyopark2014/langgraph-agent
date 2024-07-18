@@ -28,6 +28,7 @@ UpdateRelStyle($lineColor=$COLOR_REL_LINE, $textColor=$COLOR_REL_TEXT)
 
 LAYOUT_WITH_LEGEND()
 
+
 'Container(start, "Start")
 
 
@@ -35,28 +36,30 @@ Container(retrieve, "retrieve")
     
 Container(grade_documents, "grade_documents")
 
-
-'Boundary(c1, "decide_to_generate") {
-    SystemQueue_Ext(decide_to_generate, "decide_to_generate")
-'}
-
 Container(generate, "generate")
 
 Container(rewrite, "rewrite")
 
+'Boundary(c1, "decide_to_generate") {
+    SystemQueue_Ext(has_documents, "decide_to_generate")
 
-
+    SystemQueue_Ext(retrieve_count, "max_count?")
+'}
 
 
 Rel(start, retrieve, "question")
 
 Rel(retrieve, grade_documents, "documents")
 
-Rel(grade_documents, decide_to_generate, "filtered documents")
+Rel(grade_documents, has_documents, "filtered documents\ncount+1")
 
-Rel(decide_to_generate, rewrite, "no filtered documents")
+Rel(has_documents, generate, "documents")
 
-Rel(decide_to_generate, generate, "filtered documents")
+Rel(has_documents, retrieve_count, "no document")
+
+Rel(retrieve_count, rewrite, "no document")
+
+Rel(retrieve_count, END, "not available")
 
 
 Boundary(c2, "grade generation") {
@@ -64,9 +67,9 @@ Boundary(c2, "grade generation") {
 
     SystemQueue_Ext(answers_question, "answers question?")
 
-    SystemQueue_Ext(hallucination_retry, "retries<max_retries?")
+    SystemQueue_Ext(hallucination_retry, "max_retries?")
 
-    SystemQueue_Ext(answers_retry, "retires<max_retries?")
+    SystemQueue_Ext(answers_retry, "max_retries?")
 }
 
 Rel(generate, hallucination, "generation\nretries+1")
@@ -75,19 +78,19 @@ Rel(hallucination, hallucination_retry, "halluciantion")
 
 Rel(hallucination, answers_question, "not hallucination")
 
-Rel(hallucination_retry, generate, "no")
+Rel(hallucination_retry, generate, "not supported")
 
-Rel(hallucination_retry, END, "yes")
+Rel(hallucination_retry, END, "not available")
 
 
-Rel(rewrite, retrieve, "better question")
+Rel(rewrite, retrieve, "better\nquestion")
 
 Rel(answers_question, answers_retry, "not useful")
 
 Rel(answers_question, END, "useful", "generation")
 
-Rel(answers_retry, END, "yes")
+Rel(answers_retry, END, "not available")
 
-Rel(answers_retry, rewrite, "no")
+Rel(answers_retry, rewrite, "not useful")
 
 @enduml
