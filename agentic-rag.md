@@ -1,6 +1,6 @@
 # Agentic RAG
 
-Agentic RAG는 tool_condition을 통해 RAG에 retrival을 수행하고, 관련된 평가(grade)를 통해 질문을 새로 생성(rewrite)를 포함하고 있습니다.
+Agentic RAG는 tool_condition을 통해 RAG에 retrival을 수행하고, 문서를 평가(grade)를 통해 질문을 새로 생성(rewrite)를 포함하고 있습니다.
 
 [langgraph_agentic_rag.ipynb](https://github.com/langchain-ai/langgraph/blob/main/examples/rag/langgraph_agentic_rag.ipynb)를 참조합니다.
 
