@@ -28,7 +28,7 @@ Self RAG는 Self Reflection을 베이스로 [(2023.10) Self-RAG: Learning to Ret
 
 ## 재시도 숫자 제한
 
-RAG의 Vector Store에 질문과 관련된 문서가 없는 경우에는 recursion_limit만큰 반복후에 exception error와 함께 실패하게 됩니다. 따라서 아래와 같이 retries를 count하도록 구조를 변경하였습니다. 
+답변을 얻지 못하면 recursion_limit만큼 반복한 후에 exception error와 함께 실패하게 됩니다. 따라서 아래와 같이 retries, count를 이용해 재시도 숫자를 제한하였습니다.  
 
 ![image](https://github.com/user-attachments/assets/94e8743e-5505-41e9-953b-9e4e01b5f2b0)
 
