@@ -1094,7 +1094,6 @@ def generate(state: CragState):
     print("###### generate ######")
     question = state["question"]
     documents = state["documents"]
-    retries = state["retries"] if state.get("retries") is not None else -1
     
     # RAG generation
     rag_chain = get_reg_chain()
@@ -1102,7 +1101,7 @@ def generate(state: CragState):
     generation = rag_chain.invoke({"context": documents, "question": question})
     print('generation: ', generation.content)
     
-    return {"documents": documents, "question": question, "generation": generation, "retries": retries + 1}
+    return {"documents": documents, "question": question, "generation": generation}
 
 def rewrite(state: CragState):
     print("###### rewrite ######")
@@ -1194,11 +1193,13 @@ MAX_RETRIES = 3
 class SelfRagState(TypedDict):
     question : str
     generation : str
-    retries: int
+    retries: int  # number of generation 
+    count: int # number of retrieval
     documents : List[str]
     
 class GraphConfig(TypedDict):
     max_retries: int    
+    max_count: int
 
 def get_hallucination_grader():
     class GradeHallucinations(BaseModel):
@@ -1244,25 +1245,26 @@ def get_answer_grader():
     )
     answer_grader = answer_prompt | structured_llm_grade_answer
     return answer_grader
+
+def generate_for_srag(state: CragState):
+    print("###### generate ######")
+    question = state["question"]
+    documents = state["documents"]
+    retries = state["retries"] if state.get("retries") is not None else -1
     
-def decide_to_generate_for_srag(state: SelfRagState):
-    print("###### decide_to_generate ######")
-    filtered_documents = state["documents"]
+    # RAG generation
+    rag_chain = get_reg_chain()
     
-    if not filtered_documents:
-        # All documents have been filtered check_relevance
-        # We will re-generate a new query
-        print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
-        return "rewrite"
-    else:
-        # We have relevant documents, so generate answer
-        print("---DECISION: GENERATE---")
-        return "generate"
+    generation = rag_chain.invoke({"context": documents, "question": question})
+    print('generation: ', generation.content)
     
+    return {"documents": documents, "question": question, "generation": generation, "retries": retries + 1}
+        
 def grade_documents_for_srag(state: SelfRagState):
     print("###### grade_documents ######")
     question = state["question"]
     documents = state["documents"]
+    count = state["count"] if state.get("count") is not None else -1
     
     # Score each doc
     filtered_docs = []
@@ -1281,7 +1283,25 @@ def grade_documents_for_srag(state: SelfRagState):
             # We set a flag to indicate that we want to run web search
             continue
     print('len(docments): ', len(filtered_docs))    
-    return {"question": question, "documents": filtered_docs}
+    return {"question": question, "documents": filtered_docs, "count": count + 1}
+
+def decide_to_generate_for_srag(state: SelfRagState, config):
+    print("###### decide_to_generate ######")
+    filtered_documents = state["documents"]
+    
+    count = state["count"] if state.get("count") is not None else -1
+    max_count = config.get("configurable", {}).get("max_counts", MAX_RETRIES)
+    print("count: ", count)
+    
+    if not filtered_documents:
+        # All documents have been filtered check_relevance
+        # We will re-generate a new query
+        print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
+        return "rewrite" if count < max_count else "not available"
+    else:
+        # We have relevant documents, so generate answer
+        print("---DECISION: GENERATE---")
+        return "generate"
 
 def grade_generation(state: SelfRagState, config):
     print("###### grade_generation ######")
@@ -1325,7 +1345,7 @@ def buildSelfRAG():
     # Define the nodes
     workflow.add_node("retrieve", retrieve)  
     workflow.add_node("grade_documents", grade_documents_for_srag)
-    workflow.add_node("generate", generate)
+    workflow.add_node("generate", generate_for_srag)
     workflow.add_node("rewrite", rewrite)
 
     # Build graph
