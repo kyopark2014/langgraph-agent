@@ -20,12 +20,12 @@ Corrective-RAG(CRAG)는 검색된 문서에 대한 Self Refection / Self Grading
 
 Corrective RAG의 동작 Flow는 아래와 같습니다. 
 
-1) 사용자가 질문(Question)을 읽어오면 RAG의 Vector Store로 retrieve 동작을 수행합니다. 이때 k개의 관련된 문서(relevant docuements)을 가져옵니다.
-2) grade_document()는 LLM prompt를 이용하여 Vector Store에가 가져온 문서가 실제로 관련이 있는지 확인합니다. 관련이 있으면 "yes", 없으면 "no"를 판별(grade)하는데, "no"인 경우에 관련된 문서에서 제외합니다. 만약 관련된 문서가 관련성이 없어 제외되면, "websearch"를 True로 설정합니다. 
-3) decide_to_geenerate()는 모든 문서가 관련성이 있으면, 답변을 생성하는 generate()로 이동하고, 하나의 문서라도 제외되면 websearch로 이동합니다.
-4) web search가 필요할 경우에 기존 질문이 충분히 의도(sementic intent)와 의미(meaning)을 가지도록 새로운 질문으로 변경(re-write)합니다.
-5) web search()에서는 인터넷을 검색하여 새로운 관련된 문서를 찾아 추가합니다.
-6) generate()에서는 관련된 문서를 context로 활용하여 적절한 답변을 생성합니다. 
+1) "retrieve"는 질문(Question)을 이용하여, RAG의 Vector Store로 조회(retrieve) 동작을 수행합니다. 이때 k개의 관련된 문서(relevant docuements)을 가져옵니다.
+2) "grade_documents"는 LLM prompt를 이용하여 Vector Store에서 가져온 문서가 실제로 관련이 있는지 확인합니다. 관련이 있으면 "yes", 없으면 "no"를 판별(grade)하는데, "no"인 경우에 관련된 문서에서 제외합니다. 만약 관련된 문서가 관련성이 없어 제외되면, "web_search"를 True로 설정합니다. 
+3) "decide_to_generate"는 Vector Store에서 가져온 모든 문서가 관련이 있다면, "web_search"를 "yes"로 설정하고, 아니라면 "no로 설정합니다. 이와같이 관련된 문서중에 일부라도 관련이 적다고 판정되면, 웹 검색을 수행하여 관련된 문서를 보강합니다.
+4) "web_search"가 "yes"라면 (웹 검색이 필요한 경우), 기존 질문으로 부터 향상된 질문(better_question)을 생성하는 re-write를 동작을 수행합니다. 이를 위해 "rewrite"는 LLM Prompt를 이용하여, 충분히 의도(sementic intent)와 의미(meaning)을 가지도록 향상된 질문(better_question)을 생성합니다.
+6) "web search"는 기존 문서(filtered_document)에 웹 검색으로 얻어진 새로운 관련된 문서를 추가해서 문서(documents)를 생성합니다. 
+7) "generate"에서는 관련된 문서(documents)를 context로 활용하여 적절한 답변을 생성합니다. 
 
 <img src="https://github.com/user-attachments/assets/996d6671-1782-4968-be4f-0ade60b0316d" width="300">
 
