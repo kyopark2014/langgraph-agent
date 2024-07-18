@@ -2,9 +2,33 @@
 
 ## LangGraph Agent 
 
+### Agent의 정의
+
+[Agent란](https://terms.tta.or.kr/dictionary/dictionaryView.do?word_seq=171384-1%29) 주변 환경을 탐지하여 자율적으로 동작하는 장치 또는 프로그램을 의미합니다. 인공지능을 이용한 지능형 에이전트는 센서를 이용하여 주변 환경을 자각하여 Actuator를 이용하여 적절한 행동을 합니다. agent의 라틴어 어원인 [agere의 뜻](https://m.blog.naver.com/skyopenus/221783830658)은 to do 또는 to act의 의미를 가지고 있습니다. Agent를 이용하면 LLM 결과를 향상시킬 수 있습니다. 
+
+LangGraph는 agent를 생성하고 여러개의 Agent가 있을때의 흐름을 관리하기 위한 LangChain의 Extention입니다. 이를 통해 cycle flow를 생성할 수 있으며, 메모리가 내장되어 Agent를 생성에 도움을 줍니다. 상세한 내용은 [LangGraph guide](https://langchain-ai.github.io/langgraph/how-tos/)을 참조합니다.
+
+### LangChain Agent와 비교
+
+- LangChain Agent는 Resoning/Action을 효과적으로 수행하고 매우 powerful 합니다.
+- LLM의 성능이 매우 중요하므로 LLM 모델을 잘 선택하여야 합니다. 성능이 더 좋은 모델은 일반적으로 더 많은 연산시간을 필요로 합니다. (예 지연시간: Opus > Sonnet > Haiku)
+- 각 Tool의 invocation을 위해서 매번 LLM을 호출하여야 합니다. Tool을 연속적으로 실행(Observation 없이)할 때에는 불필요한 시간이 될 수 있습니다. 
+- 한번에 한개의 step을 수행하고 parallel call을 지원하지 않습니다.
+- LangGraph를 이용한 Agent는 복잡한 process를 State Machine을 이용해 구현할 수 있으며, Multi-Agent 구조에 적합합니다.
+
+### Components
+
+- Memory: Shared state across the graph
+- Tools: Nodes can call tools and modify state
+- Planning: Edges can route control flow based on LLM decisions
+
+참조: [Building and Testing Reliable Agents](https://www.youtube.com/watch?v=XiySC-d346E): chain/agent 비교하여 개념 설명 매우 좋음
+
+### Serverless Architecture 
+
 [langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph Agent의 기본 구성을 설명하고 있습니다.
 
-LLM을 사용할 때 다양한 API로부터 얻은 결과를 사용하여 더 정확한 결과를 얻고 싶을 때에 Agent을 사용합니다. 어떤 상황에 어떤 API를 쓸지를 판단하기 위해서는 상황 인식(Context-Aware)에 기반한 Reasoning(추론: 상황에 대한 인식을 바탕으로 새로운 사실을 유도)이 필요합니다. 여기에서는 Agent를 이용하여 여러개의 API를 선택적으로 사용하는 한국어 Chatbot을 구현합니다. 이를 위한 Architecture는 아래와 같습니다. 
+어떤 상황에 어떤 API를 쓸지를 판단하기 위해서는 상황 인식(Context-Aware)에 기반한 Reasoning(추론: 상황에 대한 인식을 바탕으로 새로운 사실을 유도)이 필요합니다. 여기에서는 Agent를 이용하여 여러개의 API를 선택적으로 사용하는 한국어 Chatbot을 구현합니다. 이를 위한 Architecture는 아래와 같습니다. 
 
 1) 사용자가 채팅창에서 질문을 입력하면 WebSocket 방식으로 Lambda(chat)에 전달됩니다.
 2) Lambda(chat)은 Agent 동작을 수행하는데, Action - Observation - Thought - Final Answer의 동작을 수행합니다. 만약 Thought에서 Final Answer를 얻지 못하면 Action부터 다시 수행합니다.
