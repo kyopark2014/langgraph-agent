@@ -1,0 +1,93 @@
+@startuml Self RAG
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+skinparam wrapWidth 200
+skinparam maxMessageSize 200
+
+!$BLACK = "#black"
+!$COLOR_A_6 = "#d4de5e"
+!$COLOR_A_5 = "#7f3b08"
+!$COLOR_A_4 = "#b35806"
+!$COLOR_A_3 = "#e08214"
+!$COLOR_A_2 = "#fdb863"
+!$COLOR_A_1 = "#fee0b6"
+!$COLOR_NEUTRAL = "#f7f7f7"
+!$COLOR_B_1 = "#d8daeb"
+!$COLOR_B_2 = "#b2abd2"
+!$COLOR_B_3 = "#8073ac"
+!$COLOR_B_4 = "#542788"
+!$COLOR_B_5 = "#2d004b"
+!$COLOR_REL_LINE = "#8073ac"
+!$COLOR_REL_TEXT = "#8073ac"
+
+UpdateElementStyle("container", $bgColor=$COLOR_A_6, $fontColor=$BLACK, $borderColor=$COLOR_A_1, $shadowing="false", $legendText="Internal user")
+UpdateElementStyle("system", $bgColor=$COLOR_A_4, $fontColor=$COLOR_NEUTRAL, $borderColor=$COLOR_A_2, $sprite="robot", $legendText="Our chatbot based system")
+UpdateElementStyle("system", $bgColor=$COLOR_B_4, $fontColor=$COLOR_NEUTRAL, $borderColor=$COLOR_B_2, $legendText="External system")
+UpdateRelStyle($lineColor=$COLOR_REL_LINE, $textColor=$COLOR_REL_TEXT)
+
+LAYOUT_WITH_LEGEND()
+
+'Container(start, "Start")
+
+
+Container(retrieve, "retrieve")
+    
+Container(grade_documents, "grade_documents")
+
+
+'Boundary(c1, "decide_to_generate") {
+    SystemQueue_Ext(decide_to_generate, "decide_to_generate")
+'}
+
+Container(generate, "generate")
+
+Container(rewrite, "rewrite")
+
+
+
+
+
+Rel(start, retrieve, "question")
+
+Rel(retrieve, grade_documents, "documents")
+
+Rel(grade_documents, decide_to_generate, "filtered documents")
+
+Rel(decide_to_generate, rewrite, "no filtered documents")
+
+Rel(decide_to_generate, generate, "filtered documents")
+
+
+Boundary(c2, "grade generation") {
+    SystemQueue_Ext(hallucination, "hallucination?")
+
+    SystemQueue_Ext(answers_question, "answers question?")
+
+    SystemQueue_Ext(hallucination_retry, "max_retries?")
+
+    SystemQueue_Ext(answers_retry, "max_retries?")
+}
+
+Rel(generate, hallucination, "generation\nretries+1")
+
+Rel(hallucination, hallucination_retry, "halluciantion") 
+
+Rel(hallucination, answers_question, "not hallucination")
+
+Rel(hallucination_retry, generate, "no")
+
+Rel(hallucination_retry, END, "yes")
+
+
+Rel(rewrite, retrieve, "better question")
+
+Rel(answers_question, answers_retry, "not useful")
+
+Rel(answers_question, END, "useful", "generation")
+
+Rel(answers_retry, END, "yes")
+
+Rel(answers_retry, rewrite, "no")
+
+@enduml
