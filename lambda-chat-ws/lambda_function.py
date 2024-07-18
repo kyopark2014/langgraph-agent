@@ -906,7 +906,7 @@ class GradeDocuments(BaseModel):
 
     binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
 
-def get_grader():
+def get_retrieval_grader():
     system = """You are a grader assessing relevance of a retrieved document to a user question. \n 
     If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant. \n
     Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."""
@@ -1056,7 +1056,7 @@ def grade_documents(state: CragState):
     filtered_docs = []
     web_search = "No"
     
-    retrieval_grader = get_grader()
+    retrieval_grader = get_retrieval_grader()
     for doc in documents:
         score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
         grade = score.binary_score
@@ -1136,7 +1136,7 @@ def web_search(state: CragState):
     
     return {"question": question, "documents": documents}
 
-def buildCorrectiveAgent():
+def buildCorrectiveRAG():
     workflow = StateGraph(CragState)
         
     # Define the nodes
@@ -1163,13 +1163,7 @@ def buildCorrectiveAgent():
 
     return workflow.compile()
 
-crag_app = buildCorrectiveAgent()
-
-#inputs = {"question": "이미지를 분석하기 위한 서비스에 대해 설명해줘."}
-#for output in crag_app.stream(inputs):
-#    for key, value in output.items():
-#        print(f"Finished running: {key}:")
-#print('output: ', value["generation"])
+crag_app = buildCorrectiveRAG()
 
 def run_corrective_rag(connectionId, requestId, app, query):
     global langMode
@@ -1191,6 +1185,186 @@ def run_corrective_rag(connectionId, requestId, app, query):
     
     return value["generation"].content
 
+####################### LangGraph #######################
+# Self RAG
+#########################################################
+
+class SelfRagState(TypedDict):
+    question : str
+    generation : str
+    documents : List[str]
+
+def get_hallucination_grader():
+    class GradeHallucinations(BaseModel):
+        """Binary score for hallucination present in generation answer."""
+
+        binary_score: str = Field(
+            description="Answer is grounded in the facts, 'yes' or 'no'"
+        )
+    
+    system = """You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts. \n 
+        Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."""
+    hallucination_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("human", "Set of facts: \n\n {documents} \n\n LLM generation: {generation}"),
+        ]
+    )
+    
+    chat = get_chat()
+    structured_llm_grade_hallucination = chat.with_structured_output(GradeHallucinations)
+    
+    hallucination_grader = hallucination_prompt | structured_llm_grade_hallucination
+    return hallucination_grader
+
+def get_answer_grader():
+    class GradeAnswer(BaseModel):
+        """Binary score to assess answer addresses question."""
+
+        binary_score: str = Field(
+            description="Answer addresses the question, 'yes' or 'no'"
+        )
+    
+    chat = get_chat()
+    structured_llm_grade_answer = chat.with_structured_output(GradeAnswer)
+    
+    system = """You are a grader assessing whether an answer addresses / resolves a question \n 
+        Give a binary score 'yes' or 'no'. Yes' means that the answer resolves the question."""
+    answer_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("human", "User question: \n\n {question} \n\n LLM generation: {generation}"),
+        ]
+    )
+    answer_grader = answer_prompt | structured_llm_grade_answer
+    return answer_grader
+    
+def decide_to_generate_for_srag(state: SelfRagState):
+    print("###### decide_to_generate ######")
+    filtered_documents = state["documents"]
+    
+    if not filtered_documents:
+        # All documents have been filtered check_relevance
+        # We will re-generate a new query
+        print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
+        return "rewrite"
+    else:
+        # We have relevant documents, so generate answer
+        print("---DECISION: GENERATE---")
+        return "generate"
+    
+def grade_documents_for_srag(state: SelfRagState):
+    print("###### grade_documents ######")
+    question = state["question"]
+    documents = state["documents"]
+    
+    # Score each doc
+    filtered_docs = []
+    retrieval_grader = get_retrieval_grader()
+    for doc in documents:
+        score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+        grade = score.binary_score
+        # Document relevant
+        if grade.lower() == "yes":
+            print("---GRADE: DOCUMENT RELEVANT---")
+            filtered_docs.append(doc)
+        # Document not relevant
+        else:
+            print("---GRADE: DOCUMENT NOT RELEVANT---")
+            # We do not include the document in filtered_docs
+            # We set a flag to indicate that we want to run web search
+            continue
+    print('len(docments): ', len(filtered_docs))    
+    return {"question": question, "documents": filtered_docs}
+
+def grade_generation(state):
+    print("###### grade_generation ######")
+    question = state["question"]
+    documents = state["documents"]
+    generation = state["generation"]
+
+    hallucination_grader = get_hallucination_grader()
+    score = hallucination_grader.invoke(
+        {"documents": documents, "generation": generation}
+    )
+    grade = score.binary_score
+
+    # Check hallucination
+    answer_grader = get_answer_grader()    
+    if grade == "yes":
+        print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
+        # Check question-answering
+        print("---GRADE GENERATION vs QUESTION---")
+        score = answer_grader.invoke({"question": question, "generation": generation})
+        grade = score.binary_score
+        if grade == "yes":
+            print("---DECISION: GENERATION ADDRESSES QUESTION---")
+            return "useful"
+        else:
+            print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
+            return "not useful"
+    else:
+        print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
+        return "not supported"
+    
+def buildSelfRAG():
+    workflow = StateGraph(SelfRagState)
+        
+    # Define the nodes
+    workflow.add_node("retrieve", retrieve)  
+    workflow.add_node("grade_documents", grade_documents_for_srag)
+    workflow.add_node("generate", generate)
+    workflow.add_node("rewrite", rewrite)
+
+    # Build graph
+    workflow.set_entry_point("retrieve")
+    workflow.add_edge("retrieve", "grade_documents")
+    workflow.add_conditional_edges(
+        "grade_documents",
+        decide_to_generate_for_srag,
+        {
+            "rewrite": "rewrite",
+            "generate": "generate",
+        },
+    )
+    workflow.add_edge("rewrite", "retrieve")
+    workflow.add_conditional_edges(
+        "generate",
+        grade_generation,
+        {
+            "not supported": "generate",
+            "useful": END,
+            "not useful": "rewrite",
+        },
+    )
+
+    return workflow.compile()
+
+srag_app = buildSelfRAG()
+
+def run_self_rag(connectionId, requestId, app, query):
+    global langMode
+    langMode = isKorean(query)
+    
+    isTyping(connectionId, requestId)
+    
+    inputs = {"question": query}
+    config = {"recursion_limit": 50}
+    
+    for output in app.stream(inputs, config):   
+        for key, value in output.items():
+            print(f"Finished running: {key}:")
+            print("value: ", value)
+            
+    print('value: ', value)
+        
+    readStreamMsg(connectionId, requestId, value["generation"].content)
+    
+    return value["generation"].content
+
+####################### LangGraph #######################
+# Self-Corrective RAG
+#########################################################
 
 def traslation(chat, text, input_language, output_language):
     system = (
@@ -1689,6 +1863,8 @@ def getResponse(connectionId, jsonBody):
                     msg = run_reflection_agent(connectionId, requestId, reflection_app, text)      
                 elif convType == 'agent-crag':
                     msg = run_corrective_rag(connectionId, requestId, crag_app, text)
+                elif convType == 'agent-srag':
+                    msg = run_self_rag(connectionId, requestId, srag_app, text)
                         
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
