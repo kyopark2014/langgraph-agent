@@ -45,7 +45,7 @@ LangGraph Agent는 아래와 같은 Components를 가지고 있습니다.
 
 ## Agent Use Cases
 
-### Tool Execution
+### Tool Execution Agent
 
 [langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph를 이용해 Agent를 생성하는 방법을 설명합니다. 
 
