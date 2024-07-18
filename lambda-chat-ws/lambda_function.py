@@ -959,7 +959,7 @@ def get_rewrite():
     print('langMode: ', langMode)
     
     if langMode:
-        system = """당신은 질문 re-writer입니다. 질문의 의도와 의미을 잘 표현할 수 있도록 새로운 질문으로 re-write하세요."""
+        system = """당신은 질문 re-writer입니다. 사용자의 의도와 의미을 잘 표현할 수 있도록 질문을 한국어로 re-write하세요."""
     else:
         system = """You a question re-writer that converts an input question to a better version that is optimized \n 
         for web search. Look at the input and try to reason about the underlying semantic intent / meaning."""
