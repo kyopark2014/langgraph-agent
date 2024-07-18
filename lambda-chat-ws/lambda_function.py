@@ -1357,7 +1357,7 @@ def buildSelfRAG():
         {
             "no document": "rewrite",
             "document": "generate",
-            "not available": END,
+            "not available": "generate",
         },
     )
     workflow.add_edge("rewrite", "retrieve")
