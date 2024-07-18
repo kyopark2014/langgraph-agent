@@ -59,7 +59,7 @@ Rel(has_documents, retrieve_count, "no document")
 
 Rel(retrieve_count, rewrite, "no document")
 
-Rel(retrieve_count, END, "not available")
+Rel(retrieve_count, generate, "not available")
 
 
 Boundary(c2, "grade generation") {

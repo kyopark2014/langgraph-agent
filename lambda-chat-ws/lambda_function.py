@@ -1328,7 +1328,9 @@ def grade_generation(state: SelfRagState, config):
         # Check question-answering
         print("---GRADE GENERATION vs QUESTION---")
         score = answer_grader.invoke({"question": question, "generation": generation})
-        answer_grade = score.binary_score
+        answer_grade = score.binary_score        
+        print("answer_grade: ", answer_grade)
+
         if answer_grade == "yes":
             print("---DECISION: GENERATION ADDRESSES QUESTION---")
             return "useful" 
