@@ -59,6 +59,7 @@ Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제
 4) 이 동작을 3회 반복 수행한 후에 "END"에 최종 답변을 전달합니다. 
 
 <img src="https://github.com/user-attachments/assets/8ca02018-56b8-4272-a8d1-f71aa6b6f0ca" width="350">
+
 ### Corrective RAG
 
 [corrective-rag-agent.md](./corrective-rag-agent.md)에서는 Corrective RAG을 이용한 RAG 성능 강화에 대해 설명합니다. Corrective RAG는 Vector Store에서 가져온 문서를 Refine하고 관련성이 적은 문서는 제외하고, 다른 데이터 소스나 Web 검색을 통해 RAG의 성능을 향상시킬 수 있습니다. 아래 그림은 Corrective RAG에 대한 activity diagram입니다. 
