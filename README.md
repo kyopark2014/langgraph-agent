@@ -42,9 +42,6 @@ LangGraph Agent는 아래와 같은 Components를 가지고 있습니다.
 
 아래에서 구현한 Agent는 zero-shot agent로 사용자의 질문에 따라 tools 리스트로부터 적절한 tool을 선택하여 활용합니다. tool은 함수 또는 API로 구현됩니다. 선택된 tool로 원하는 작업을 완료하지 못하면 다른 tool을 추가로 활용합니다.
 
-
-## Agent Use Cases
-
 ### Tool Execution Agent
 
 [langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph를 이용해 Agent를 생성하는 방법을 설명합니다. 
@@ -61,6 +58,8 @@ Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제
 
 <img src="https://github.com/user-attachments/assets/8ca02018-56b8-4272-a8d1-f71aa6b6f0ca" width="350">
    
+
+## Agent Use Cases
 
 ### Corrective RAG
 
