@@ -28,16 +28,9 @@ LangGraph Agent는 아래와 같은 Components를 가지고 있습니다.
 
 [langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph Agent의 기본 구성을 설명하고 있습니다.
 
-어떤 상황에 어떤 API를 쓸지를 판단하기 위해서는 상황 인식(Context-Aware)에 기반한 Reasoning(추론: 상황에 대한 인식을 바탕으로 새로운 사실을 유도)이 필요합니다. 여기에서는 Agent를 이용하여 여러개의 API를 선택적으로 사용하는 한국어 Chatbot을 구현합니다. 이를 위한 Architecture는 아래와 같습니다. 
+어떤 상황에 어떤 API를 쓸지를 판단하기 위해서는 상황 인식(Context-Aware)에 기반한 Reasoning(추론: 상황에 대한 인식을 바탕으로 새로운 사실을 유도)이 필요합니다. 여기에서는 Agent를 이용하여 여러개의 API를 선택적으로 사용하는 한국어 Chatbot을 구현합니다. 
 
-1) 사용자가 채팅창에서 질문을 입력하면 WebSocket 방식으로 Lambda(chat)에 전달됩니다.
-2) Lambda(chat)은 Agent 동작을 수행하는데, Action - Observation - Thought - Final Answer의 동작을 수행합니다. 만약 Thought에서 Final Answer를 얻지 못하면 Action부터 다시 수행합니다.
-3) Agent의 Action은 API를 이용해 필요한 정보를 얻어옵니다. 이때 사용하는 API에는 도서 추천, 날씨정보, 검색엔진이 있을 수 있습니다. 또한 시스템 시간을 가져오는 동작은 별도 API가 아닌 내부 함수를 이용해 구현할 수 있습니다.
-4) 만약 RAG의 정보가 필요한 경우에는 Action의 하나로 RAG을 이용하여 필요한 정보를 조회합니다.
-5) Observation/Thought/Final Answer를 위해 Agent는 prompt를 이용해 LLM에 요청을 보내고 응답을 받습니다.
-6) Agent가 Final Answer을 구하면 사용자에게 전달합니다.
 
-<img src="https://github.com/kyopark2014/llm-agent/assets/52392004/c372c125-4e05-41f8-b691-784e4c2028af" width="700">
 
 
 아래에서 구현한 Agent는 zero-shot agent로 사용자의 질문에 따라 tools 리스트로부터 적절한 tool을 선택하여 활용합니다. tool은 함수 또는 API로 구현됩니다. 선택된 tool로 원하는 작업을 완료하지 못하면 다른 tool을 추가로 활용합니다.
