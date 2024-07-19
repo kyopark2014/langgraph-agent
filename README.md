@@ -7,16 +7,17 @@
 LangGraph는 agent를 생성하고 여러개의 Agent가 있을때의 흐름을 관리하기 위한 LangChain의 Extention입니다. 이를 통해 cycle flow를 생성할 수 있으며, 메모리가 내장되어 Agent를 생성에 도움을 줍니다. 상세한 내용은 [LangGraph guide](https://langchain-ai.github.io/langgraph/how-tos/)을 참조합니다.
 
 
-## Serverless Architecture 
+![image](https://github.com/user-attachments/assets/c12d72fa-310c-4ea6-aa6e-634ac858ffaa)
 
-[langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph Agent의 기본 구성을 설명하고 있습니다.
 
 어떤 상황에 어떤 API를 쓸지를 판단하기 위해서는 상황 인식(Context-Aware)에 기반한 Reasoning(추론: 상황에 대한 인식을 바탕으로 새로운 사실을 유도)이 필요합니다. 여기에서는 Agent를 이용하여 여러개의 API를 선택적으로 사용하는 한국어 Chatbot을 구현합니다. 
 
 
-
+[langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph Agent의 기본 구성을 설명하고 있습니다.
 
 아래에서 구현한 Agent는 zero-shot agent로 사용자의 질문에 따라 tools 리스트로부터 적절한 tool을 선택하여 활용합니다. tool은 함수 또는 API로 구현됩니다. 선택된 tool로 원하는 작업을 완료하지 못하면 다른 tool을 추가로 활용합니다.
+
+
 
 ## Agent Use Cases
 
