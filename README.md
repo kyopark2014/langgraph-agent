@@ -119,7 +119,7 @@ Self-Corrective RAG는 Corrective RAG처럼 Vector Store로 부터 얻어진 문
 
 ### CDK를 이용한 인프라 설치
 
-본 실습에서는 Seoul 리전 (ap-northeast-2)을 사용합니다. [인프라 설치](./deployment.md)에 따라 CDK로 인프라 설치를 진행합니다. 
+본 실습에서는 us-west-2 리전을 사용합니다. [인프라 설치](./deployment.md)에 따라 CDK로 인프라 설치를 진행합니다. 
 
 
 ## 실행결과
@@ -131,24 +131,22 @@ Self-Corrective RAG는 Corrective RAG처럼 Vector Store로 부터 얻어진 문
 
 ### LangGraph Agent
 
+메뉴에서 "Agent Executor (LangGraph"를 선택하여 "생성형 AI 기술에 대해 설명해주세요."라고 입력합니다. Agent Executor의 Tools에 OpenSearch가 Tool로 등록되어 있으므로 RAG 동작을 확인할 수 있습니다. 
+
 ![image](https://github.com/user-attachments/assets/785c30d8-d006-4b35-9075-0dee195191f9)
 
-28초가 소요가 소요되었습니다. 
-
-generative AI, how generative AI works, how generative AI models work와 같이 3번 질의한 후에 결과를 모아서 답변을 생성하였습니다. 
+28초가 소요가 소요되었는데, ReAct 방식으로 동작하면서, "generative AI", "how generative AI works", "how generative AI models work"와 같이 3번을 OpenSearch에 질의한 후에 아래와 같은 답변을 생성하였습니다. 
 
 ![image](https://github.com/user-attachments/assets/ffd3fa14-acf4-425e-9bd7-f2f203bc72c4)
 
 
 ### Reflection Agent
 
-Reflection을 선택하고 "생성형 AI 기술에 대해 설명해주세요."라고 입력합니다. 
-
-90초 시간이 소요되었습니다. 
+메뉴에서 "Reflection Agent"를 선택하고, "생성형 AI 기술에 대해 설명해주세요."라고 입력합니다. 이때, 아래와 같이 90초 시간이 소요되었습니다. 
 
 ![image](https://github.com/user-attachments/assets/7fc6f563-5e24-4be5-9569-9c50ba35f1f7)
 
-초안은 아래와 같습니다. 
+먼저 LLM이 생성한 초안은 아래와 같습니다. 
 
 ```text
 여기 생성형 AI 기술에 대한 5문단 에세이 초안이 있습니다:
@@ -184,6 +182,8 @@ Reflection을 선택하고 "생성형 AI 기술에 대해 설명해주세요."�
 
 ### Corrective RAG 사용시
 
+메뉴에서 "Corrective RAG"를 선택하여 "생성형 AI 기술에 대해 설명해주세요."라고 입력합니다.
+
 ![image](https://github.com/user-attachments/assets/db8e3ce5-6538-4a87-b508-de9df3a023d7)
 
 전체 14초가 소요되었고, retrieve로 얻어진 4개의 문서에 대한 평가(grade) 후에 결과를 생성하였습니다. 
@@ -191,6 +191,8 @@ Reflection을 선택하고 "생성형 AI 기술에 대해 설명해주세요."�
 ![image](https://github.com/user-attachments/assets/4fcf557b-88ef-494b-887d-8aa2b0da2cbc)
 
 ### Self RAG 사용시
+
+메뉴에서 "Self RAG"를 선택하여 "생성형 AI 기술에 대해 설명해주세요."라고 입력합니다.
 
 ![image](https://github.com/user-attachments/assets/6fedc3f8-2a9c-4c49-93b0-f93e1e6c51ff)
 
@@ -200,12 +202,22 @@ Reflection을 선택하고 "생성형 AI 기술에 대해 설명해주세요."�
 
 ### Self Corrective RAG 사용시
 
+메뉴에서 "Self-Corrective RAG"를 선택하여 "생성형 AI 기술에 대해 설명해주세요."라고 입력합니다.
+
 ![image](https://github.com/user-attachments/assets/d79be2e8-b407-4d60-9504-8e3878e4fabe)
+
+전체 23초가 소요되었고, 동작 Flow는 Self RAG와 동일합니다. 
 
 ![image](https://github.com/user-attachments/assets/120f1d4e-43cf-401b-ad4a-05b45f600c06)
 
-### 결과 정리
+## 결론
 
+RAG의 활용용도에 agent의 동작 방식을 선택하여 사용할 수 있었습니다. Agent의 활용 목적에 따라서 결과와 실행 시간의 trade off를 고려하여야 합니다. 
+
+- RAG 검색을 Tool로 등록하고 LangGraph Agent를 실행하면, ReAct 방식으로 질문을 평가하면서 여러번 질의를 수행할 수 있습니다.
+- Reflection Agent 방식은 시간이 오래 소요가 되지만 가장 풍부한 답변을 얻을 수 있었습니다.
+- Corrective RAG는 상대적으로 시간이 적게 소요가 되지만 RAG의 Vector Search에서 얻어진 문서를 평가하여 적절한 문서를 고르고 검색으로 얻어진 결과를 모아서 RAG만 검색했을 때보다 좋은 결과를 얻을 수 있습니다.
+- Self RAG와 Corrective Self RAG는 관련된 문서의 평가뿐 아니라, 환각과 답변의 적절성을 평가할 수 있습니다. 웹검색 필요에 따라서 Self RAG와 Self Corrective RAG를 선택적으로 사용할 수 있습니다. 
 
 
 ## 리소스 정리하기 
