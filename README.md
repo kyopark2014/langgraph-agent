@@ -4,8 +4,15 @@
 
 [Agent란](https://terms.tta.or.kr/dictionary/dictionaryView.do?word_seq=171384-1%29) 주변 환경을 탐지하여 자율적으로 동작하는 장치 또는 프로그램을 의미합니다. agent의 라틴어 어원인 [agere의 뜻](https://m.blog.naver.com/skyopenus/221783830658)은 to do 또는 to act의 의미를 가지고 있습니다. 
 
-LangGraph는 agent를 생성하고 여러개의 Agent가 있을때의 흐름을 관리하기 위한 LangChain의 Extention입니다. 이를 통해 cycle flow를 생성할 수 있으며, 메모리가 내장되어 Agent를 생성에 도움을 줍니다. 상세한 내용은 [LangGraph guide](https://langchain-ai.github.io/langgraph/how-tos/)을 참조합니다.
+LangGraph는 agent를 생성하고 여러개의 Agent가 있을때의 흐름을 관리하기 위한 LangChain의 Extention입니다. 이를 통해 cycle flow를 생성할 수 있으며, 메모리가 내장되어 Agent를 생성에 도움을 줍니다. 상세한 내용은 [LangGraph guide](https://langchain-ai.github.io/langgraph/how-tos/)을 참조합니다. 
 
+아래와 같이 Agent는 Serverless Architecture로 구현할 수 있습니다.
+
+1) 사용자기 질문을 입력하면 WebSocket 방식으로 API Gateway로 질문이 전달됩니다.
+2) Lambda에서는 LangGraph 형태로 Agent를 정의합니다. 여기에서는 Corrective RAG, Self RAG, Self corrective RAG를 구현하였습니다.
+3) 질문에 관련된 문서를 OpenSearch를 통해 검색합니다. 이때, Child/Parent Chunking을 이용해 작은 크기의 Chunk를 검색하여 성능을 향상시키면서도 Parent Chunk를 문서로 활용하여 풍부한 context를 제공합니다.
+4) OpenSearch로 얻어진 관련된 문서는 LLM Prompt를 이용해 관련도를 평가(grade) 합니다. 평가 결과에 따라 웹검색을 이용한 Fallback 동작을 수행할 수 있습니다.
+5) LLM에 관련된 문서를 Context로 제공하여 적절한 답변을 생성합니다. 답변이 환각(Hallucination)인지, 적절한 답변이 생성되었는지를 LLM prompt를 이용해 평가grade)할 수 있습니다. 
 
 ![image](https://github.com/user-attachments/assets/c12d72fa-310c-4ea6-aa6e-634ac858ffaa)
 
