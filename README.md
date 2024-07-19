@@ -6,21 +6,6 @@
 
 LangGraph는 agent를 생성하고 여러개의 Agent가 있을때의 흐름을 관리하기 위한 LangChain의 Extention입니다. 이를 통해 cycle flow를 생성할 수 있으며, 메모리가 내장되어 Agent를 생성에 도움을 줍니다. 상세한 내용은 [LangGraph guide](https://langchain-ai.github.io/langgraph/how-tos/)을 참조합니다.
 
-LangChain과 LangGraph Agent를 비교하면 아래와 같습니다. 
-
-- LangChain Agent는 Resoning/Action을 효과적으로 수행하고 매우 powerful 합니다.
-- LLM의 성능이 매우 중요하므로 LLM 모델을 잘 선택하여야 합니다. 성능이 더 좋은 모델은 일반적으로 더 많은 연산시간을 필요로 합니다. (예 지연시간: Opus > Sonnet > Haiku)
-- 각 Tool의 invocation을 위해서 매번 LLM을 호출하여야 합니다. Tool을 연속적으로 실행(Observation 없이)할 때에는 불필요한 시간이 될 수 있습니다. 
-- 한번에 한개의 step을 수행하고 parallel call을 지원하지 않습니다.
-- LangGraph를 이용한 Agent는 복잡한 process를 State Machine을 이용해 구현할 수 있으며, Multi-Agent 구조에 적합합니다.
-
-LangGraph Agent는 아래와 같은 Components를 가지고 있습니다. 
-
-- Memory: Shared state across the graph
-- Tools: Nodes can call tools and modify state
-- Planning: Edges can route control flow based on LLM decisions
-
-참조: [Building and Testing Reliable Agents](https://www.youtube.com/watch?v=XiySC-d346E): chain/agent 비교하여 개념 설명
 
 ## Serverless Architecture 
 
