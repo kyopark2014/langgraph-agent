@@ -9,7 +9,7 @@ Self RAG는 Self Reflection을 베이스로 [(2023.10) Self-RAG: Learning to Ret
 ![image](https://github.com/user-attachments/assets/ad83adf8-600b-4c3b-b601-9ad6f48f235b)
 
 
-## 동작의 특징
+## Self RAG의 구현
 
 아래는 Self RAG에 대한 activity diagram입니다. 
 
@@ -22,7 +22,7 @@ Self RAG는 Self Reflection을 베이스로 [(2023.10) Self-RAG: Learning to Ret
 
 ![image](https://github.com/user-attachments/assets/55672f1a-0b8e-4566-a604-6e5534d9e7d9)
 
-## 재시도 숫자 제한
+### 재시도 숫자 제한의 필요성
 
 답변을 얻지 못하면 recursion_limit만큼 반복한 후에 exception error와 함께 실패하게 됩니다. 따라서 아래와 같이 retries, count를 이용해 재시도 숫자를 제한하였습니다. 
 
@@ -31,7 +31,7 @@ Self RAG는 Self Reflection을 베이스로 [(2023.10) Self-RAG: Learning to Ret
 
 ![image](https://github.com/user-attachments/assets/4dc8a762-70f5-4e1b-9d2e-d082cc9e74a5)
 
-## Self RAG의 구현 
+### 상세 구현
 
 구현된 코드는 [lambda_function.py](./lambda-chat-ws/lambda_function.py)에서 확인할 수 있습니다. 또한, 동작 방식은 [self-rag.ipynb](./agent/self-rag.ipynb)을 참조합니다. 
 
