@@ -48,6 +48,9 @@ LangGraph Agent는 아래와 같은 Components를 가지고 있습니다.
 
 [langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph를 이용해 Agent를 생성하는 방법을 설명합니다. 
 
+### Agentic RAG
+
+Agentic RAG는 tool_condition을 통해 RAG에 retrival을 선택하고, 문서를 평가(grade)하여, 검색 결과가 만족스럽지 않다면 re-write를 통해 새로운 질문(better question)을 생성할 수 있습니다. 상세한 내용은 [agentic-rag.md](./agentic-rag.md)을 참조합니다. 
 
 ### Reflection Agent
 
