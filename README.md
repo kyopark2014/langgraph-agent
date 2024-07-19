@@ -124,116 +124,6 @@ Self-Corrective RAG는 Corrective RAG처럼 Vector Store로 부터 얻어진 문
 
 실행한 결과는 아래와 같습니다.
 
-- "안녕"이라고 입력하고, 동작하는것을 LangSmith로 확인합니다. 
-  
-![image](https://github.com/kyopark2014/llm-agent/assets/52392004/9e737a68-1e7b-4062-9dde-f94b7b03a2b4)
-
-Tools에 여러개의 API를 등록해 놓았지만, LLM이 Tool을 사용할 필요가 없다고 생각하면 LLM이 답변을 수행합니다.
-
-![image](https://github.com/kyopark2014/llm-agent/assets/52392004/da33d115-62fc-454d-ac26-71d13358bc90)
-
-이때의 로그는 아래와 같습니다.
-
-```text
-Thought: Tool을 사용해야 하나요? No
-Final Answer: 안녕하세요! 무엇을 도와드릴까요?
-```  
-
-- "서울 날씨는?"를 입력하면 현재의 [날씨 정보를 조회](./apis.md#%EB%82%A0%EC%94%A8-%EC%A0%95%EB%B3%B4-%EA%B0%80%EC%A0%B8%EC%98%A4%EA%B8%B0)하여 알려줍니다. 
-
-![image](https://github.com/kyopark2014/llm-agent/assets/52392004/4b2f79cc-6782-4c44-b594-1c5f22472dc7)
-
-- "오늘 날짜 알려줘"를 하면 [시스템 날짜를 확인](./apis.md#%EB%82%A0%EC%A7%9C%EC%99%80-%EC%8B%9C%EA%B0%84-%EC%A0%95%EB%B3%B4-%EA%B0%80%EC%A0%B8%EC%98%A4%EA%B8%B0)하여 알려줍니다. 
-
-<img width="850" alt="image" src="https://github.com/kyopark2014/llm-agent/assets/52392004/a0190426-33d4-46d3-b9d2-5294f9222b8c">
-
-- "서울 여행에 대한 책을 추천해줘"를 입력하면 [교보문고의 검색 API](./apis.md#%EB%8F%84%EC%84%9C-%EC%A0%95%EB%B3%B4-%EA%B0%80%EC%A0%B8%EC%98%A4%EA%B8%B0)를 이용하여 관련책을 검색하여 추천합니다.
-
-<img width="849" alt="image" src="https://github.com/kyopark2014/llm-agent/assets/52392004/e62b4654-ba18-40e6-86ae-2152b241aa04">
-
-- 오늘 날짜를 알수 있으므로 "올해 크리스마스까지 몇일이 남아 있어?"와 같은 질문에 정확히 답변할 수 있습니다.
-
-![image](https://github.com/kyopark2014/llm-agent/assets/52392004/8905c677-7a26-4a4e-9e14-ee8af8a481cf)
-
-
-- "서울과 부산의 날씨를 알려줘"와 같이 서울과 부산의 결과를 각각 검색한 후에 아래와 같은 결과를 얻습니다. 
-
-<img width="848" alt="image" src="https://github.com/kyopark2014/llm-agent/assets/52392004/7b5c4993-1178-442d-9fb0-ddaff6b7ab09">
-
-이때의 LangSmith의 로그를 확인하면 서울과 부산과 대한 검색후 결과를 생성하였습니다. (get_weather_info를 서울과 부산에 대해 각각 호출함)
-
-![image](https://github.com/kyopark2014/llm-agent/assets/52392004/38334666-c71d-4076-9be1-eb8fc16a34f5)
-
-
-- "미국 여행을 하려고 해. 추천해줘 어떻게 여행하는게 좋아?"로 질문을 하면 아래와 같이 로스웬젤레스를 추천해주는데 날씨정보도 같이 전달하고 있습니다.
-
-상세한 내부 동작은 아래와 같습니다. 
-
-1) 질문에 필요한 정보를 찾습니다. 여기에서는 여행일정, 방문도시, 관심사에 선택했습니다.
-2) 현재 가지고 있는 api중에 관련된 것을 찾았는데, 도서정보를 찾는 API(get_product_list)가 선택되었습니다.
-3) "미국 여행 가이드 북"을 검색해서 도서 정보를 얻었습니다.
-4) 가이드된 도서 목록에서 미국 서부 지역, 뉴욕을 선택하고 추가 정보를 찾으려고 합니다.
-5) API중에 get_weather_info을 선택해서, Los Angeles 를 검색합니다.
-6) 가이드 북과 날씨 정보를 조합하여 Final Answer로 여행 계획을 추천합니다. 
-
-아래는 LangSmith에서 추출한 로그 입니다. 
-
-```text
-Question: 미국 여행을 하려고 해. 추천해줘 어떻게 여행하는게 좋아?
-Thought:Thought: 미국 여행에 대한 구체적인 정보가 필요할 것 같습니다. 여행 일정, 방문 도시, 관심사 등에 대해 더 자세히 알아보는 것이 좋겠습니다.
-Action: get_product_list
-Action Input: 미국 여행 가이드북
-Observation: 추천 도서는 아래와 같습니다.
-[국내도서]미국 서부 셀프트래블(2022-2023), URL: https://product.kyobobook.co.kr/detail/S000060626443
-[eBook]미국 서부 셀프트래블(2022-2023), URL: https://ebook-product.kyobobook.co.kr/dig/epd/ebook/E000002960164
-[국내도서]버킷리스트 미국 서부, URL: https://product.kyobobook.co.kr/detail/S000001981279
-[eBook]살아보고 싶다면, 포틀랜드, URL: https://ebook-product.kyobobook.co.kr/dig/epd/ebook/E000003234513
-[국내도서]뉴욕 영화 가이드북, URL: https://product.kyobobook.co.kr/detail/S000001913689
-
-Thought: Thought: 여행 가이드북 목록을 보니 미국 서부 지역과 뉴욕에 대한 정보가 있습니다. 하지만 구체적인 여행 계획을 세우기 위해서는 더 자세한 정보가 필요할 것 같습니다.
-Action: get_weather_info
-Action Input: Los Angeles
-Observation: 로스앤젤레스의 현재 날씨의 특징은 Clouds이며, 현재 온도는 13.85도 이고, 최저온도는 11.85도, 최고 온도는 15.6도 입니다. 현재 습도는 85% 이고, 바람은 초당 2.06 미터 입니다. 구름은 100% 입니다.
-Thought: 미국 여행에 대한 구체적인 정보를 모으기 위해 여러 도구를 사용해 보았습니다. 가이드북 목록을 통해 인기 여행지와 관심 분야를 파악할 수 있었고, 날씨 정보를 통해 여행 시기와 준비물을 고려할 수 있었습니다. 이제 이 정보들을 종합하여 여행 계획을 세울 수 있을 것 같습니다.
-
-Final Answer: 미국 여행을 계획할 때는 다음 사항들을 고려하는 것이 좋습니다.
-
-1. 여행 지역 선정: 가이드북 목록에서 보았듯이 서부 지역(로스앤젤레스, 포틀랜드 등)과 뉴욕이 인기 여행지입니다. 관심사와 일정에 맞춰 방문 도시를 정하세요.
-
-2. 계절 및 날씨: 로스앤젤레스 날씨 정보를 보니 현재 구름이 많고 온도는 10도 중반입니다. 여행 시기에 따라 날씨가 다르므로 이에 맞춰 옷차림과 활동을 계획하는 것이 좋습니다. 
-
-3. 교통 및 숙박: 렌터카 이용이 편리할 수 있습니다. 도시 간 이동 시에는 기차나 항공편을 이용할 수 있습니다. 숙박 시설은 호텔, 모텔, 에어비앤비 등 다양한 선택지가 있습니다.
-
-4. 관광명소 및 활동: 뉴욕 영화 가이드북에서 보듯 영화 촬영지 방문, 미술관 관람 등 취향에 맞는 활동을 계획하세요.
-```
-
-이때의 결과는 아래와 같습니다. 
-
-<img width="858" alt="image" src="https://github.com/kyopark2014/llm-agent/assets/52392004/75987226-b3d2-481c-a9ba-efc62bfbe4ca">
-
-- "서울 여행에 대한 책을 추천해줘"로 입력후 결과를 확인합니다.
-
-<img width="848" alt="image" src="https://github.com/kyopark2014/multimodal-on-aws/assets/52392004/0213de6b-2580-4598-a2fc-b671aea43a37">
-
-아래와 같이 get_book_list를 이용해 얻어온 도서 정보와 search_by_tavily로 얻어진 정보를 통합하였음을 알 수 있습니다.
-
-![image](https://github.com/kyopark2014/multimodal-on-aws/assets/52392004/6b33eb2d-11bc-4959-81d0-9ba76ca55ab2)
-
-- 다양한 API사용해 보기 위하여 "서울에서 부산으로 여행하려고 하고 있어. 서울과 부산의 온도를 비교해줘. 그리고 부산가면서 읽을 책 추천해주고, 부산가서 먹을 맛집도 찾아줘."로 입력 후 결과를 확인합니다. 
-
-  ![image](https://github.com/kyopark2014/llm-agent/assets/52392004/05eb0ab0-fa84-487e-b008-d8517d53105c)
-
-LangSmith의 로그를 보면 아래와 같이 get_weather_info로 서울/부산의 날씨를 검색하고, get_book_list을 이용해 도서 목록을 가져오고, search_by_tavily로 맛집 검색한 결과를 보여주고 있습니다. 
-
-<img width="293" alt="image" src="https://github.com/kyopark2014/llm-agent/assets/52392004/dc0db14a-dcd2-486b-b0f5-3fae8a7b60bb">
-
-- [error_code.pdf](./contents/error_code.pdf)를 다운로드 한 후에 채팅창의 파일 아이콘을 선택하여 업로드 합니다. 이후 "보일러 에러코드에 대해 설명해줘."라고 입력하몬 RAG에서 얻어진 결과를 이용해 아래와 같이 답변합니다. 
-
-<img width="852" alt="image" src="https://github.com/kyopark2014/multimodal-on-aws/assets/52392004/16ee0cdc-73d2-4e03-9d23-129b209af4ea">
-
-LangSmith의 로그를 보면 아래와 같이 search_by_opensearch(RAG)를 호출하여 얻은 정보로 답변을 생성했음을 알 수 있습니다.
-
-![image](https://github.com/kyopark2014/llm-agent/assets/52392004/6f9db7f5-4ab1-44b5-aa8f-5c158ee12381)
 
 
 
@@ -241,32 +131,10 @@ LangSmith의 로그를 보면 아래와 같이 search_by_opensearch(RAG)를 호�
 
 더이상 인프라를 사용하지 않는 경우에 아래처럼 모든 리소스를 삭제할 수 있습니다. 
 
-1) [API Gateway Console](https://ap-northeast-2.console.aws.amazon.com/apigateway/main/apis?region=ap-northeast-2)로 접속하여 "rest-api-for-llm-agent", "ws-api-for-llm-agent"을 삭제합니다.
+1) [API Gateway Console](https://us-east-1.console.aws.amazon.com/apigateway/main/apis?region=us-east-1)로 접속하여 "rest-api-for-langgraph-agent", "ws-api-for-langgraph-agent"을 삭제합니다.
 
-2) [Cloud9 Console](https://ap-northeast-2.console.aws.amazon.com/cloud9control/home?region=ap-northeast-2#/)에 접속하여 아래의 명령어로 전체 삭제를 합니다.
-
+2) [Cloud9 Console](https://us-east-1.console.aws.amazon.com/cloud9control/home?region=us-east-1#/)에 접속하여 아래의 명령어로 전체 삭제를 합니다.
 
 ```text
-cd ~/environment/llm-agent/cdk-llm-agent/ && cdk destroy --all
+cd ~/environment/langgraph-agent/cdk-langgraph-agent/ && cdk destroy --all
 ```
-
-## 결론
-
-LangGraph를 이용해 한국어 Chatbot Agent을 만들었습니다. Agent를 사용함으로써 다양한 API를 문맥(Context)에 따라 활용할 수 있었습니다. 다만 API를 여러번 호출함으로 인한 지연시간이 증가하고, prompt에 넣을 수 있는 Context 길이 제한으로 검색이나 RAG 결과를 일부만 넣게 되는 제한이 있습니다.
-
-## Reference
-
-[Building Context-Aware Reasoning Applications with LangChain and LangSmith](https://www.youtube.com/watch?app=desktop&v=Hy08dbsfJGg)
-
-[Using LangChain ReAct Agents for Answering Multi-hop Questions in RAG Systems](https://towardsdatascience.com/using-langchain-react-agents-for-answering-multi-hop-questions-in-rag-systems-893208c1847e)
-
-[Intro to LLM Agents with Langchain: When RAG is Not Enough](https://towardsdatascience.com/intro-to-llm-agents-with-langchain-when-rag-is-not-enough-7d8c08145834)
-
-[LangChain 🦜️🔗 Tool Calling and Tool Calling Agent 🤖 with Anthropic](https://medium.com/@dminhk/langchain-%EF%B8%8F-tool-calling-and-tool-calling-agent-with-anthropic-467b0fb58980)
-
-[Automating tasks using Amazon Bedrock Agents and AI](https://blog.serverlessadvocate.com/automating-tasks-using-amazon-bedrock-agents-and-ai-4b6fb8856589)
-
-[llama3 로 #agent 🤖 만드는 방법 + 8B 오픈 모델로 Agent 구성하는 방법](https://www.youtube.com/watch?app=desktop&v=04MM0PXv2Fk)
-
-[LLM-powered autonomous agent system](https://lilianweng.github.io/posts/2023-06-23-agent/)
-
