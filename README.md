@@ -212,7 +212,7 @@ Self-Corrective RAG는 Corrective RAG처럼 Vector Store로 부터 얻어진 문
 
 ## 결론
 
-RAG의 활용용도에 agent의 동작 방식을 선택하여 사용할 수 있었습니다. Agent의 활용 목적에 따라서 결과와 실행 시간의 trade off를 고려하여야 합니다. 
+여러 방식의 agent를 구현하고 동작 방식을 선택하여 사용할 수 있었습니다. Agent의 활용 목적에 따라서 결과와 실행 시간의 trade off를 고려하여야 합니다. 
 
 - RAG 검색을 Tool로 등록하고 LangGraph Agent를 실행하면, ReAct 방식으로 질문을 평가하면서 여러번 질의를 수행할 수 있습니다.
 - Reflection Agent 방식은 시간이 오래 소요가 되지만 가장 풍부한 답변을 얻을 수 있었습니다.
