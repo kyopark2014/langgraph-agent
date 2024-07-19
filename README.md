@@ -123,17 +123,82 @@ Self-Corrective RAG는 Corrective RAG처럼 Vector Store로 부터 얻어진 문
 
 ## 실행결과
 
-### Agent Executor로 실행
+### LangGraph Agent
 
-![image](https://github.com/user-attachments/assets/7e54d700-e322-4d35-b847-0d93ed142b9b)
+![image](https://github.com/user-attachments/assets/785c30d8-d006-4b35-9075-0dee195191f9)
 
-![image](https://github.com/user-attachments/assets/febf65bd-7111-490b-b8e4-54334d26f664)
+28초가 소요가 소요되었습니다. 
 
-###
+generative AI, how generative AI works, how generative AI models work와 같이 3번 질의한 후에 결과를 모아서 답변을 생성하였습니다. 
 
-실행한 결과는 아래와 같습니다.
+![image](https://github.com/user-attachments/assets/ffd3fa14-acf4-425e-9bd7-f2f203bc72c4)
 
 
+### Reflection Agent
+
+Reflection을 선택하고 "생성형 AI 기술에 대해 설명해주세요."라고 입력합니다. 
+
+90초 시간이 소요되었습니다. 
+
+![image](https://github.com/user-attachments/assets/7fc6f563-5e24-4be5-9569-9c50ba35f1f7)
+
+초안은 아래와 같습니다. 
+
+```text
+여기 생성형 AI 기술에 대한 5문단 에세이 초안이 있습니다:
+
+1문단: 생성형 AI(Generative AI)는 기존 데이터를 기반으로 새로운 콘텐츠를 생성할 수 있는 인공지능 기술을 말합니다. 이는 텍스트, 이미지, 오디오, 코드 등 다양한 형태의 콘텐츠 생성이 가능합니다. 생성형 AI는 기계학습 알고리즘을 사용하여 대량의 데이터에서 패턴을 학습하고 이를 바탕으로 새로운 콘텐츠를 만들어냅니다.
+
+2문단: 대표적인 생성형 AI 기술로는 GPT-3, DALL-E, 뮤직 제너레이터 등이 있습니다. GPT-3는 OpenAI에서 개발한 대규모 언어 모델로, 주어진 텍스트 프롬프트를 기반으로 다양한 형식의 텍스트를 생성할 수 있습니다. DALL-E는 OpenAI의 이미지 생성 AI로, 텍스트 설명을 입력하면 해당하는 이미지를 생성해냅니다. 뮤직 제너레이터는 기존 음원 데이터를 학습하여 새로운 멜로디와 가사를 만들어냅니다.
+```
+
+생성된 결과에 대한 평가는 아래와 같습니다.
+
+```text
+개선사항:
+
+1. 각 문단의 길이를 200자 이상으로 늘리고, 관련 예시와 구체적인 설명을 추가합니다.
+
+2. 2문단에서 생성형 AI의 작동 원리인 기계학습 알고리즘의 종류(예: 순환 신경망, 변분 자기 부호기 등)와 학습 과정에 대해 자세히 설명합니다.
+
+3. 3문단에서 생성형 AI의 활용 분야를 설명할 때 실제 사례나 구체적인 예시를 들어 설명합니다. 예를 들어 작가의 경우 어떤 방식으로 AI를 활용할 수 있는지, 마케팅 분야에서는 어떤 개인화 콘텐츠를 생성할 수 있는지 등을 구체적으로 설명합니다.
+
+4. 전체적으로 문장 구조와 연결을 자연스럽게 하고, 전문 용어에 대한 설명을 추가하여 가독성을 높입니다.
+```
+
+총 3회 수정하여 얻어진 최종 결과는 아래와 같습니다. 초안보다 더 풍부하고 충분한 예제를 제공하고 있습니다. 
+
+```text
+감사합니다. 피드백을 반영하여 에세이를 수정하고 보완하겠습니다.
+
+1문단: 생성형 AI(Generative AI)는 기존 데이터를 기반으로 새로운 콘텐츠를 생성할 수 있는 인공지능 기술을 말합니다. 텍스트, 이미지, 오디오, 코드 등 다양한 형태의 콘텐츠 생성이 가능합니다. 생성형 AI는 기계학습 알고리즘, 특히 순환 신경망(Recurrent Neural Network)이나 변분 자기부호기(Variational Autoencoder) 등을 사용하여 대량의 데이터에서 패턴을 학습합니다. 그리고 이렇게 학습된 모델을 바탕으로 새로운 콘텐츠를 만들어냅니다.
+
+2문단: 대표적인 생성형 AI 기술로는 GPT-3, DALL-E, 뮤직 제너레이터 등이 있습니다. GPT-3는 OpenAI에서 개발한 거대한 언어 모델로, 175억 개의 매개변수를 가진 순환 신경망 기반의 모델입니다. 이 모델은 주어진 텍스트 프롬프트를 기반으로 다양한 형식의 텍스트를 생성할 수 있습니다. DALL-E는 OpenAI의 이미지 생성 AI로, 변분 자기부호기 기반의 모델입니다. 이 모델은 텍스트 설명을 입력받아 해당하는 이미지를 생성해냅니다. 뮤직 제너레이터는 기존 음원 데이터를 순환 신경망으로 학습하여 새로운 멜로디와 가사를 만들어냅니다.
+```
+
+### Corrective RAG 사용시
+
+![image](https://github.com/user-attachments/assets/db8e3ce5-6538-4a87-b508-de9df3a023d7)
+
+전체 14초가 소요되었고, retrieve로 얻어진 4개의 문서에 대한 평가(grade) 후에 결과를 생성하였습니다. 
+
+![image](https://github.com/user-attachments/assets/4fcf557b-88ef-494b-887d-8aa2b0da2cbc)
+
+### Self RAG 사용시
+
+![image](https://github.com/user-attachments/assets/6fedc3f8-2a9c-4c49-93b0-f93e1e6c51ff)
+
+전체 18초가 소요되었고 관련된 문서에 대한 평가후에 환각 및 답변의 유용성을 평가하고 있습니다. 
+
+![image](https://github.com/user-attachments/assets/c05db029-e129-439b-b407-3e117b1f16b2)
+
+### Self Corrective RAG 사용시
+
+![image](https://github.com/user-attachments/assets/d79be2e8-b407-4d60-9504-8e3878e4fabe)
+
+![image](https://github.com/user-attachments/assets/120f1d4e-43cf-401b-ad4a-05b45f600c06)
+
+### 결과 정리
 
 
 
