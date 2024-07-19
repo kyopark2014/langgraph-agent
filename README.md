@@ -120,9 +120,19 @@ Self-Corrective RAG는 Corrective RAG처럼 Vector Store로 부터 얻어진 문
 
 본 실습에서는 Seoul 리전 (ap-northeast-2)을 사용합니다. [인프라 설치](./deployment.md)에 따라 CDK로 인프라 설치를 진행합니다. 
 
+
 ## 실행결과
 
+### Agent Executor로 실행
+
+![image](https://github.com/user-attachments/assets/7e54d700-e322-4d35-b847-0d93ed142b9b)
+
+![image](https://github.com/user-attachments/assets/febf65bd-7111-490b-b8e4-54334d26f664)
+
+###
+
 실행한 결과는 아래와 같습니다.
+
 
 
 
