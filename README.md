@@ -2,11 +2,9 @@
 
 ## LangGraph Agent 
 
-### Agent의 정의
+[Agent란](https://terms.tta.or.kr/dictionary/dictionaryView.do?word_seq=171384-1%29) 주변 환경을 탐지하여 자율적으로 동작하는 장치 또는 프로그램을 의미합니다. 인공지능을 이용한 지능형 에이전트는 센서를 이용하여 주변 환경을 자각하여 Actuator를 이용하여 적절한 행동을 합니다. 또한, agent의 라틴어 어원인 [agere의 뜻](https://m.blog.naver.com/skyopenus/221783830658)은 to do 또는 to act의 의미를 가지고 있습니다. 
 
 LangGraph는 agent를 생성하고 여러개의 Agent가 있을때의 흐름을 관리하기 위한 LangChain의 Extention입니다. 이를 통해 cycle flow를 생성할 수 있으며, 메모리가 내장되어 Agent를 생성에 도움을 줍니다. 상세한 내용은 [LangGraph guide](https://langchain-ai.github.io/langgraph/how-tos/)을 참조합니다.
-
-[Agent란](https://terms.tta.or.kr/dictionary/dictionaryView.do?word_seq=171384-1%29) 주변 환경을 탐지하여 자율적으로 동작하는 장치 또는 프로그램을 의미합니다. 인공지능을 이용한 지능형 에이전트는 센서를 이용하여 주변 환경을 자각하여 Actuator를 이용하여 적절한 행동을 합니다. agent의 라틴어 어원인 [agere의 뜻](https://m.blog.naver.com/skyopenus/221783830658)은 to do 또는 to act의 의미를 가지고 있습니다. 
 
 LangChain과 LangGraph Agent를 비교하면 아래와 같습니다. 
 
@@ -22,9 +20,9 @@ LangGraph Agent는 아래와 같은 Components를 가지고 있습니다.
 - Tools: Nodes can call tools and modify state
 - Planning: Edges can route control flow based on LLM decisions
 
-참조: [Building and Testing Reliable Agents](https://www.youtube.com/watch?v=XiySC-d346E): chain/agent 비교하여 개념 설명 매우 좋음
+참조: [Building and Testing Reliable Agents](https://www.youtube.com/watch?v=XiySC-d346E): chain/agent 비교하여 개념 설명
 
-### Serverless Architecture 
+## Serverless Architecture 
 
 [langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph Agent의 기본 구성을 설명하고 있습니다.
 
