@@ -103,6 +103,8 @@ def get_answer_grader():
     return answer_grader
 ```
 
+### Node
+
 RAG의 Vector Store로 부터 문서를 조회하는 retrieve를 정의합니다. 여기서는 Vector Store로 OpenSearch를 활용하였고 Parent/Child Chunking을 이용한 Chunk strategy로 검색 정확도를 향상시키고 있습니다. 
 
 ```python
@@ -237,6 +239,8 @@ def rewrite(state: CragState):
     return {"question": better_question.question, "documents": documents}
 ```
 
+### Conditional Edge
+
 Conditional Edge인 decide_to_generate()를 아래와 같이 정의합니다. 무한 루프를 방지하기 위하여 max_count를 활용합니다. 
 
 ```python
@@ -300,6 +304,8 @@ def grade_generation(state: SelfRagState, config):
         print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
         return "not supported" if retries < max_retries else "not available"
 ```
+
+### Graph
 
 Workflow를 위한 Graph를 정의합니다.
 
