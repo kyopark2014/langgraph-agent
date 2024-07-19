@@ -317,6 +317,11 @@ def buildCorrectiveAgent():
 crag_app = buildCorrectiveAgent()
 ```
 
+이때 생성된 Workflow에 대한 Graph를 아래와 같이 나타낼 수 있습니다.
+
+![image](https://github.com/user-attachments/assets/b26ed485-2f83-4ea2-a866-98ac8890d5d9)
+
+
 아래와 같이 실행할 수 있습니다.
 
 ```python
