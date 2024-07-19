@@ -23,9 +23,6 @@ LangGraph는 agent를 생성하고 여러개의 Agent가 있을때의 흐름을 
 
 ## Agent Use Cases
 
-채팅 메뉴에서 아래와 같이 agent의 동작방식을 선택하여 결과를 확인할 수 있습니다. 
-
-![image](https://github.com/user-attachments/assets/28cc84db-ffa7-4774-aa82-73d5d699eb31)
 
 ### Tool Execution Agent
 
@@ -126,6 +123,11 @@ Self-Corrective RAG는 Corrective RAG처럼 Vector Store로 부터 얻어진 문
 
 
 ## 실행결과
+
+채팅 메뉴에서 아래와 같이 agent의 동작방식을 선택하여 결과를 확인할 수 있습니다. 
+
+![image](https://github.com/user-attachments/assets/28cc84db-ffa7-4774-aa82-73d5d699eb31)
+
 
 ### LangGraph Agent
 
