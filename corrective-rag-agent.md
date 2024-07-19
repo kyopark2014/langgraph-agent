@@ -132,6 +132,10 @@ def get_rewrite():
     return question_rewriter
 ```
 
+
+
+### State
+
 Graph State를 정의합니다.
 
 ```python
@@ -144,6 +148,10 @@ class GraphState(TypedDict):
     web_search : str
     documents : List[str]
 ```
+
+
+
+### Node
 
 OpenSeach를 이용해 vector 검색으로 관련된 문서를 찾습니다. 여기서는 관련된 문서를 parent/child chunking을 한 후에 child chunk를 이용해 검색 정확도를 높이고, parent chunk를 이용해 context를 풍부하게 활용합니다. 
 
@@ -191,10 +199,31 @@ def retrieve(state: CragState):
                     },
                 )
             )
+    else: 
+        relevant_documents = vectorstore_opensearch.similarity_search_with_score(
+            query = question,
+            k = top_k,
+        )
+
+        for i, document in enumerate(relevant_documents):
+            print(f'## Document(opensearch-vector) {i+1}: {document}')
+            
+            excerpt = document[0].page_content        
+            uri = document[0].metadata['uri']
+                            
+            docs.append(
+                Document(
+                    page_content=excerpt,
+                    metadata={
+                        'name': name,
+                        'uri': uri,
+                    },
+                )
+            )    
     return {"documents": docs, "question": question}
 ```
 
-각 노드를 정의합니다. 
+Vector Store에서 가져온 문서를 평가합니다.
 
 ```python
 def grade_documents(state: CragState):
@@ -206,7 +235,7 @@ def grade_documents(state: CragState):
     filtered_docs = []
     web_search = "No"
     
-    retrieval_grader = get_grader()
+    retrieval_grader = get_retrieval_grader()
     for doc in documents:
         score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
         grade = score.binary_score
@@ -223,21 +252,13 @@ def grade_documents(state: CragState):
             continue
     print('len(docments): ', len(filtered_docs))
     print('web_search: ', web_search)
-
-def decide_to_generate(state: CragState):
-    print("###### decide_to_generate ######")
-    web_search = state["web_search"]
     
-    if web_search == "Yes":
-        # All documents have been filtered check_relevance
-        # We will re-generate a new query
-        print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
-        return "rewrite"
-    else:
-        # We have relevant documents, so generate answer
-        print("---DECISION: GENERATE---")
-        return "generate"
+    return {"question": question, "documents": filtered_docs, "web_search": web_search}
+```
 
+답변을 생성합니다.
+
+```python
 def generate(state: CragState):
     print("###### generate ######")
     question = state["question"]
@@ -250,10 +271,15 @@ def generate(state: CragState):
     print('generation: ', generation.content)
     
     return {"documents": documents, "question": question, "generation": generation}
+```
 
+Re-Write를 위한 노드를 정의합니다. 
+
+```python
 def rewrite(state: CragState):
     print("###### rewrite ######")
     question = state["question"]
+    documents = state["documents"]
 
     # Prompt
     question_rewriter = get_rewrite()
@@ -261,8 +287,12 @@ def rewrite(state: CragState):
     better_question = question_rewriter.invoke({"question": question})
     print("better_question: ", better_question.question)
 
-    return {"question": better_question.question}
+    return {"question": better_question.question, "documents": documents}
+```
 
+웹 검색을 위한 노드를 정의합니다.
+
+```python
 def web_search(state: CragState):
     print("###### web_search ######")
     question = state["question"]
@@ -283,6 +313,27 @@ def web_search(state: CragState):
     
     return {"question": question, "documents": documents}
 ```
+
+
+### Conditional Edge 
+
+웹 검색이 필요 유무에 따라 적절한 동작을 할 수 있도록 Conditional Edge로 decide_to_generate()을 정의합니다. 
+
+def decide_to_generate(state: CragState):
+    print("###### decide_to_generate ######")
+    web_search = state["web_search"]
+    
+    if web_search == "Yes":
+        # All documents have been filtered check_relevance
+        # We will re-generate a new query
+        print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
+        return "rewrite"
+    else:
+        # We have relevant documents, so generate answer
+        print("---DECISION: GENERATE---")
+        return "generate"
+
+### Graph
 
 이제 Graph를 이용하여 Workflow를 정의합니다.
 
