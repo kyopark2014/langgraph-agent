@@ -52,7 +52,7 @@ Rel(start, retrieve, "question")
 
 Rel(retrieve, grade_documents, "documents")
 
-Rel(grade_documents, decide_to_generate, "filtered documents")
+Rel(grade_documents, decide_to_generate, "filtered documents\nquestion")
 
 Rel(decide_to_generate, rewrite, "no filtered documents")
 
@@ -76,7 +76,7 @@ Rel(hallucination, answers_question, "grade = no")
 
 Rel(rewrite, retrieve, "better \nquestion")
 
-Rel(answers_question, END, "score = useful", "generation")
+Rel(answers_question, END, "score = useful\ngeneration")
 
 Rel(answers_question, rewrite, "score = not_useful")
 
