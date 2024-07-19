@@ -6,7 +6,7 @@
 
 LangGraph는 agent를 생성하고 여러개의 Agent가 있을때의 흐름을 관리하기 위한 LangChain의 Extention입니다. 이를 통해 cycle flow를 생성할 수 있으며, 메모리가 내장되어 Agent를 생성에 도움을 줍니다. 상세한 내용은 [LangGraph guide](https://langchain-ai.github.io/langgraph/how-tos/)을 참조합니다. 
 
-아래와 같이 Agent는 Serverless Architecture로 구현할 수 있습니다.
+아래와 같이 agent는 Serverless Architecture로 구현할 수 있습니다.
 
 1) 사용자기 질문을 입력하면 WebSocket 방식으로 API Gateway로 질문이 전달됩니다.
 2) Lambda에서는 LangGraph 형태로 Agent를 정의합니다. 여기에서는 Corrective RAG, Self RAG, Self corrective RAG를 구현하였습니다.
