@@ -23,6 +23,10 @@ LangGraph는 agent를 생성하고 여러개의 Agent가 있을때의 흐름을 
 
 ## Agent Use Cases
 
+채팅 메뉴에서 아래와 같이 agent의 동작방식을 선택하여 결과를 확인할 수 있습니다. 
+
+![image](https://github.com/user-attachments/assets/28cc84db-ffa7-4774-aa82-73d5d699eb31)
+
 ### Tool Execution Agent
 
 [agent-executor.md](./agent-executor.md)에서는 LangGraph를 이용해 각종 Tool을 실행하는 agent를 만드는 방법을 설명하고 있습니다. 
