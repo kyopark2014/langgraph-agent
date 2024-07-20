@@ -2,10 +2,10 @@ import json
 import boto3
 import os
 import traceback
-import PyPDF2
 import time
 import docx
 import base64
+import fitz
 
 from io import BytesIO
 from urllib import parse
@@ -22,6 +22,9 @@ from multiprocessing import Process, Pipe
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_aws import ChatBedrock
+from pptx.enum.shapes import MSO_SHAPE_TYPE
+from docx.enum.shape import WD_INLINE_SHAPE_TYPE
+from pypdf import PdfReader   
 
 sqs = boto3.client('sqs')
 s3_client = boto3.client('s3')  
@@ -42,6 +45,7 @@ LLM_embedding = json.loads(os.environ.get('LLM_embedding'))
 selected_chat = 0
 selected_multimodal = 0
 selected_embedding = 0
+enableHybridSearch = os.environ.get('enableHybridSearch')
 
 roleArn = os.environ.get('roleArn') 
 path = os.environ.get('path')
@@ -49,6 +53,10 @@ max_object_size = int(os.environ.get('max_object_size'))
 
 supportedFormat = json.loads(os.environ.get('supportedFormat'))
 print('supportedFormat: ', supportedFormat)
+
+enableImageExtraction = 'true'
+enablePageImageExraction = 'true'
+maxOutputTokens = 4096
 
 os_client = OpenSearch(
     hosts = [{
@@ -78,8 +86,18 @@ def delete_document_if_exist(metadata_key):
             ids = json.loads(meta)['ids']
             print('ids: ', ids)
             
+            # delete ids
             result = vectorstore.delete(ids)
-            print('result: ', result)        
+            print('result: ', result)   
+            
+            # delete files 
+            files = json.loads(meta)['files']
+            print('files: ', files)
+            
+            for file in files:
+                s3r.Object(s3_bucket, file).delete()
+                print('delete file: ', file)
+            
         else:
             print('no meta file: ', metadata_key)
             
@@ -94,7 +112,6 @@ def get_chat():
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
     print(f'selected_chat: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-    maxOutputTokens = int(profile['maxOutputTokens'])
                           
     # bedrock   
     boto3_bedrock = boto3.client(
@@ -134,7 +151,6 @@ def get_multimodal():
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
     print(f'selected_multimodal: {selected_multimodal}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-    maxOutputTokens = int(profile['maxOutputTokens'])
                           
     # bedrock   
     boto3_bedrock = boto3.client(
@@ -211,11 +227,11 @@ vectorstore = OpenSearchVectorSearch(
 
 def store_document_for_opensearch(file_type, key):
     print('upload to opensearch: ', key) 
-    contents = load_document(file_type, key)
+    contents, files = load_document(file_type, key)
     
     if len(contents) == 0:
         print('no contents: ', key)
-        return []
+        return [], files
     
     # contents = str(contents).replace("\n"," ") 
     print('length: ', len(contents))
@@ -229,9 +245,11 @@ def store_document_for_opensearch(file_type, key):
             'uri': path+parse.quote(key)
         }
     ))
-    print('docs: ', docs)
+    # print('docs: ', docs)
     
-    return add_to_opensearch(docs, key)    
+    ids = add_to_opensearch(docs, key)    
+    
+    return ids, files
 
 def store_code_for_opensearch(file_type, key):
     codes = load_code(file_type, key)  # number of functions in the code
@@ -284,6 +302,9 @@ def store_image_for_opensearch(key):
                         
     width, height = img.size 
     print(f"width: {width}, height: {height}, size: {width*height}")
+    
+    if width < 100 or height < 100:  # skip small size image
+        return []
                         
     isResized = False
     while(width*height > 5242880):
@@ -291,40 +312,142 @@ def store_image_for_opensearch(key):
         height = int(height/2)
         isResized = True
         print(f"width: {width}, height: {height}, size: {width*height}")
-                        
-    if isResized:
-        img = img.resize((width, height))
-                        
-    buffer = BytesIO()
-    img.save(buffer, format="PNG")
-    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-                                                            
-    # extract text from the image
-    chat = get_multimodal()    
-    text = extract_text(chat, img_base64)
-    extracted_text = text[text.find('<result>')+8:len(text)-9] # remove <result> tag
-    print('extracted_text: ', extracted_text)
+            
+    try:             
+        if isResized:
+            img = img.resize((width, height))
+                            
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+                                                                
+        # extract text from the image
+        chat = get_multimodal()
+        text = extract_text(chat, img_base64)
+        extracted_text = text[text.find('<result>')+8:len(text)-9] # remove <result> tag
+        #print('extracted_text: ', extracted_text)
+        
+        summary = summary_image(chat, img_base64)
+        image_summary = summary[summary.find('<result>')+8:len(summary)-9] # remove <result> tag
+        #print('image summary: ', image_summary)
+        
+        if len(extracted_text) > 30:
+            contents = f"[이미지 요약]\n{image_summary}\n\n[추출된 텍스트]\n{extracted_text}"
+        else:
+            contents = f"[이미지 요약]\n{image_summary}"
+        print('image contents: ', contents)
+        
+        docs = []
+        if len(contents) > 30:
+            docs.append(
+                Document(
+                    page_content=contents,
+                    metadata={
+                        'name': key,
+                        # 'page':i+1,
+                        'uri': path+parse.quote(key)
+                    }
+                )
+            )                                                                                                            
+        print('docs size: ', len(docs))
+        
+        return add_to_opensearch(docs, key)
     
-    docs = []
-    if len(extracted_text)>10:
-        docs.append(
-            Document(
-                page_content=extracted_text,
-                metadata={
-                    'name': key,
-                    # 'page':i+1,
-                    'uri': path+parse.quote(key)
-                }
-            )
-        )                                                                                                            
-    print('docs size: ', len(docs))
-    
-    return add_to_opensearch(docs, key)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                
+        #raise Exception ("Not able to summary")  
+        
+        return []
 
+def is_not_exist(index_name):    
+    if os_client.indices.exists(index_name):        
+        print('use exist index: ', index_name)    
+        return False
+    else:
+        print('no index: ', index_name)
+        return True
+    
+def create_nori_index():
+    index_body = {
+        'settings': {
+            'analysis': {
+                'analyzer': {
+                    'my_analyzer': {
+                        'char_filter': ['html_strip'], 
+                        'tokenizer': 'nori',
+                        'filter': ['nori_number','lowercase','trim','my_nori_part_of_speech'],
+                        'type': 'custom'
+                    }
+                },
+                'tokenizer': {
+                    'nori': {
+                        'decompound_mode': 'mixed',
+                        'discard_punctuation': 'true',
+                        'type': 'nori_tokenizer'
+                    }
+                },
+                "filter": {
+                    "my_nori_part_of_speech": {
+                        "type": "nori_part_of_speech",
+                        "stoptags": [
+                                "E", "IC", "J", "MAG", "MAJ",
+                                "MM", "SP", "SSC", "SSO", "SC",
+                                "SE", "XPN", "XSA", "XSN", "XSV",
+                                "UNA", "NA", "VSV"
+                        ]
+                    }
+                }
+            },
+            'index': {
+                'knn': True,
+                'knn.space_type': 'cosinesimil'  # Example space type
+            }
+        },
+        'mappings': {
+            'properties': {
+                'metadata': {
+                    'properties': {
+                        'source' : {'type': 'keyword'},                    
+                        'last_updated': {'type': 'date'},
+                        'project': {'type': 'keyword'},
+                        'seq_num': {'type': 'long'},
+                        'title': {'type': 'text'},  # For full-text search
+                        'url': {'type': 'text'},  # For full-text search
+                    }
+                },            
+                'text': {
+                    'analyzer': 'my_analyzer',
+                    'search_analyzer': 'my_analyzer',
+                    'type': 'text'
+                },
+                'vector_field': {
+                    'type': 'knn_vector',
+                    'dimension': 1536  # Replace with your vector dimension
+                }
+            }
+        }
+    }
+    
+    if(is_not_exist(index_name)):
+        try: # create index
+            response = os_client.indices.create(
+                index_name,
+                body=index_body
+            )
+            print('index was created with nori plugin:', response)
+        except Exception:
+            err_msg = traceback.format_exc()
+            print('error message: ', err_msg)                
+            #raise Exception ("Not able to create the index")
+
+if enableHybridSearch == 'true':
+    create_nori_index()
+    
 def add_to_opensearch(docs, key):    
     if len(docs) == 0:
         return []    
-    print('docs[0]: ', docs[0])       
+    # print('docs[0]: ', docs[0])       
     
     objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
     print('objectName: ', objectName)    
@@ -356,7 +479,7 @@ def add_to_opensearch(docs, key):
             
             for i, doc in enumerate(parent_docs):
                 doc.metadata["doc_level"] = "parent"
-                print(f"parent_docs[{i}]: {doc}")
+                # print(f"parent_docs[{i}]: {doc}")
                     
             try:        
                 parent_doc_ids = vectorstore.add_documents(parent_docs, bulk_size = 10000)
@@ -402,53 +525,350 @@ def add_to_opensearch(docs, key):
             print('error message: ', err_msg)
             #raise Exception ("Not able to add docs in opensearch")    
     return ids
+
+def extract_images_from_pdf(reader, key):
+    picture_count = 1
     
-def delete_document_if_exist(metadata_key):
-    try: 
-        s3r = boto3.resource("s3")
-        bucket = s3r.Bucket(s3_bucket)
-        objs = list(bucket.objects.filter(Prefix=metadata_key))
-        print('objs: ', objs)
+    extracted_image_files = []
+    print('pages: ', len(reader.pages))
+    for i, page in enumerate(reader.pages):
+        print('page: ', page)
+        if '/ProcSet' in page['/Resources']:
+            print('Resources/ProcSet: ', page['/Resources']['/ProcSet'])        
+        if '/XObject' in page['/Resources']:
+            print(f"Resources/XObject[{i}]: {page['/Resources']['/XObject']}")
         
-        if(len(objs)>0):
-            doc = s3r.Object(s3_bucket, metadata_key)
-            meta = doc.get()['Body'].read().decode('utf-8')
-            print('meta: ', meta)
+        for image_file_object in page.images:
+            print('image_file_object: ', image_file_object)
             
-            ids = json.loads(meta)['ids']
-            print('ids: ', ids)
+            img_name = image_file_object.name
+            print('img_name: ', img_name)
             
-            result = vectorstore.delete(ids)
-            print('result: ', result)        
-        else:
-            print('no meta file: ', metadata_key)
+            if img_name in extracted_image_files:
+                print('skip....')
+                continue
             
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)        
-        raise Exception ("Not able to create meta file")
+            extracted_image_files.append(img_name)
+            # print('list: ', extracted_image_files)
+            
+            ext = img_name.split('.')[-1]            
+            contentType = ""
+            if ext == 'png':
+                contentType = 'image/png'
+            elif ext == 'jpg' or ext == 'jpeg':
+                contentType = 'image/jpeg'
+            elif ext == 'gif':
+                contentType = 'image/gif'
+            elif ext == 'bmp':
+                contentType = 'image/bmp'
+            elif ext == 'tiff' or ext == 'tif':
+                contentType = 'image/tiff'
+            elif ext == 'svg':
+                contentType = 'image/svg+xml'
+            elif ext == 'webp':
+                contentType = 'image/webp'
+            elif ext == 'ico':
+                contentType = 'image/x-icon'
+            elif ext == 'eps':
+                contentType = 'image/eps'
+            # print('contentType: ', contentType)
+            
+            if contentType:                
+                image_bytes = image_file_object.data
+
+                pixels = BytesIO(image_bytes)
+                pixels.seek(0, 0)
+                            
+                # get path from key
+                objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+                folder = s3_prefix+'/files/'+objectName+'/'
+                # print('folder: ', folder)
+                            
+                img_key = folder+img_name
+                
+                response = s3_client.put_object(
+                    Bucket=s3_bucket,
+                    Key=img_key,
+                    ContentType=contentType,
+                    Body=pixels
+                )
+                print('response: ', response)
+                            
+                # metadata
+                img_meta = {   # not used yet
+                    'bucket': s3_bucket,
+                    'key': img_key,
+                    'url': path+img_key,
+                    'ext': 'png',
+                    'page': i+1,
+                    'original': key
+                }
+                print('img_meta: ', img_meta)
+                            
+                picture_count += 1
+                    
+                extracted_image_files.append(img_key)
+
+    print('extracted_image_files: ', extracted_image_files)    
+    return extracted_image_files
+    
+def extract_images_from_pptx(prs, key):
+    picture_count = 1
+    
+    extracted_image_files = []
+    for i, slide in enumerate(prs.slides):
+        for shape in slide.shapes:
+            print('shape type: ', shape.shape_type)
+            if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                image = shape.image
+                # image bytes to PIL Image object
+                image_bytes = image.blob
+                
+                pixels = BytesIO(image_bytes)
+                pixels.seek(0, 0)
+                        
+                # get path from key
+                objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+                folder = s3_prefix+'/files/'+objectName+'/'
+                print('folder: ', folder)
+                        
+                fname = 'img_'+key.split('/')[-1].split('.')[0]+f"_{picture_count}"  
+                print('fname: ', fname)
+                        
+                img_key = folder+fname+'.png'
+                        
+                response = s3_client.put_object(
+                    Bucket=s3_bucket,
+                    Key=img_key,
+                    ContentType='image/png',
+                    Body=pixels
+                )
+                print('response: ', response)
+                        
+                # metadata
+                img_meta = { # not used yet
+                    'bucket': s3_bucket,
+                    'key': img_key,
+                    'url': path+img_key,
+                    'ext': 'png',
+                    'page': i+1,
+                    'original': key
+                }
+                print('img_meta: ', img_meta)
+                        
+                picture_count += 1
+                
+                extracted_image_files.append(img_key)
+    
+    print('extracted_image_files: ', extracted_image_files)    
+    return extracted_image_files
+
+def extract_images_from_docx(doc_contents, key):
+    picture_count = 1
+    extracted_image_files = []
+    
+    for inline_shape in doc_contents.inline_shapes:
+        #print('inline_shape.type: ', inline_shape.type)                
+        if inline_shape.type == WD_INLINE_SHAPE_TYPE.PICTURE:
+            rId = inline_shape._inline.graphic.graphicData.pic.blipFill.blip.embed
+            print('rId: ', rId)
+        
+            image_part = doc_contents.part.related_parts[rId]
+        
+            filename = image_part.filename
+            print('filename: ', filename)
+        
+            bytes_of_image = image_part.image.blob
+            pixels = BytesIO(bytes_of_image)
+            pixels.seek(0, 0)
+                    
+            # get path from key
+            objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+            folder = s3_prefix+'/files/'+objectName+'/'
+            print('folder: ', folder)
+            
+            fname = 'img_'+key.split('/')[-1].split('.')[0]+f"_{picture_count}"  
+            print('fname: ', fname)
+                            
+            ext = filename.split('.')[-1]            
+            contentType = ""
+            if ext == 'png':
+                contentType = 'image/png'
+            elif ext == 'jpg' or ext == 'jpeg':
+                contentType = 'image/jpeg'
+            elif ext == 'gif':
+                contentType = 'image/gif'
+            elif ext == 'bmp':
+                contentType = 'image/bmp'
+            elif ext == 'tiff' or ext == 'tif':
+                contentType = 'image/tiff'
+            elif ext == 'svg':
+                contentType = 'image/svg+xml'
+            elif ext == 'webp':
+                contentType = 'image/webp'
+            elif ext == 'ico':
+                contentType = 'image/x-icon'
+            elif ext == 'eps':
+                contentType = 'image/eps'
+            # print('contentType: ', contentType)
+                    
+            img_key = folder+fname+'.'+ext
+            print('img_key: ', img_key)
+            
+            response = s3_client.put_object(
+                Bucket=s3_bucket,
+                Key=img_key,
+                ContentType=contentType,
+                Body=pixels
+            )
+            print('response: ', response)
+                            
+            # metadata
+            img_meta = { # not used yet
+                'bucket': s3_bucket,
+                'key': img_key,
+                'url': path+img_key,
+                'ext': 'png',
+                'original': key
+            }
+            print('img_meta: ', img_meta)
+                            
+            picture_count += 1
+                    
+            extracted_image_files.append(img_key)
+    
+    print('extracted_image_files: ', extracted_image_files)    
+    return extracted_image_files
              
 # load documents from s3 for pdf and txt
 def load_document(file_type, key):
     s3r = boto3.resource("s3")
     doc = s3r.Object(s3_bucket, key)
     
+    files = []
     contents = ""
     if file_type == 'pdf':
         Byte_contents = doc.get()['Body'].read()
-        
+
+        texts = []
+        nImages = []
         try: 
-            reader = PyPDF2.PdfReader(BytesIO(Byte_contents))
+            # pdf reader            
+            reader = PdfReader(BytesIO(Byte_contents))
+            print('pages: ', len(reader.pages))
             
-            texts = []
-            for page in reader.pages:
+            # extract text
+            imgList = []
+            for i, page in enumerate(reader.pages):
+                print(f"page[{i}]: {page}")
                 texts.append(page.extract_text())
+                
+                # annotation
+                #if '/Type' in page:
+                #    print(f"Type[{i}]: {page['/Type']}")                
+                #if '/Annots' in page:
+                #    print(f"Annots[{i}]: {page['/Annots']}")
+                #if '/Group' in page:
+                #    print(f"Group[{i}]: {page['/Group']}")
+                if '/Contents' in page:                
+                    print(f"Contents[{i}]: {page['/Contents']}")
+                #if '/MediaBox' in page:                
+                #    print(f"MediaBox[{i}]: {page['/MediaBox']}")                    
+                #if '/Parent' in page:
+                #    print(f"Parent[{i}]: {page['/Parent']}")
+                                
+                nImage = 0
+                if '/Resources' in page:
+                    print(f"Resources[{i}]: {page['/Resources']}")
+                    if '/ProcSet' in page['/Resources']:
+                        print(f"Resources/ProcSet[{i}]: {page['/Resources']['/ProcSet']}")
+                    if '/XObject' in page['/Resources']:
+                        print(f"Resources/XObject[{i}]: {page['/Resources']['/XObject']}")                        
+                        for j, image in enumerate(page['/Resources']['/XObject']):
+                            print(f"image[{j}]: {image}")                                 
+                            if image in imgList:
+                                print('Duplicated...')
+                                continue    
+                            else:
+                                imgList.append(image)
+                                                    
+                            Im = page['/Resources']['/XObject'][image]
+                            print(f"{image}[{j}]: {Im}")                            
+                            nImage = nImage+1
+                            
+                print(f"# of images of page[{i}] = {nImage}")
+                nImages.append(nImage)
+
             contents = '\n'.join(texts)
+
+            # extract page images using PyMuPDF
+            if enablePageImageExraction=='true': 
+                pages = fitz.open(stream=Byte_contents, filetype='pdf')      
+            
+                for i, page in enumerate(pages):
+                    print('page: ', page)
+                    
+                    imgInfo = page.get_image_info()
+                    print(f"imgInfo[{i}]: {imgInfo}")         
+                    
+                    width = height = 0
+                    for j, info in enumerate(imgInfo):
+                        bbox = info['bbox']
+                        print(f"page[{i}] -> bbox[{j}]: {bbox}")
+                        if (bbox[2]-bbox[0]>width or bbox[3]-bbox[1]>height) and (bbox[2]-bbox[0]<940 and bbox[3]-bbox[1]<520):
+                            width = bbox[2]-bbox[0]
+                            height = bbox[3]-bbox[1]
+                            print(f"page[{i}] -> (used) width[{j}]: {bbox[2]-bbox[0]}, height[{j}]: {bbox[3]-bbox[1]}")                    
+                        print(f"page[{i}] -> (image) width[{j}]: {info['width']}, height[{j}]: {info['height']}")
+                        
+                    print(f"nImages[{i}]: {nImages[i]}")  # number of XObjects
+                    if nImages[i]>=4 or \
+                        (nImages[i]>=1 and (width==0 and height==0)) or \
+                        (nImages[i]>=1 and (width>=100 or height>=100)):
+                        # save current pdf page to image 
+                        pixmap = page.get_pixmap(dpi=200)  # dpi=300
+                        #pixels = pixmap.tobytes() # output: jpg
+                        
+                        # convert to png
+                        img = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
+                        pixels = BytesIO()
+                        img.save(pixels, format='PNG')
+                        pixels.seek(0, 0)
+                                        
+                        # get path from key
+                        objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+                        folder = s3_prefix+'/captures/'+objectName+'/'
+                        print('folder: ', folder)
+                                
+                        fname = 'img_'+key.split('/')[-1].split('.')[0]+f"_{i}"
+                        print('fname: ', fname)          
+
+                        response = s3_client.put_object(
+                            Bucket=s3_bucket,
+                            Key=folder+fname+'.png',
+                            ContentType='image/png',
+                            Metadata = {
+                                "ext": 'png',
+                                "page": str(i)
+                            },
+                            Body=pixels
+                        )
+                        print('response: ', response)
+                                                        
+                        files.append(folder+fname+'.png')
+                                    
+                contents = '\n'.join(texts)
+
+            elif enableImageExtraction == 'true':
+                image_files = extract_images_from_pdf(reader, key)
+                for img in image_files:
+                    files.append(img)
+        
         except Exception:
                 err_msg = traceback.format_exc()
                 print('err_msg: ', err_msg)
                 # raise Exception ("Not able to load the pdf file")
-                
+                     
     elif file_type == 'pptx':
         Byte_contents = doc.get()['Body'].read()
             
@@ -462,20 +882,18 @@ def load_document(file_type, key):
                     if shape.has_text_frame:
                         text = text + shape.text
                 texts.append(text)
-            contents = '\n'.join(texts)
+            contents = '\n'.join(texts)          
+            
+            if enableImageExtraction == 'true':
+                image_files = extract_images_from_pptx(prs, key)                
+                for img in image_files:
+                    files.append(img)
+                    
         except Exception:
                 err_msg = traceback.format_exc()
                 print('err_msg: ', err_msg)
                 # raise Exception ("Not able to load texts from preseation file")
         
-    elif file_type == 'txt' or file_type == 'md':       
-        try:  
-            contents = doc.get()['Body'].read().decode('utf-8')
-        except Exception:
-            err_msg = traceback.format_exc()
-            print('error message: ', err_msg)        
-            # raise Exception ("Not able to load the file")
-
     elif file_type == 'docx':
         try:
             Byte_contents = doc.get()['Body'].read()                    
@@ -488,12 +906,27 @@ def load_document(file_type, key):
                     # print(f"{i}: {para.text}")        
             contents = '\n'.join(texts)            
             # print('contents: ', contents)
+            
+            # Extract images
+            if enableImageExtraction == 'true':
+                image_files = extract_images_from_docx(doc_contents, key)                
+                for img in image_files:
+                    files.append(img)
+            
         except Exception:
                 err_msg = traceback.format_exc()
                 print('err_msg: ', err_msg)
                 # raise Exception ("Not able to load docx")   
+                
+    elif file_type == 'txt' or file_type == 'md':       
+        try:  
+            contents = doc.get()['Body'].read().decode('utf-8')
+        except Exception:
+            err_msg = traceback.format_exc()
+            print('error message: ', err_msg)        
+            # raise Exception ("Not able to load the file")
     
-    return contents
+    return contents, files
 
 # load a code file from s3
 def load_code(file_type, key):
@@ -546,7 +979,7 @@ def check_supported_type(key, file_type, size):
 
 HUMAN_PROMPT = "\n\nHuman:"
 AI_PROMPT = "\n\nAssistant:"
-def get_parameter(model_type, maxOutputTokens):
+def get_parameter(model_type):
     if model_type=='titan': 
         return {
             "maxTokenCount":1024,
@@ -703,7 +1136,38 @@ def extract_text(chat, img_base64):
         result = chat.invoke(messages)
         
         extracted_text = result.content
-        print('result of text extraction from an image: ', extracted_text)
+        # print('result of text extraction from an image: ', extracted_text)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+    
+    return extracted_text
+
+def summary_image(chat, img_base64):    
+    query = "이미지가 의미하는 내용을 풀어서 자세히 알려주세요. <result> tag를 붙여주세요."
+    
+    messages = [
+        HumanMessage(
+            content=[
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{img_base64}", 
+                    },
+                },
+                {
+                    "type": "text", "text": query
+                },
+            ]
+        )
+    ]
+    
+    try: 
+        result = chat.invoke(messages)
+        
+        extracted_text = result.content
+        # print('summary from an image: ', extracted_text)
     except Exception:
         err_msg = traceback.format_exc()
         print('error message: ', err_msg)                    
@@ -720,7 +1184,7 @@ def get_documentId(key, category):
                 
     return documentId
 
-def create_metadata(bucket, key, meta_prefix, s3_prefix, uri, category, documentId, ids):
+def create_metadata(bucket, key, meta_prefix, s3_prefix, uri, category, documentId, ids, files):
     title = key
     timestamp = int(time.time())
 
@@ -733,7 +1197,8 @@ def create_metadata(bucket, key, meta_prefix, s3_prefix, uri, category, document
         },
         "Title": title,
         "DocumentId": documentId,      
-        "ids": ids  
+        "ids": ids,
+        "files": files
     }
     print('metadata: ', metadata)
     
@@ -816,11 +1281,11 @@ def lambda_handler(event, context):
             else: 
                 print('This file format is not supported: ', file_type)                
                     
-        elif eventName == "ObjectCreated:Put" or eventName == "ObjectCreated:CompleteMultipartUpload":          
+        elif eventName == "ObjectCreated:Put" or eventName == "ObjectCreated:CompleteMultipartUpload":
             size = 0
             try:
                 s3obj = s3_client.get_object(Bucket=bucket, Key=key)
-                print(f"Got object: {s3obj}")        
+                print(f"Got object: {s3obj}")
                 size = int(s3obj['ContentLength'])    
                 
                 #attributes = ['ETag', 'Checksum', 'ObjectParts', 'StorageClass', 'ObjectSize']
@@ -843,9 +1308,9 @@ def lambda_handler(event, context):
                 documentId = get_documentId(key, category)                                
                 print('documentId: ', documentId)
                 
-                ids = []                        
+                ids = files = []
                 if file_type == 'pdf' or file_type == 'txt' or file_type == 'md' or file_type == 'csv' or file_type == 'pptx' or file_type == 'docx':
-                    ids = store_document_for_opensearch(file_type, key)   
+                    ids, files = store_document_for_opensearch(file_type, key)   
                                     
                 elif file_type == 'py' or file_type == 'js':
                     ids = store_code_for_opensearch(file_type, key)  
@@ -853,7 +1318,7 @@ def lambda_handler(event, context):
                 elif file_type == 'png' or file_type == 'jpg' or file_type == 'jpeg':
                     ids = store_image_for_opensearch(key)
                                                                                                          
-                create_metadata(bucket=s3_bucket, key=key, meta_prefix=meta_prefix, s3_prefix=s3_prefix, uri=path+parse.quote(key), category=category, documentId=documentId, ids=ids)
+                create_metadata(bucket=s3_bucket, key=key, meta_prefix=meta_prefix, s3_prefix=s3_prefix, uri=path+parse.quote(key), category=category, documentId=documentId, ids=ids, files=files)
 
             else: # delete if the object is unsupported one for format or size
                 try:
