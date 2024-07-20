@@ -31,6 +31,7 @@ let opensearch_url = "";
 const bucketName = `storage-for-${projectName}-${accountId}-${region}`; 
 const debugMessageMode = 'false'; // if true, debug messages will be delivered to the client.
 const max_object_size = 102400000; // 100 MB max size of an object, 50MB(default)
+const enableHybridSearch = 'true';
 const enableParallelSummay = 'true';
 const supportedFormat = JSON.stringify(["pdf", "txt", "csv", "pptx", "ppt", "docx", "doc", "xlsx", "py", "js", "md", "jpeg", "jpg", "png"]);  
 const separated_chat_history = 'true';
@@ -572,7 +573,8 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
         debugMessageMode: debugMessageMode,
         projectName: projectName,
         separated_chat_history: separated_chat_history,
-        enalbeParentDocumentRetrival: enalbeParentDocumentRetrival    
+        enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
+        enableHybridSearch: enableHybridSearch
       }
     });     
     lambdaChatWebsocket.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));  
@@ -685,7 +687,8 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
           LLM_for_multimodal:JSON.stringify(claude3_sonnet),
           LLM_embedding: JSON.stringify(titan_embedding_v2),
           enableParallelSummay: enableParallelSummay,
-          enalbeParentDocumentRetrival: enalbeParentDocumentRetrival
+          enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
+          enableHybridSearch: enableHybridSearch
         }
       });         
       s3Bucket.grantReadWrite(lambdDocumentManager[i]); // permission for s3
