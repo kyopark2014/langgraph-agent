@@ -2143,7 +2143,7 @@ def getResponse(connectionId, jsonBody):
                     msg = general_conversation(connectionId, requestId, chat, text)                  
 
                 elif convType == 'agent-executor':
-                    msg = run_agent_executor(connectionId, requestId, chat_app, text)      
+                    msg = run_agent_executor(connectionId, requestId, chat_app, text)
                 elif convType == 'agent-executor-chat':
                     revised_question = revise_question(connectionId, requestId, chat, text)     
                     print('revised_question: ', revised_question)  
