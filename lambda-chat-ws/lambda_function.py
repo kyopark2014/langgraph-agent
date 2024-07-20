@@ -1095,6 +1095,63 @@ def retrieve(state: CragState):
                     },
                 )
             )    
+    
+    if enableHybridSearch=='true':
+        # lexical search (keyword)
+        min_match = 0
+        query = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "match": {
+                                "text": {
+                                    "query": query,
+                                    "minimum_should_match": f'{min_match}%',
+                                    "operator":  "or",
+                                }
+                            }
+                        },
+                    ],
+                    "filter": [
+                    ]
+                }
+            }
+        }
+
+        response = os_client.search(
+            body=query,
+            index="idx-*", # all
+        )
+        # print('lexical query result: ', json.dumps(response))
+        
+        for i, document in enumerate(response['hits']['hits']):
+            if i>=top_k: 
+                break
+                    
+            excerpt = document['_source']['text']
+            #print(f'## Document(opensearch-keyword) {i+1}: {excerpt}')
+
+            name = document['_source']['metadata']['name']
+            # print('name: ', name)
+
+            uri = ""
+            if "uri" in document['_source']['metadata']:
+                uri = document['_source']['metadata']['uri']
+            # print('uri: ', uri)
+            
+            print(f"lexical search --> doc[{i}]: {excerpt}, name:{name}, uri:{uri}\n")
+            
+            docs.append(
+                Document(
+                    page_content=excerpt,
+                    metadata={
+                        'name': name,
+                        'uri': uri,
+                    },
+                )
+            )  
+
     return {"documents": docs, "question": question}
 
 def grade_documents(state: CragState):
