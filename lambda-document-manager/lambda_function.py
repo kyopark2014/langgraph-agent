@@ -482,7 +482,7 @@ def add_to_opensearch(docs, key):
                 # print(f"parent_docs[{i}]: {doc}")
                     
             try:        
-                parent_doc_ids = vectorstore.add_documents(parent_docs, bulk_size = 10000)
+                parent_doc_ids = vectorstore.add_documents(parent_docs, bulk_size = 50000)
                 print('parent_doc_ids: ', parent_doc_ids)
                 
                 child_docs = []
@@ -496,7 +496,7 @@ def add_to_opensearch(docs, key):
                     child_docs.extend(sub_docs)
                 # print('child_docs: ', child_docs)
                 
-                child_doc_ids = vectorstore.add_documents(child_docs, bulk_size = 10000)
+                child_doc_ids = vectorstore.add_documents(child_docs, bulk_size = 50000)
                 print('child_doc_ids: ', child_doc_ids)
                     
                 ids = parent_doc_ids+child_doc_ids
@@ -518,7 +518,7 @@ def add_to_opensearch(docs, key):
             print('documents[0]: ', documents[0])        
             
         try:        
-            ids = vectorstore.add_documents(documents, bulk_size = 10000)
+            ids = vectorstore.add_documents(documents, bulk_size = 50000)
             print('response of adding documents: ', ids)
         except Exception:
             err_msg = traceback.format_exc()
