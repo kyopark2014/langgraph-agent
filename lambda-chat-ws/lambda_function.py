@@ -704,8 +704,8 @@ def search_by_opensearch(keyword: str) -> str:
                             
             answer = answer + f"{excerpt}, URL: {uri}\n\n"
 
-        if enableHybridSearch == 'true':
-            answer = answer + lexical_search_for_tool(keyword, top_k)
+    if enableHybridSearch == 'true':
+        answer = answer + lexical_search_for_tool(keyword, top_k)
         
     return answer
 
