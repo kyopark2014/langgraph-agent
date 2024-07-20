@@ -69,7 +69,13 @@ cdk deploy --all
 
 ![noname](https://github.com/kyopark2014/stream-chatbot-for-amazon-bedrock/assets/52392004/5c876093-3faa-4faf-a7d2-ed9659a75473)
 
-9) API에 대한 Credential을 획득하고 입력합니다.
+9) Hybrid 검색을 위한 Nori Plug-in 설치
+
+[OpenSearch Console](https://us-west-2.console.aws.amazon.com/aos/home?region=us-west-2#opensearch/domains)에서 "llm-agent"로 들어가서 [Packages] - [Associate package]을 선택한 후에, 아래와 같이 "analysis-nori"을 설치합니다. 
+
+![image](https://github.com/kyopark2014/korean-chatbot-using-amazon-bedrock/assets/52392004/b91c91a1-b13c-4f5d-bd58-1c8298b2f128)
+
+10) API에 대한 Credential을 획득하고 입력합니다.
 
 - 일반 검색을 위하여 [Tavily Search](https://app.tavily.com/sign-in)에 접속하여 가입 후 API Key를 발급합니다. 이것은 tvly-로 시작합니다.
 - 날씨 검색을 위하여 [openweathermap](https://home.openweathermap.org/api_keys)에 접속하여 API Key를 발급합니다.
