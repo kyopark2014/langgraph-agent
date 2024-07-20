@@ -1106,7 +1106,7 @@ def retrieve(state: CragState):
                         {
                             "match": {
                                 "text": {
-                                    "query": query,
+                                    "query": question,
                                     "minimum_should_match": f'{min_match}%',
                                     "operator":  "or",
                                 }
