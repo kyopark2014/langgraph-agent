@@ -737,7 +737,7 @@ def lexical_search_for_tool(query, top_k):
         body=query,
         index="idx-*", # all
     )
-    print('lexical query result: ', json.dumps(response))
+    # print('lexical query result: ', json.dumps(response))
         
     answer = ""
     for i, document in enumerate(response['hits']['hits']):
@@ -745,15 +745,14 @@ def lexical_search_for_tool(query, top_k):
             break
                     
         excerpt = document['_source']['text']
-
+        
         uri = ""
         if "uri" in document['_source']['metadata']:
-            uri = document['_source']['metadata']['uri']
-        # print('uri: ', uri)
+            uri = document['_source']['metadata']['uri']            
+        print(f"lexical search --> doc[{i}]: {excerpt}, uri:{uri}\n")
 
         answer = answer + f"{excerpt}, URL: {uri}\n\n"
-        
-    print('lexical answer: ', answer)
+    
     return answer
 
 # define tools
