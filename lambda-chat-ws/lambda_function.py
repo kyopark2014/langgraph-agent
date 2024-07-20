@@ -63,6 +63,7 @@ selected_embedding = 0
 maxOutputTokens = 4096
 separated_chat_history = os.environ.get('separated_chat_history')
 enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
+enableHybridSearch = os.environ.get('enableHybridSearch')
 
 # api key to get weather information in agent
 secretsmanager = boto3.client('secretsmanager')
