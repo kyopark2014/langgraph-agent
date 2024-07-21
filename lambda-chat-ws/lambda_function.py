@@ -984,12 +984,18 @@ def get_references_for_agent(docs):
         page = ""
         if "page" in doc.metadata:
             page = doc.metadata['page']
-        #print('page: ', page)
-        uri = doc.metadata['uri']
-        #print('uri: ', uri)        
-        name = doc.metadata['name']
-        #print('name: ', name)
-        sourceType = doc.metadata['from']
+            #print('page: ', page)            
+        uri = ""
+        if "uri" in doc.metadata:
+            uri = doc.metadata['uri']
+            #print('uri: ', uri)                
+        name = ""
+        if "name" in doc.metadata:
+            name = doc.metadata['name']
+            #print('name: ', name)        
+        sourceType = ""
+        if "from" in doc.metadata:
+            sourceType = doc.metadata['from']
         #print('sourceType: ', sourceType)
         excerpt = doc.page_content
         #print('excerpt: ', excerpt)
@@ -1537,8 +1543,6 @@ def web_search(state: CragState):
             )
         )
         
-    reference_docs += documents
-    
     return {"question": question, "documents": documents}
 
 def buildCorrectiveRAG():
