@@ -68,7 +68,7 @@ enableHybridSearch = os.environ.get('enableHybridSearch')
 useParallelRAG = os.environ.get('useParallelRAG', 'true')
 
 reference_docs = []
-
+reference_msg = ""
 # api key to get weather information in agent
 secretsmanager = boto3.client('secretsmanager')
 try:
@@ -1016,7 +1016,6 @@ class ChatAgentState(TypedDict):
 
 tool_node = ToolNode(tools)
 
-reference_msg = ""
 def should_continue(state: ChatAgentState) -> Literal["continue", "end"]:
     global reference_msg, reference_docs
     
@@ -1298,6 +1297,10 @@ class CragState(TypedDict):
 def retrieve(state: CragState):
     print("###### retrieve ######")
     question = state["question"]
+    
+    global reference_msg, reference_docs
+    reference_msg = ""
+    reference_docs = []
 
     # Retrieval
     bedrock_embedding = get_embedding()
@@ -1415,6 +1418,9 @@ def retrieve(state: CragState):
                     },
                 )
             )  
+    
+    if docs:
+        reference_msg = get_references_for_agent(docs)
 
     return {"documents": docs, "question": question}
 
@@ -1472,6 +1478,11 @@ def generate(state: CragState):
     generation = rag_chain.invoke({"context": documents, "question": question})
     print('generation: ', generation.content)
     
+    # for reference
+    global reference_msg, reference_docs
+    if reference_docs:
+        reference_msg = get_references_for_agent(reference_docs)
+    
     return {"documents": documents, "question": question, "generation": generation}
 
 def rewrite(state: CragState):
@@ -1492,6 +1503,8 @@ def web_search(state: CragState):
     question = state["question"]
     documents = state["documents"]
 
+    global reference_docs
+    
     # Web search
     web_search_tool = TavilySearchResults(k=3)
     
@@ -1504,6 +1517,24 @@ def web_search(state: CragState):
         documents.append(web_results)
     else:
         documents = [web_results]
+    
+    # for reference
+    for d in docs:
+        content = d.get("content")
+        url = d.get("url")
+                
+        reference_docs.append(
+            Document(
+                page_content=content,
+                metadata={
+                    'name': 'WWW',
+                    'uri': url,
+                    'from': 'tavily'
+                },
+            )
+        )
+        
+    reference_docs += documents
     
     return {"question": question, "documents": documents}
 
@@ -2422,8 +2453,12 @@ def getResponse(connectionId, jsonBody):
                         
                 elif convType == 'agent-reflection':  # reflection
                     msg = run_reflection_agent(connectionId, requestId, reflection_app, text)      
+                    
                 elif convType == 'agent-crag':  # corrective RAG
                     msg = run_corrective_rag(connectionId, requestId, crag_app, text)
+                    if reference_msg:
+                        reference = reference_msg
+                    
                 elif convType == 'agent-srag':  # self RAG 
                     msg = run_self_rag(connectionId, requestId, srag_app, text)
                 elif convType == 'agent-scrag':  # self-corrective RAG
