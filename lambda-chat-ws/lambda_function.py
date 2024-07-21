@@ -758,8 +758,6 @@ def search_by_opensearch(keyword: str) -> str:
             
         print(f"filtered doc[{i}]: {text}, metadata:{doc.metadata}")
         
-    print('langth of reference_docs: ', len(reference_docs))
-    
     answer = "" 
     for doc in filtered_docs:
         excerpt = doc.page_content
@@ -1082,10 +1080,6 @@ def buildChatAgent():
 chat_app = buildChatAgent()
 
 def run_agent_executor(connectionId, requestId, app, query):
-    print('initiate....')
-    global reference_docs
-    reference_docs = []
-    
     isTyping(connectionId, requestId)
     
     inputs = [HumanMessage(content=query)]
@@ -1560,10 +1554,6 @@ def buildCorrectiveRAG():
 crag_app = buildCorrectiveRAG()
 
 def run_corrective_rag(connectionId, requestId, app, query):
-    print('initiate....')
-    global reference_docs
-    reference_docs = []
-    
     global langMode
     langMode = isKorean(query)
             
@@ -1781,10 +1771,6 @@ def buildSelfRAG():
 srag_app = buildSelfRAG()
 
 def run_self_rag(connectionId, requestId, app, query):
-    print('initiate....')
-    global reference_docs
-    reference_docs = []
-    
     global langMode
     langMode = isKorean(query)
     
@@ -1933,10 +1919,6 @@ def buildSelCorrectivefRAG():
 scrag_app = buildSelfRAG()
 
 def run_self_corrective_rag(connectionId, requestId, app, query):
-    print('initiate....')
-    global reference_docs
-    reference_docs = []
-    
     global langMode
     langMode = isKorean(query)
     
@@ -2384,6 +2366,10 @@ def getResponse(connectionId, jsonBody):
     convType = jsonBody['convType']
     print('convType: ', convType)
     
+    print('initiate....')
+    global reference_docs
+    reference_docs = []
+
     global map_chain, memory_chain
     
     # Multi-LLM
