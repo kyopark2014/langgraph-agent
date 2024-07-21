@@ -2371,6 +2371,8 @@ def getResponse(connectionId, jsonBody):
     start = int(time.time())    
 
     msg = ""
+    reference = ""
+    
     if type == 'text' and body[:11] == 'list models':
         bedrock_client = boto3.client(
             service_name='bedrock',
