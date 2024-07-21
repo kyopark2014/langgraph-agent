@@ -1023,16 +1023,11 @@ class ChatAgentState(TypedDict):
 tool_node = ToolNode(tools)
 
 def should_continue(state: ChatAgentState) -> Literal["continue", "end"]:
-    global reference_msg, reference_docs
+    global reference_msg
     
     messages = state["messages"]    
     # print('(should_continue) messages: ', messages)
     
-    if len(messages)==1:
-        reference_docs = []
-        reference_msg = ""
-        print('initialized')
-        
     last_message = messages[-1]
     if not last_message.tool_calls:
         if reference_docs:
@@ -1092,6 +1087,11 @@ def buildChatAgent():
 chat_app = buildChatAgent()
 
 def run_agent_executor(connectionId, requestId, app, query):
+    print('initiate....')
+    global reference_docs, reference_msg
+    reference_msg = "" 
+    reference_docs = []
+    
     isTyping(connectionId, requestId)
     
     inputs = [HumanMessage(content=query)]
@@ -1304,10 +1304,6 @@ def retrieve(state: CragState):
     print("###### retrieve ######")
     question = state["question"]
     
-    global reference_msg, reference_docs
-    reference_msg = ""
-    reference_docs = []
-
     # Retrieval
     bedrock_embedding = get_embedding()
         
@@ -1428,8 +1424,8 @@ def retrieve(state: CragState):
                 )
             )  
     
-    if docs:
-        reference_msg = get_references_for_agent(docs)
+    global reference_docs
+    reference_docs += docs
 
     return {"documents": docs, "question": question}
 
@@ -1488,7 +1484,7 @@ def generate(state: CragState):
     print('generation: ', generation.content)
     
     # for reference
-    global reference_msg, reference_docs
+    global reference_msg
     if reference_docs:
         reference_msg = get_references_for_agent(reference_docs)
     
@@ -1575,9 +1571,14 @@ def buildCorrectiveRAG():
 crag_app = buildCorrectiveRAG()
 
 def run_corrective_rag(connectionId, requestId, app, query):
+    print('initiate....')
+    global reference_docs, reference_msg
+    reference_msg = "" 
+    reference_docs = []
+    
     global langMode
     langMode = isKorean(query)
-    
+            
     isTyping(connectionId, requestId)
     
     inputs = {"question": query}
