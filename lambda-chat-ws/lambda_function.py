@@ -67,6 +67,8 @@ enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
 enableHybridSearch = os.environ.get('enableHybridSearch')
 useParallelRAG = os.environ.get('useParallelRAG', 'true')
 
+reference_docs = []
+
 # api key to get weather information in agent
 secretsmanager = boto3.client('secretsmanager')
 try:
