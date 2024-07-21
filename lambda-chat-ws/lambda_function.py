@@ -23,6 +23,7 @@ from langchain.memory import ConversationBufferWindowMemory
 from langchain_aws import ChatBedrock
 from langchain_community.vectorstores.opensearch_vector_search import OpenSearchVectorSearch
 from langchain_community.embeddings import BedrockEmbeddings
+from multiprocessing import Process, Pipe
 
 from langchain.agents import tool
 from langchain.agents import AgentExecutor, create_react_agent
@@ -42,6 +43,9 @@ from langgraph.graph import START, END, StateGraph
 from langgraph.prebuilt import ToolNode
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import tools_condition
+from langchain_core.pydantic_v1 import BaseModel, Field
+from typing import Literal
+
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
 s3_prefix = os.environ.get('s3_prefix')
@@ -64,6 +68,7 @@ maxOutputTokens = 4096
 separated_chat_history = os.environ.get('separated_chat_history')
 enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
 enableHybridSearch = os.environ.get('enableHybridSearch')
+useParallelRAG = os.environ.get('useParallelRAG', 'true')
 
 # api key to get weather information in agent
 secretsmanager = boto3.client('secretsmanager')
@@ -467,7 +472,7 @@ os_client = OpenSearch(
     ssl_show_warn = False,
 )
 
-def get_parent_document(parent_doc_id):
+def get_parent_content(parent_doc_id):
     response = os_client.get(
         index="idx-rag", 
         id = parent_doc_id
@@ -481,7 +486,7 @@ def get_parent_document(parent_doc_id):
     #print('uri: ', metadata['uri'])   
     #print('doc_level: ', metadata['doc_level']) 
     
-    return source['text'], metadata['name'], metadata['uri'], metadata['doc_level']    
+    return source['text'], metadata['name'], metadata['uri']
 
 @tool 
 def get_book_list(keyword: str) -> str:
@@ -625,6 +630,7 @@ def search_by_tavily(keyword: str) -> str:
     keyword: search keyword
     return: the information of keyword
     """    
+    global reference_docs
     
     answer = ""
     
@@ -641,6 +647,20 @@ def search_by_tavily(keyword: str) -> str:
             if result:
                 content = result.get("content")
                 url = result.get("url")
+                
+                reference_docs.append(
+                    Document(
+                        page_content=content,
+                        metadata={
+                            'name': 'WWW',
+                            'uri': url,
+                            'content': content,
+                            'from': 'tavily'
+                        },
+                    )
+                )
+                
+                print('langth of reference_docs: ', len(reference_docs))
             
                 answer = answer + f"{content}, URL: {url}\n"
         
@@ -653,6 +673,7 @@ def search_by_opensearch(keyword: str) -> str:
     keyword: search keyword
     return: the technical information of keyword
     """    
+    global reference_docs
     
     print('keyword: ', keyword)
     keyword = keyword.replace('\'','')
@@ -676,20 +697,31 @@ def search_by_opensearch(keyword: str) -> str:
     answer = ""
     top_k = 2
     
-    if enalbeParentDocumentRetrival == 'true':
+    docs = [] 
+    if enalbeParentDocumentRetrival == 'true': # parent/child chunking
         relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, keyword, top_k)
-
+                        
         for i, document in enumerate(relevant_documents):
-            print(f'## Document(opensearch-vector) {i+1}: {document}')
+            #print(f'## Document(opensearch-vector) {i+1}: {document}')
             
             parent_doc_id = document[0].metadata['parent_doc_id']
             doc_level = document[0].metadata['doc_level']
-            print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
-                
-            excerpt, name, uri, doc_level = get_parent_document(parent_doc_id) # use pareant document
-            print(f"parent: name: {name}, uri: {uri}, doc_level: {doc_level}")
+            #print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
             
-            answer = answer + f"{excerpt}, URL: {uri}\n\n"
+            excerpt, name, uri = get_parent_content(parent_doc_id) # use pareant document
+            #print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, uri: {uri}, content: {excerpt}")
+            
+            docs.append(
+                Document(
+                    page_content=excerpt,
+                    metadata={
+                        'name': name,
+                        'uri': uri,
+                        'doc_level': doc_level,
+                        'from': 'vector'
+                    },
+                )
+            )
     else: 
         relevant_documents = vectorstore_opensearch.similarity_search_with_score(
             query = keyword,
@@ -697,17 +729,89 @@ def search_by_opensearch(keyword: str) -> str:
         )
 
         for i, document in enumerate(relevant_documents):
-            print(f'## Document(opensearch-vector) {i+1}: {document}')
+            #print(f'## Document(opensearch-vector) {i+1}: {document}')
             
             excerpt = document[0].page_content        
-            uri = document[0].metadata['uri']
-                            
-            answer = answer + f"{excerpt}, URL: {uri}\n\n"
-
+            uri = document[0].metadata['uri']            
+            name = document[0].metadata['name']
+            
+            docs.append(
+                Document(
+                    page_content=excerpt,
+                    metadata={
+                        'name': name,
+                        'uri': uri,
+                        'from': 'vector'
+                    },
+                )
+            )
+    
     if enableHybridSearch == 'true':
-        answer = answer + lexical_search_for_tool(keyword, top_k)
+        docs = docs + lexical_search_for_tool(keyword, top_k)
+    
+    print('doc length: ', len(docs))
+                
+    filtered_docs = grade_documents(keyword, docs)
+        
+    for i, doc in enumerate(filtered_docs):
+        if len(doc.page_content)>=100:
+            text = doc.page_content[:100]
+        else:
+            text = doc.page_content
+            
+        print(f"filtered doc[{i}]: {text}, metadata:{doc.metadata}")
+        
+    reference_docs += filtered_docs
+    
+    print('langth of reference_docs: ', len(reference_docs))
+    
+    answer = "" 
+    for doc in filtered_docs:
+        excerpt = doc.page_content
+        uri = doc.metadata['uri']
+        
+        answer = answer + f"{excerpt}\n\n"
         
     return answer
+
+def get_documents_from_opensearch(vectorstore_opensearch, query, top_k):
+    result = vectorstore_opensearch.similarity_search_with_score(
+        query = query,
+        k = top_k*2,  
+        pre_filter={"doc_level": {"$eq": "child"}}
+    )
+    # print('result: ', result)
+                
+    relevant_documents = []
+    docList = []
+    for re in result:
+        if 'parent_doc_id' in re[0].metadata:
+            parent_doc_id = re[0].metadata['parent_doc_id']
+            doc_level = re[0].metadata['doc_level']
+            print(f"doc_level: {doc_level}, parent_doc_id: {parent_doc_id}")
+                        
+            if doc_level == 'child':
+                if parent_doc_id in docList:
+                    print('duplicated!')
+                else:
+                    relevant_documents.append(re)
+                    docList.append(parent_doc_id)
+                        
+                    if len(relevant_documents)>=top_k:
+                        break                                
+    # print('lexical query result: ', json.dumps(response))
+    
+    for i, doc in enumerate(relevant_documents):
+        #print('doc: ', doc[0])
+        #print('doc content: ', doc[0].page_content)
+        
+        if len(doc[0].page_content)>=30:
+            text = doc[0].page_content[:30]
+        else:
+            text = doc[0].page_content            
+        print(f"--> vector search doc[{i}]: {text}, metadata:{doc[0].metadata}")        
+
+    return relevant_documents
 
 def lexical_search_for_tool(query, top_k):
     # lexical search (keyword)
@@ -739,21 +843,163 @@ def lexical_search_for_tool(query, top_k):
     )
     # print('lexical query result: ', json.dumps(response))
         
-    answer = ""
+    docs = []
     for i, document in enumerate(response['hits']['hits']):
         if i>=top_k: 
             break
                     
         excerpt = document['_source']['text']
         
+        name = document['_source']['metadata']['name']
+        # print('name: ', name)
+
+        page = ""
+        if "page" in document['_source']['metadata']:
+            page = document['_source']['metadata']['page']
+        
         uri = ""
         if "uri" in document['_source']['metadata']:
             uri = document['_source']['metadata']['uri']            
-        print(f"lexical search --> doc[{i}]: {excerpt}, uri:{uri}\n")
-
-        answer = answer + f"{excerpt}, URL: {uri}\n\n"
+        
+        docs.append(
+                Document(
+                    page_content=excerpt,
+                    metadata={
+                        'name': name,
+                        'uri': uri,
+                        'page': page,
+                        'from': 'lexical'
+                    },
+                )
+            )
     
-    return answer
+    for i, doc in enumerate(docs):
+        #print('doc: ', doc)
+        #print('doc content: ', doc.page_content)
+        
+        if len(doc.page_content)>=30:
+            text = doc.page_content[:30]
+        else:
+            text = doc.page_content            
+        print(f"--> lexical search doc[{i}]: {text}, metadata:{doc.metadata}")   
+        
+    return docs
+
+class GradeDocuments(BaseModel):
+    """Binary score for relevance check on retrieved documents."""
+
+    binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
+
+def get_retrieval_grader():
+    system = """You are a grader assessing relevance of a retrieved document to a user question. \n 
+    If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant. \n
+    Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."""
+
+    grade_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("human", "Retrieved document: \n\n {document} \n\n User question: {question}"),
+        ]
+    )
+    
+    chat = get_chat()
+    structured_llm_grader = chat.with_structured_output(GradeDocuments)
+    retrieval_grader = grade_prompt | structured_llm_grader
+    return retrieval_grader
+
+def grade_document_based_on_relevance(conn, question, doc):     
+    retrieval_grader = get_retrieval_grader()       
+    score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+    # print(f"score: {score}")
+    
+    grade = score.binary_score    
+    if grade == 'yes':
+        print("---GRADE: DOCUMENT RELEVANT---")
+        conn.send(doc)
+    else:  # no
+        print("---GRADE: DOCUMENT NOT RELEVANT---")
+        conn.send(None)
+    
+    conn.close()
+    
+def grade_documents_using_parallel_processing(question, documents):
+    relevant_docs = []    
+
+    processes = []
+    parent_connections = []
+    
+    for i, doc in enumerate(documents):
+        #print(f"grading doc[{i}]: {doc.page_content}")        
+        parent_conn, child_conn = Pipe()
+        parent_connections.append(parent_conn)
+            
+        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc))
+        processes.append(process)
+
+    for process in processes:
+        process.start()
+            
+    for parent_conn in parent_connections:
+        doc = parent_conn.recv()
+
+        if doc is not None:
+            relevant_docs.append(doc)    
+
+    for process in processes:
+        process.join()
+    
+    #print('relevant_docs: ', relevant_docs)
+    return relevant_docs
+
+def grade_documents(question, documents):
+    print("###### grade_documents ######")
+    
+    filtered_docs = []
+    if useParallelRAG == 'true':  # parallel processing
+        print("start grading...")
+        filtered_docs = grade_documents_using_parallel_processing(question, documents)
+
+    else:
+        # Score each doc    
+        retrieval_grader = get_retrieval_grader()
+        for doc in documents:
+            score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+            grade = score.binary_score
+            # Document relevant
+            if grade.lower() == "yes":
+                print("---GRADE: DOCUMENT RELEVANT---")
+                filtered_docs.append(doc)
+            # Document not relevant
+            else:
+                print("---GRADE: DOCUMENT NOT RELEVANT---")
+                # We do not include the document in filtered_docs
+                # We set a flag to indicate that we want to run web search
+                continue
+            
+    # print('len(docments): ', len(filtered_docs))    
+    return filtered_docs
+
+def get_references_for_agent(docs):
+    reference = "\n\nFrom\n"
+    for i, doc in enumerate(docs):
+        page = ""
+        if "page" in doc.metadata:
+            page = doc.metadata['page']
+        #print('page: ', page)
+        uri = doc.metadata['uri']
+        #print('uri: ', uri)        
+        name = doc.metadata['name']
+        #print('name: ', name)
+        sourceType = doc.metadata['from']
+        #print('sourceType: ', sourceType)
+        excerpt = doc.page_content
+        #print('excerpt: ', excerpt)
+        
+        if page:                
+            reference = reference + f"{i+1}. {page}page in <a href={uri} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
+        else:
+            reference = reference + f"{i+1}. <a href={uri} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
+    return reference
 
 # define tools
 tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
@@ -771,35 +1017,55 @@ class ChatAgentState(TypedDict):
 
 tool_node = ToolNode(tools)
 
-from typing import Literal
+reference_msg = ""
 def should_continue(state: ChatAgentState) -> Literal["continue", "end"]:
-    messages = state["messages"]
+    global reference_msg, reference_docs
+    
+    messages = state["messages"]    
+    # print('(should_continue) messages: ', messages)
+    
+    if len(messages)==1:
+        reference_docs = []
+        reference_msg = ""
+        print('initialized')
+        
     last_message = messages[-1]
     if not last_message.tool_calls:
+        if reference_docs:
+            reference_msg = get_references_for_agent(reference_docs)
         return "end"
-    else:
+    else:                
         return "continue"
 
-#def call_model(state: ChatAgentState):
-#    response = model.invoke(state["messages"])
-#    return {"messages": [response]}    
-
 def call_model(state: ChatAgentState):
+    question = state["messages"]
+    print('question: ', question)
+    
+    if isKorean(question[0].content)==True:
+        system = (
+            "다음의 Human과 Assistant의 친근한 이전 대화입니다."
+            "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+            "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
+        )
+    else: 
+        system = (            
+            "Answer friendly for the newest question using the following conversation"
+            "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+            "You will be acting as a thoughtful advisor."
+            "Put it in <result> tags."
+        )
+         
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system",
-                "다음의 Human과 Assistant의 친근한 이전 대화입니다."
-                "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-                "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
-                "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
-            ),
+            ("system", system),
             MessagesPlaceholder(variable_name="messages"),
         ]
     )
     chain = prompt | model
         
-    response = chain.invoke(state["messages"])
-    return {"messages": [response]}    
+    response = chain.invoke(question)
+    return {"messages": [response]}
 
 def buildChatAgent():
     workflow = StateGraph(ChatAgentState)
@@ -829,10 +1095,10 @@ def run_agent_executor(connectionId, requestId, app, query):
     
     message = ""
     for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
-        print('event: ', event)
+        # print('event: ', event)
         
         message = event["messages"][-1]
-        print('message: ', message)
+        # print('message: ', message)
 
     msg = readStreamMsg(connectionId, requestId, message.content)
 
@@ -948,7 +1214,6 @@ def run_reflection_agent(connectionId, requestId, app, query):
 ####################### LangGraph #######################
 # Corrective RAG
 #########################################################
-from langchain_core.pydantic_v1 import BaseModel, Field
 langMode = False
 
 class GradeDocuments(BaseModel):
@@ -1061,8 +1326,8 @@ def retrieve(state: CragState):
             doc_level = document[0].metadata['doc_level']
             print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
                 
-            excerpt, name, uri, doc_level = get_parent_document(parent_doc_id) # use pareant document
-            print(f"parent: name: {name}, uri: {uri}, doc_level: {doc_level}")
+            excerpt, name, uri = get_parent_content(parent_doc_id) # use pareant document
+            print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, uri: {uri}, content: {excerpt}")
             
             docs.append(
                 Document(
@@ -1547,8 +1812,8 @@ def retrieve_for_scrag(state: SelfCorrectiveRagState):
             doc_level = document[0].metadata['doc_level']
             print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
                 
-            excerpt, name, uri, doc_level = get_parent_document(parent_doc_id) # use pareant document
-            print(f"parent: name: {name}, uri: {uri}, doc_level: {doc_level}")
+            excerpt, name, uri = get_parent_content(parent_doc_id) # use pareant document
+            print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, uri: {uri}, content: {excerpt}")
             
             docs.append(
                 Document(
@@ -2144,10 +2409,16 @@ def getResponse(connectionId, jsonBody):
 
                 elif convType == 'agent-executor':
                     msg = run_agent_executor(connectionId, requestId, chat_app, text)
+                    if reference_msg:
+                        reference = reference_msg
+                        
                 elif convType == 'agent-executor-chat':
                     revised_question = revise_question(connectionId, requestId, chat, text)     
                     print('revised_question: ', revised_question)  
                     msg = run_agent_executor(connectionId, requestId, chat_app, revised_question)                                      
+                    if reference_msg:
+                        reference = reference_msg
+                        
                 elif convType == 'agent-reflection':  # reflection
                     msg = run_reflection_agent(connectionId, requestId, reflection_app, text)      
                 elif convType == 'agent-crag':  # corrective RAG
@@ -2264,7 +2535,9 @@ def getResponse(connectionId, jsonBody):
             
             else:
                 msg = "uploaded file: "+object
-            
+        
+        sendResultMessage(connectionId, requestId, msg+reference)
+        # print('msg+reference: ', msg+reference)    
                 
         elapsed_time = int(time.time()) - start
         print("total run time(sec): ", elapsed_time)
@@ -2289,7 +2562,7 @@ def getResponse(connectionId, jsonBody):
             raise Exception ("Not able to write into dynamodb")               
         #print('resp, ', resp)
 
-    return msg
+    return msg, reference
 
 def lambda_handler(event, context):
     # print('event: ', event)    
@@ -2317,10 +2590,9 @@ def lambda_handler(event, context):
 
                 requestId  = jsonBody['request_id']
                 try:
-                    msg = getResponse(connectionId, jsonBody)
-                    # print('msg: ', msg)
-                    
-                    sendResultMessage(connectionId, requestId, msg)  
+                    msg, reference = getResponse(connectionId, jsonBody)
+
+                    print('msg+reference: ', msg+reference)
                                         
                 except Exception:
                     err_msg = traceback.format_exc()

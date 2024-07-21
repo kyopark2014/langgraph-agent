@@ -28,6 +28,7 @@ const projectName = `langgraph-agent`;
 const opensearch_account = "admin";
 const opensearch_passwd = "Wifi1234!";
 let opensearch_url = "";
+const useParallelRAG = 'true';
 const bucketName = `storage-for-${projectName}-${accountId}-${region}`; 
 const debugMessageMode = 'false'; // if true, debug messages will be delivered to the client.
 const max_object_size = 102400000; // 100 MB max size of an object, 50MB(default)
@@ -571,6 +572,7 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
         opensearch_url: opensearch_url,
         connection_url: connection_url,
         debugMessageMode: debugMessageMode,
+        useParallelRAG: useParallelRAG,
         projectName: projectName,
         separated_chat_history: separated_chat_history,
         enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
