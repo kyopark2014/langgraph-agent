@@ -68,7 +68,6 @@ enableHybridSearch = os.environ.get('enableHybridSearch')
 useParallelRAG = os.environ.get('useParallelRAG', 'true')
 
 reference_docs = []
-reference_msg = ""
 # api key to get weather information in agent
 secretsmanager = boto3.client('secretsmanager')
 try:
@@ -672,8 +671,7 @@ def search_by_opensearch(keyword: str) -> str:
     keyword: search keyword
     return: the technical information of keyword
     """    
-    global reference_docs
-    
+
     print('keyword: ', keyword)
     keyword = keyword.replace('\'','')
     keyword = keyword.replace('|','')
@@ -760,8 +758,6 @@ def search_by_opensearch(keyword: str) -> str:
             
         print(f"filtered doc[{i}]: {text}, metadata:{doc.metadata}")
         
-    reference_docs += filtered_docs
-    
     print('langth of reference_docs: ', len(reference_docs))
     
     answer = "" 
@@ -974,7 +970,10 @@ def grade_documents(question, documents):
                 # We do not include the document in filtered_docs
                 # We set a flag to indicate that we want to run web search
                 continue
-            
+    
+    global reference_docs
+    reference_docs += filtered_docs
+    
     # print('len(docments): ', len(filtered_docs))    
     return filtered_docs
 
@@ -1023,15 +1022,11 @@ class ChatAgentState(TypedDict):
 tool_node = ToolNode(tools)
 
 def should_continue(state: ChatAgentState) -> Literal["continue", "end"]:
-    global reference_msg
-    
     messages = state["messages"]    
     # print('(should_continue) messages: ', messages)
     
     last_message = messages[-1]
     if not last_message.tool_calls:
-        if reference_docs:
-            reference_msg = get_references_for_agent(reference_docs)
         return "end"
     else:                
         return "continue"
@@ -1088,8 +1083,7 @@ chat_app = buildChatAgent()
 
 def run_agent_executor(connectionId, requestId, app, query):
     print('initiate....')
-    global reference_docs, reference_msg
-    reference_msg = "" 
+    global reference_docs
     reference_docs = []
     
     isTyping(connectionId, requestId)
@@ -1424,9 +1418,6 @@ def retrieve(state: CragState):
                 )
             )  
     
-    global reference_docs
-    reference_docs += docs
-
     return {"documents": docs, "question": question}
 
 def grade_documents_for_crag(state: CragState):
@@ -1456,6 +1447,9 @@ def grade_documents_for_crag(state: CragState):
     print('len(docments): ', len(filtered_docs))
     print('web_search: ', web_search)
     
+    global reference_docs
+    reference_docs += filtered_docs
+    
     return {"question": question, "documents": filtered_docs, "web_search": web_search}
 
 def decide_to_generate(state: CragState):
@@ -1482,12 +1476,7 @@ def generate(state: CragState):
     
     generation = rag_chain.invoke({"context": documents, "question": question})
     print('generation: ', generation.content)
-    
-    # for reference
-    global reference_msg
-    if reference_docs:
-        reference_msg = get_references_for_agent(reference_docs)
-    
+        
     return {"documents": documents, "question": question, "generation": generation}
 
 def rewrite(state: CragState):
@@ -1572,8 +1561,7 @@ crag_app = buildCorrectiveRAG()
 
 def run_corrective_rag(connectionId, requestId, app, query):
     print('initiate....')
-    global reference_docs, reference_msg
-    reference_msg = "" 
+    global reference_docs
     reference_docs = []
     
     global langMode
@@ -1693,6 +1681,10 @@ def grade_documents_with_count(state: SelfRagState):
             # We set a flag to indicate that we want to run web search
             continue
     print('len(docments): ', len(filtered_docs))    
+    
+    global reference_docs
+    reference_docs += filtered_docs
+    
     return {"question": question, "documents": filtered_docs, "count": count + 1}
 
 def decide_to_generate_with_retires(state: SelfRagState, config):
@@ -1789,6 +1781,10 @@ def buildSelfRAG():
 srag_app = buildSelfRAG()
 
 def run_self_rag(connectionId, requestId, app, query):
+    print('initiate....')
+    global reference_docs
+    reference_docs = []
+    
     global langMode
     langMode = isKorean(query)
     
@@ -1937,6 +1933,10 @@ def buildSelCorrectivefRAG():
 scrag_app = buildSelfRAG()
 
 def run_self_corrective_rag(connectionId, requestId, app, query):
+    print('initiate....')
+    global reference_docs
+    reference_docs = []
+    
     global langMode
     langMode = isKorean(query)
     
@@ -2449,26 +2449,21 @@ def getResponse(connectionId, jsonBody):
 
                 elif convType == 'agent-executor':
                     msg = run_agent_executor(connectionId, requestId, chat_app, text)
-                    if reference_msg:
-                        reference = reference_msg
                         
                 elif convType == 'agent-executor-chat':
                     revised_question = revise_question(connectionId, requestId, chat, text)     
                     print('revised_question: ', revised_question)  
                     msg = run_agent_executor(connectionId, requestId, chat_app, revised_question)                                      
-                    if reference_msg:
-                        reference = reference_msg
                         
                 elif convType == 'agent-reflection':  # reflection
                     msg = run_reflection_agent(connectionId, requestId, reflection_app, text)      
                     
                 elif convType == 'agent-crag':  # corrective RAG
                     msg = run_corrective_rag(connectionId, requestId, crag_app, text)
-                    if reference_msg:
-                        reference = reference_msg
                     
                 elif convType == 'agent-srag':  # self RAG 
                     msg = run_self_rag(connectionId, requestId, srag_app, text)
+                    
                 elif convType == 'agent-scrag':  # self-corrective RAG
                     msg = run_self_corrective_rag(connectionId, requestId, scrag_app, text)        
                                                 
@@ -2481,6 +2476,9 @@ def getResponse(connectionId, jsonBody):
                     
                 memory_chain.chat_memory.add_user_message(text)
                 memory_chain.chat_memory.add_ai_message(msg)
+                
+                if reference_docs:
+                    reference = get_references_for_agent(reference_docs)
                                         
         elif type == 'document':
             isTyping(connectionId, requestId)
