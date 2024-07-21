@@ -1338,6 +1338,7 @@ def retrieve(state: CragState):
                         'name': name,
                         'uri': uri,
                         'doc_level': doc_level,
+                        'from': 'vector'
                     },
                 )
             )
@@ -1359,6 +1360,7 @@ def retrieve(state: CragState):
                     metadata={
                         'name': name,
                         'uri': uri,
+                        'from': 'vector'
                     },
                 )
             )    
@@ -1415,6 +1417,7 @@ def retrieve(state: CragState):
                     metadata={
                         'name': name,
                         'uri': uri,
+                        'from': 'lexical'
                     },
                 )
             )  
