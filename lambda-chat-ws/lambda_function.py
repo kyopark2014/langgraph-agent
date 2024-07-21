@@ -1418,7 +1418,7 @@ def retrieve(state: CragState):
 
     return {"documents": docs, "question": question}
 
-def grade_documents(state: CragState):
+def grade_documents_for_crag(state: CragState):
     print("###### grade_documents ######")
     question = state["question"]
     documents = state["documents"]
@@ -1512,7 +1512,7 @@ def buildCorrectiveRAG():
         
     # Define the nodes
     workflow.add_node("retrieve", retrieve)  
-    workflow.add_node("grade_documents", grade_documents)
+    workflow.add_node("grade_documents", grade_documents_for_crag)
     workflow.add_node("generate", generate)
     workflow.add_node("rewrite", rewrite)
     workflow.add_node("websearch", web_search)
