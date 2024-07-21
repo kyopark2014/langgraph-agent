@@ -1880,6 +1880,9 @@ def generate_for_scrag(state: SelfCorrectiveRagState):
     generation = rag_chain.invoke({"context": documents, "question": question})
     print('generation: ', generation.content)
     
+    global reference_docs
+    reference_docs += documents
+    
     return {"retries": retries + 1, "candidate_answer": generation.content}
 
 def finalize_response(state: SelfCorrectiveRagState):
