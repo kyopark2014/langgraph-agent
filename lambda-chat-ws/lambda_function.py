@@ -2551,7 +2551,7 @@ def getResponse(connectionId, jsonBody):
             'request_time': {'S':requestTime},
             'type': {'S':type},
             'body': {'S':body},
-            'msg': {'S':msg}
+            'msg': {'S':msg+reference}
         }
 
         client = boto3.client('dynamodb')
