@@ -26,10 +26,7 @@ from langchain_community.embeddings import BedrockEmbeddings
 from multiprocessing import Process, Pipe
 
 from langchain.agents import tool
-from langchain.agents import AgentExecutor, create_react_agent
 from bs4 import BeautifulSoup
-from langchain.prompts import PromptTemplate
-from langchain.agents import AgentExecutor, create_tool_calling_agent
 from pytz import timezone
 from langchain_community.tools.tavily_search import TavilySearchResults
 from PIL import Image
