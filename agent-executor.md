@@ -4,9 +4,7 @@ ReAct는 LLM을 다양한 데이터 소스와 실행 가능한 프로그램과 �
 
 <img src="https://github.com/user-attachments/assets/703b86dd-8e6a-4673-adac-048baf94d35b" width="500">
 
-LangGraph Agent를 이용하여 적절한 Tool을 실행할 수 있습니다. 상세한 코드는 [agent-executor.ipynb](./agent/agent-executor.ipynb)을 참조합니다.
-
-Agent로 tools를 실행하는 Excueter를 생성할때의 기본 Architecture는 아래와 같습니다. 
+아래와 같이 LangGraph Agent를 Serverless Architecture로 구현하여 적절한 Tool을 실행할 수 있습니다. 상세한 코드는 [agent-executor.ipynb](./agent/agent-executor.ipynb)을 참조합니다. Agent로 tools를 실행하는 Excueter의 동작은 아래와 같습니다. 
 
 1) 사용자가 채팅창에서 질문을 입력하면 WebSocket 방식으로 Lambda(chat)에 전달됩니다.
 2) Lambda(chat)에서 Agent를 실행합니다.
