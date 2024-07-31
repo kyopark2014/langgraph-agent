@@ -31,7 +31,7 @@ s3_client = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
 s3_prefix = os.environ.get('s3_prefix')
 meta_prefix = "metadata/"
-enableParallelSummay = os.environ.get('enableParallelSummay')
+enableParallelSummary = os.environ.get('enableParallelSummary')
 enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
 
 opensearch_account = os.environ.get('opensearch_account')
@@ -45,7 +45,7 @@ LLM_embedding = json.loads(os.environ.get('LLM_embedding'))
 selected_chat = 0
 selected_multimodal = 0
 selected_embedding = 0
-enableHybridSearch = os.environ.get('enableHybridSearch')
+maxOutputTokens = 4096
 
 roleArn = os.environ.get('roleArn') 
 path = os.environ.get('path')
@@ -54,9 +54,10 @@ max_object_size = int(os.environ.get('max_object_size'))
 supportedFormat = json.loads(os.environ.get('supportedFormat'))
 print('supportedFormat: ', supportedFormat)
 
+enableHybridSearch = os.environ.get('enableHybridSearch')
+
 enableImageExtraction = 'true'
 enablePageImageExraction = 'true'
-maxOutputTokens = 4096
 
 os_client = OpenSearch(
     hosts = [{
@@ -150,7 +151,7 @@ def get_multimodal():
     profile = LLM_for_multimodal[selected_multimodal]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
-    print(f'selected_multimodal: {selected_multimodal}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+    print(f'LLM: {selected_multimodal}, bedrock_region: {bedrock_region}, modelId: {modelId}')
                           
     # bedrock   
     boto3_bedrock = boto3.client(
@@ -227,7 +228,7 @@ vectorstore = OpenSearchVectorSearch(
 
 def store_document_for_opensearch(file_type, key):
     print('upload to opensearch: ', key) 
-    contents, files = load_document(file_type, key)
+    contents, files, tables = load_document(file_type, key)
     
     if len(contents) == 0:
         print('no contents: ', key)
@@ -236,25 +237,35 @@ def store_document_for_opensearch(file_type, key):
     # contents = str(contents).replace("\n"," ") 
     print('length: ', len(contents))
     
+    # text
     docs = []
     docs.append(Document(
         page_content=contents,
         metadata={
             'name': key,
-            # 'page':i+1,
             'uri': path+parse.quote(key)
         }
     ))
-    # print('docs: ', docs)
     
-    ids = add_to_opensearch(docs, key)    
+    # table
+    for table in tables:
+        docs.append(Document(
+            page_content=table['body'],
+            metadata={
+                'name': table['name'],
+                'uri': path+parse.quote(table['name']),
+            }
+        ))            
+    print('docs: ', docs)
+
+    ids = add_to_opensearch(docs, key)
     
     return ids, files
 
 def store_code_for_opensearch(file_type, key):
     codes = load_code(file_type, key)  # number of functions in the code
             
-    if enableParallelSummay=='true':
+    if enableParallelSummary=='true':
         docs = summarize_relevant_codes_using_parallel_processing(codes, key)
                                 
     else:
@@ -302,21 +313,21 @@ def store_image_for_opensearch(key):
                         
     width, height = img.size 
     print(f"width: {width}, height: {height}, size: {width*height}")
-    
+            
     if width < 100 or height < 100:  # skip small size image
         return []
-                        
+                
     isResized = False
     while(width*height > 5242880):
         width = int(width/2)
         height = int(height/2)
         isResized = True
         print(f"width: {width}, height: {height}, size: {width*height}")
-            
+           
     try:             
         if isResized:
             img = img.resize((width, height))
-                            
+                             
         buffer = BytesIO()
         img.save(buffer, format="PNG")
         img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
@@ -423,7 +434,7 @@ def create_nori_index():
                 },
                 'vector_field': {
                     'type': 'knn_vector',
-                    'dimension': 1536  # Replace with your vector dimension
+                    'dimension': 1024
                 }
             }
         }
@@ -447,7 +458,7 @@ if enableHybridSearch == 'true':
 def add_to_opensearch(docs, key):    
     if len(docs) == 0:
         return []    
-    # print('docs[0]: ', docs[0])       
+    #print('docs[0]: ', docs[0])       
     
     objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
     print('objectName: ', objectName)    
@@ -482,7 +493,7 @@ def add_to_opensearch(docs, key):
                 # print(f"parent_docs[{i}]: {doc}")
                     
             try:        
-                parent_doc_ids = vectorstore.add_documents(parent_docs, bulk_size = 50000)
+                parent_doc_ids = vectorstore.add_documents(parent_docs, bulk_size = 10000)
                 print('parent_doc_ids: ', parent_doc_ids)
                 
                 child_docs = []
@@ -496,7 +507,7 @@ def add_to_opensearch(docs, key):
                     child_docs.extend(sub_docs)
                 # print('child_docs: ', child_docs)
                 
-                child_doc_ids = vectorstore.add_documents(child_docs, bulk_size = 50000)
+                child_doc_ids = vectorstore.add_documents(child_docs, bulk_size = 10000)
                 print('child_doc_ids: ', child_doc_ids)
                     
                 ids = parent_doc_ids+child_doc_ids
@@ -518,7 +529,7 @@ def add_to_opensearch(docs, key):
             print('documents[0]: ', documents[0])        
             
         try:        
-            ids = vectorstore.add_documents(documents, bulk_size = 50000)
+            ids = vectorstore.add_documents(documents, bulk_size = 10000)
             print('response of adding documents: ', ids)
         except Exception:
             err_msg = traceback.format_exc()
@@ -611,7 +622,7 @@ def extract_images_from_pdf(reader, key):
 
     print('extracted_image_files: ', extracted_image_files)    
     return extracted_image_files
-    
+        
 def extract_images_from_pptx(prs, key):
     picture_count = 1
     
@@ -739,13 +750,55 @@ def extract_images_from_docx(doc_contents, key):
     
     print('extracted_image_files: ', extracted_image_files)    
     return extracted_image_files
-             
+
+def extract_table_image(page, index, table_count, bbox, key):
+    pixmap_ori = page.get_pixmap()
+    # print(f"width: {pixmap_ori.width}, height: {pixmap_ori.height}")
+        
+    pixmap = page.get_pixmap(dpi=200)  # dpi=300
+    #pixels = pixmap.tobytes() # output: jpg
+    
+    # convert to png
+    img = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
+    # print(f"width: {pixmap.width}, height: {pixmap.height}")
+    
+    rate_width = pixmap.width / pixmap_ori.width
+    rate_height = pixmap.height / pixmap_ori.height
+    # print(f"rate_width={rate_width}, rate_height={rate_height}")
+    
+    crop_img = img.crop((bbox[0]*rate_width, bbox[1]*rate_height, bbox[2]*rate_width, bbox[3]*rate_height))
+    
+    pixels = BytesIO()
+    crop_img.save(pixels, format='PNG')
+    pixels.seek(0, 0)
+
+    # get path from key
+    objectName = (key[key.find(s3_prefix)+len(s3_prefix)+1:len(key)])
+    folder = s3_prefix+'/captures/'+objectName+'/'
+                                
+    fname = 'table_'+key.split('/')[-1].split('.')[0]+f"_{table_count}"
+
+    response = s3_client.put_object(
+        Bucket=s3_bucket,
+        Key=folder+fname+'.png',
+        ContentType='image/png',
+        Metadata = {
+            "ext": 'png',
+            "page": str(index)
+        },
+        Body=pixels
+    )
+    # print('response: ', response)
+    
+    return folder+fname+'.png'
+                 
 # load documents from s3 for pdf and txt
 def load_document(file_type, key):
     s3r = boto3.resource("s3")
     doc = s3r.Object(s3_bucket, key)
     
     files = []
+    tables = []
     contents = ""
     if file_type == 'pdf':
         Byte_contents = doc.get()['Body'].read()
@@ -771,7 +824,7 @@ def load_document(file_type, key):
                 #if '/Group' in page:
                 #    print(f"Group[{i}]: {page['/Group']}")
                 if '/Contents' in page:                
-                    print(f"Contents[{i}]: {page['/Contents']}")
+                    print(f"Contents[{i}]: {page['/Contents']}")                    
                 #if '/MediaBox' in page:                
                 #    print(f"MediaBox[{i}]: {page['/MediaBox']}")                    
                 #if '/Parent' in page:
@@ -800,11 +853,38 @@ def load_document(file_type, key):
                 nImages.append(nImage)
 
             contents = '\n'.join(texts)
-
-            # extract page images using PyMuPDF
-            if enablePageImageExraction=='true': 
-                pages = fitz.open(stream=Byte_contents, filetype='pdf')      
             
+            pages = fitz.open(stream=Byte_contents, filetype='pdf')     
+
+            # extract table data
+            table_count = 0
+            for i, page in enumerate(pages):
+                page_tables = page.find_tables()
+                
+                if page_tables.tables:
+                    print('page_tables.tables: ', len(page_tables.tables))
+
+                    for tab in page_tables.tables:    
+                        print(tab.to_markdown())    
+                        print(f"index: {i}")
+                        print(f"bounding box: {tab.bbox}")  # bounding box of the full table
+                        #print(f"top-left cell: {tab.cells[0]}")  # top-left cell
+                        #print(f"bottom-right cell: {tab.cells[-1]}")  # bottom-right cell
+                        print(f"row count: {tab.row_count}, column count: {tab.col_count}") # row and column counts
+                        print("\n\n")
+                        
+                        if tab.row_count>=2:
+                            table_image = extract_table_image(page, i, table_count, tab.bbox, key)
+                            table_count += 1
+                        
+                            tables.append({
+                                "body": tab.to_markdown(),
+                                "name": table_image
+                            })                    
+                            files.append(table_image)
+
+            # extract page images
+            if enablePageImageExraction=='true': 
                 for i, page in enumerate(pages):
                     print('page: ', page)
                     
@@ -858,7 +938,7 @@ def load_document(file_type, key):
                         files.append(folder+fname+'.png')
                                     
                 contents = '\n'.join(texts)
-
+                
             elif enableImageExtraction == 'true':
                 image_files = extract_images_from_pdf(reader, key)
                 for img in image_files:
@@ -926,7 +1006,7 @@ def load_document(file_type, key):
             print('error message: ', err_msg)        
             # raise Exception ("Not able to load the file")
     
-    return contents, files
+    return contents, files, tables
 
 # load a code file from s3
 def load_code(file_type, key):

@@ -33,7 +33,7 @@ const bucketName = `storage-for-${projectName}-${accountId}-${region}`;
 const debugMessageMode = 'false'; // if true, debug messages will be delivered to the client.
 const max_object_size = 102400000; // 100 MB max size of an object, 50MB(default)
 const enableHybridSearch = 'true';
-const enableParallelSummay = 'true';
+const enableParallelSummary = 'true';
 const supportedFormat = JSON.stringify(["pdf", "txt", "csv", "pptx", "ppt", "docx", "doc", "xlsx", "py", "js", "md", "jpeg", "jpg", "png"]);  
 const separated_chat_history = 'true';
 const enalbeParentDocumentRetrival = 'true';
@@ -704,7 +704,7 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
           LLM_for_chat: JSON.stringify(claude3_sonnet),
           LLM_for_multimodal:JSON.stringify(claude3_sonnet),
           LLM_embedding: JSON.stringify(titan_embedding_v2),
-          enableParallelSummay: enableParallelSummay,
+          enableParallelSummary: enableParallelSummary,
           enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
           enableHybridSearch: enableHybridSearch
         }
