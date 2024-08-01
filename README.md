@@ -107,7 +107,11 @@ Self-Corrective RAG는 Corrective RAG처럼 vector store로 부터 얻어진 문
 - [GPT Newspape](https://www.youtube.com/watch?v=E7nFHaSs3q8)에서는 신문요약에 대해 설명하고 있습니다. ([github](https://github.com/rotemweiss57/gpt-newspaper/tree/master) 링크)
 
 - [Essay Writer](https://github.com/kyopark2014/llm-agent/blob/main/essay-writer.md)에서는 essay를 작성하는 Agent를 생성합니다.
-  
+
+- [Human-in-the-loop (HIL)](./Human-in-the-loop.md)에서는 LangGraph의 Human Interation에 대해 설명합니다.
+
+
+ 
 
 ## 직접 실습 해보기
 
