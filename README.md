@@ -76,6 +76,12 @@ Self-Corrective RAG는 Corrective RAG처럼 vector store로 부터 얻어진 문
 
 ![image](https://github.com/user-attachments/assets/5769e8ed-6e76-4fda-a932-a1d3c461de50)
 
+
+### Human-in-the-loop (HIL)
+
+Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용합니다. [Human-in-the-loop (HIL)](./Human-in-the-loop.md)에서는 Human-in-the-loop (HIL)을 구현하는것을 설명합니다.
+
+
 ## Reference
 
 - [planning-agents.md](./planning-agents.md)에서는 plan-and-execution 형태의 agent를 생성하는 방법을 설명합니다.
@@ -108,7 +114,6 @@ Self-Corrective RAG는 Corrective RAG처럼 vector store로 부터 얻어진 문
 
 - [Essay Writer](https://github.com/kyopark2014/llm-agent/blob/main/essay-writer.md)에서는 essay를 작성하는 Agent를 생성합니다.
 
-- [Human-in-the-loop (HIL)](./Human-in-the-loop.md)에서는 LangGraph의 Human Interation에 대해 설명합니다.
 
 
  
