@@ -1978,10 +1978,11 @@ def run_self_corrective_rag(connectionId, requestId, app, query):
             print("value: ", value)
             
     print('value: ', value)
+    print('content: ', value["messages"][-1].content)
         
-    readStreamMsg(connectionId, requestId, value["messages"][0].content)
+    readStreamMsg(connectionId, requestId, value["messages"][-1].content)
     
-    return value["messages"][0].content
+    return value["messages"][-1].content
 
 
 #########################################################
