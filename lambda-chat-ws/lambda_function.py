@@ -995,8 +995,14 @@ def get_references_for_agent(docs):
         if "from" in doc.metadata:
             sourceType = doc.metadata['from']
         #print('sourceType: ', sourceType)
-        excerpt = ""+doc.page_content                        
-        excerpt = excerpt.encode(encoding='UTF-8')
+        excerpt=re.findall(r"^\w+$",doc.page_content)
+        print('excerpt: ', excerpt)
+        #excerpt = excerpt.encode(encoding='UTF-8')
+        
+        #re = "/[\u3131-\uD79D]/ug"
+        #en = "^[a-zA-Z0-9]+$"
+        #pattern = '^\w+$'  # \w for matching alphanumeric and underscore 
+
         
         #if len(excerpt)>2000:  # prevent too long excerpt
         #    excerpt = excerpt[:2000]
