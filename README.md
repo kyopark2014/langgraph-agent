@@ -138,6 +138,7 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 ![image](https://github.com/user-attachments/assets/28cc84db-ffa7-4774-aa82-73d5d699eb31)
 
 
+<!--
 RAG를 위해 아래의 파일들을 다운로드한 후에 채팅창 아래의 파일 아이콘을 선택하여 업로드합니다. 
 
 - [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/pdf/2210.03629)
@@ -149,6 +150,10 @@ RAG를 위해 아래의 파일들을 다운로드한 후에 채팅창 아래의 
 파일 업로드를 하면 아래와 같이 Summary 결과를 보여줍니다. 
 
 ![image](https://github.com/user-attachments/assets/2c333876-2f91-49b1-8379-07374e374d83)
+
+-->
+
+[book_SMMDINLM239.pdf](./contents/book_SMMDINLM239.pdf) 파일을 다운로드 한 후에 채팅창 하단의 파일 아이콘을 이용하여 업로드 합니다. 다량의 문서 파일을 업로드 하는 경우에는 S3로 직접 업로드합니다.
 
 문서에서 그림파일이 있는 경우에 검색의 정확도를 위해 페이지 단위로 요약을 수행합니다. 따라서, 파일 업로드후에 [SQS](https://us-west-2.console.aws.amazon.com/sqs/v3/home?region=us-west-2#/queues)에 접속해서 업로드 상황을 확인합니다. 아래와 같이 파일이 S3로 업로드되면, 파일 업로드 이벤트를 SQS에 저장후 하나씩 꺼내서, Mulimodal인 Claude Sonnet을 이용해 이미지를 분석합니다. 
 
