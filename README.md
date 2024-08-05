@@ -171,33 +171,37 @@ RAG를 위해 아래의 파일들을 다운로드한 후에 채팅창 아래의 
 
 ### Corrective RAG 사용시
 
-메뉴에서 "Corrective RAG"를 선택하여 "교보 다이렉트 보험의 장단점을 비교하여 설명하세요."라고 입력합니다.
+메뉴에서 "Corrective RAG"를 선택하여 "교보 다이렉트 보험의 장단점을 비교하여 설명하세요."라고 입력합니다. 결과는 LangGraph Agent와 유사하지만, 미리 지정된 Workflow에 따라 원하는 작업을 수행할 수 있습니다.
 
-![image](https://github.com/user-attachments/assets/db8e3ce5-6538-4a87-b508-de9df3a023d7)
+![image](https://github.com/user-attachments/assets/0a1568e5-88ff-4f74-b138-82182283f4b2)
 
-전체 14초가 소요되었고, retrieve로 얻어진 4개의 문서에 대한 평가(grade) 후에 결과를 생성하였습니다. 
 
-![image](https://github.com/user-attachments/assets/4fcf557b-88ef-494b-887d-8aa2b0da2cbc)
+전체 25초가 소요되었고, retrieve로 얻어진 문서에 대한 평가(grade)를 하고, 조건에 따라 웹검색을 수행할 수 있습니다.
+
+![image](https://github.com/user-attachments/assets/0305302d-2da0-46a9-ae41-32ba92f18df0)
+
 
 ### Self RAG 사용시
 
 메뉴에서 "Self RAG"를 선택하여 "교보 다이렉트 보험의 장단점을 비교하여 설명하세요."라고 입력합니다.
 
-![image](https://github.com/user-attachments/assets/6fedc3f8-2a9c-4c49-93b0-f93e1e6c51ff)
+![image](https://github.com/user-attachments/assets/245ac8bf-b61e-4805-a918-34af6d7b6691)
 
-전체 18초가 소요되었고 관련된 문서에 대한 평가후에 환각 및 답변의 유용성을 평가하고 있습니다. 
+전체 22초가 소요되었고 관련된 문서에 대한 평가후에 환각 및 답변의 유용성을 평가하고 있습니다. 
 
-![image](https://github.com/user-attachments/assets/c05db029-e129-439b-b407-3e117b1f16b2)
+![image](https://github.com/user-attachments/assets/34ce4f4f-ca24-489c-8d07-04041a208b2a)
+
 
 ### Self Corrective RAG 사용시
 
 메뉴에서 "Self-Corrective RAG"를 선택하여 "교보 다이렉트 보험의 장단점을 비교하여 설명하세요."라고 입력합니다.
 
-![image](https://github.com/user-attachments/assets/d79be2e8-b407-4d60-9504-8e3878e4fabe)
+![image](https://github.com/user-attachments/assets/57e031c9-d5e9-4ce0-9e9c-61608b47bfb2)
 
-전체 23초가 소요되었고, 동작 Flow는 Self RAG와 동일합니다. 
 
-![image](https://github.com/user-attachments/assets/120f1d4e-43cf-401b-ad4a-05b45f600c06)
+전체 25초가 소요되었고, 동작 Flow는 Self RAG와 동일합니다. Self Corrective RAG의 Workflow를 구성할 때에 환각(hallucination)과 답변의 유용성을 확인하여 max retry이상 일 경우에만 웹검색을 합니다. 현재의 질문은 아래와 같이 모두 "yes"이므로 웹검색을 수행하지 않았습니다.
+
+![image](https://github.com/user-attachments/assets/559e933f-9024-4713-9a8f-c81de0597508)
 
 
 
