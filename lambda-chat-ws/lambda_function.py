@@ -996,8 +996,12 @@ def get_references_for_agent(docs):
             sourceType = doc.metadata['from']
         else:
             sourceType = "OpenSearch"
-        #print('sourceType: ', sourceType)
-        excerpt = ""+doc.page_content
+        #print('sourceType: ', sourceType)        
+        
+        if len(doc.page_content)>=2000:
+            excerpt = ""+doc.page_content[:2000]
+        else:
+            excerpt = ""+doc.page_content
         
         if page:                
             reference = reference + f"{i+1}. {page}page in <a href={uri} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
