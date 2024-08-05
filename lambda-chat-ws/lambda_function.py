@@ -995,7 +995,7 @@ def get_references_for_agent(docs):
         if "from" in doc.metadata:
             sourceType = doc.metadata['from']
         #print('sourceType: ', sourceType)
-        excerpt=re.findall(r"^\w+$",doc.page_content)
+        excerpt=re.findall(r"\w+$",doc.page_content)
         print('excerpt: ', excerpt)
         #excerpt = excerpt.encode(encoding='UTF-8')
         
