@@ -159,17 +159,46 @@ RAG를 위해 아래의 파일들을 다운로드한 후에 채팅창 아래의 
 
 ![image](https://github.com/user-attachments/assets/4a9eeb13-cb9f-425e-b7e8-5ab6c17b2701)
 
-
-
 ### LangGraph Agent
 
-메뉴에서 "Agent Executor (LangGraph"를 선택하여 "생성형 AI 기술에 대해 설명해주세요."라고 입력합니다. Agent Executor의 Tools에 OpenSearch가 Tool로 등록되어 있으므로 RAG 동작을 확인할 수 있습니다. 
+메뉴에서 "Agent Executor (LangGraph)"를 선택하여 "교보 다이렉트 보험의 장단점을 비교하여 설명하세요."라고 입력합니다. Agent Executor의 Tools에 OpenSearch가 Tool로 등록되어 있으므로 RAG 동작을 확인할 수 있습니다. 
 
-![image](https://github.com/user-attachments/assets/785c30d8-d006-4b35-9075-0dee195191f9)
+![image](https://github.com/user-attachments/assets/8a2a77a2-8bf6-41e1-a04a-01b114e2213f)
 
-28초가 소요가 소요되었는데, ReAct 방식으로 동작하면서, "generative AI", "how generative AI works", "how generative AI models work"와 같이 3번을 OpenSearch에 질의한 후에 아래와 같은 답변을 생성하였습니다. 
+28초가 소요가 소요되었는데, "교보 다이렉트 보험 장단점"에 대해 tavily와 OpenSearch를 검색한 결과를 이용해 응답을 얻었습니다. 이때 OpenSearch에서 얻어진 결과는 아래와 같이 LLM을 이용해 관련도 검사를 한 후에 활용합니다.
 
-![image](https://github.com/user-attachments/assets/ffd3fa14-acf4-425e-9bd7-f2f203bc72c4)
+![image](https://github.com/user-attachments/assets/efd13f05-d32c-4424-9920-ea7ae3c50a49)
+
+### Corrective RAG 사용시
+
+메뉴에서 "Corrective RAG"를 선택하여 "교보 다이렉트 보험의 장단점을 비교하여 설명하세요."라고 입력합니다.
+
+![image](https://github.com/user-attachments/assets/db8e3ce5-6538-4a87-b508-de9df3a023d7)
+
+전체 14초가 소요되었고, retrieve로 얻어진 4개의 문서에 대한 평가(grade) 후에 결과를 생성하였습니다. 
+
+![image](https://github.com/user-attachments/assets/4fcf557b-88ef-494b-887d-8aa2b0da2cbc)
+
+### Self RAG 사용시
+
+메뉴에서 "Self RAG"를 선택하여 "교보 다이렉트 보험의 장단점을 비교하여 설명하세요."라고 입력합니다.
+
+![image](https://github.com/user-attachments/assets/6fedc3f8-2a9c-4c49-93b0-f93e1e6c51ff)
+
+전체 18초가 소요되었고 관련된 문서에 대한 평가후에 환각 및 답변의 유용성을 평가하고 있습니다. 
+
+![image](https://github.com/user-attachments/assets/c05db029-e129-439b-b407-3e117b1f16b2)
+
+### Self Corrective RAG 사용시
+
+메뉴에서 "Self-Corrective RAG"를 선택하여 "교보 다이렉트 보험의 장단점을 비교하여 설명하세요."라고 입력합니다.
+
+![image](https://github.com/user-attachments/assets/d79be2e8-b407-4d60-9504-8e3878e4fabe)
+
+전체 23초가 소요되었고, 동작 Flow는 Self RAG와 동일합니다. 
+
+![image](https://github.com/user-attachments/assets/120f1d4e-43cf-401b-ad4a-05b45f600c06)
+
 
 
 ### Reflection Agent
@@ -211,36 +240,6 @@ RAG를 위해 아래의 파일들을 다운로드한 후에 채팅창 아래의 
 
 2문단: 대표적인 생성형 AI 기술로는 GPT-3, DALL-E, 뮤직 제너레이터 등이 있습니다. GPT-3는 OpenAI에서 개발한 거대한 언어 모델로, 175억 개의 매개변수를 가진 순환 신경망 기반의 모델입니다. 이 모델은 주어진 텍스트 프롬프트를 기반으로 다양한 형식의 텍스트를 생성할 수 있습니다. DALL-E는 OpenAI의 이미지 생성 AI로, 변분 자기부호기 기반의 모델입니다. 이 모델은 텍스트 설명을 입력받아 해당하는 이미지를 생성해냅니다. 뮤직 제너레이터는 기존 음원 데이터를 순환 신경망으로 학습하여 새로운 멜로디와 가사를 만들어냅니다.
 ```
-
-### Corrective RAG 사용시
-
-메뉴에서 "Corrective RAG"를 선택하여 "생성형 AI 기술에 대해 설명해주세요."라고 입력합니다.
-
-![image](https://github.com/user-attachments/assets/db8e3ce5-6538-4a87-b508-de9df3a023d7)
-
-전체 14초가 소요되었고, retrieve로 얻어진 4개의 문서에 대한 평가(grade) 후에 결과를 생성하였습니다. 
-
-![image](https://github.com/user-attachments/assets/4fcf557b-88ef-494b-887d-8aa2b0da2cbc)
-
-### Self RAG 사용시
-
-메뉴에서 "Self RAG"를 선택하여 "생성형 AI 기술에 대해 설명해주세요."라고 입력합니다.
-
-![image](https://github.com/user-attachments/assets/6fedc3f8-2a9c-4c49-93b0-f93e1e6c51ff)
-
-전체 18초가 소요되었고 관련된 문서에 대한 평가후에 환각 및 답변의 유용성을 평가하고 있습니다. 
-
-![image](https://github.com/user-attachments/assets/c05db029-e129-439b-b407-3e117b1f16b2)
-
-### Self Corrective RAG 사용시
-
-메뉴에서 "Self-Corrective RAG"를 선택하여 "생성형 AI 기술에 대해 설명해주세요."라고 입력합니다.
-
-![image](https://github.com/user-attachments/assets/d79be2e8-b407-4d60-9504-8e3878e4fabe)
-
-전체 23초가 소요되었고, 동작 Flow는 Self RAG와 동일합니다. 
-
-![image](https://github.com/user-attachments/assets/120f1d4e-43cf-401b-ad4a-05b45f600c06)
 
 ## 결론
 
