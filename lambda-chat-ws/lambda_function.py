@@ -1898,8 +1898,8 @@ def grade_generation_for_scrag(state: SelfCorrectiveRagState, config):
 
     if not web_fallback:
         return "finalize_response"
-    print("---Hallucination?---")
     
+    print("---Hallucination?---")    
     hallucination_grader = get_hallucination_grader()
     score = hallucination_grader.invoke(
         {"documents": documents, "generation": generation}
@@ -1916,8 +1916,10 @@ def grade_generation_for_scrag(state: SelfCorrectiveRagState, config):
 
     # Check question-answering
     answer_grader = get_answer_grader()    
-    answer_grade = answer_grader.invoke({"question": question, "generation": generation})
+    score = answer_grader.invoke({"question": question, "generation": generation})
+    answer_grade = score.binary_score     
     print("answer_grade: ", answer_grade)
+    
     if answer_grade == "yes":
         print("---DECISION: GENERATION ADDRESSES QUESTION---")
         return "finalize_response"
