@@ -1000,7 +1000,8 @@ def get_references_for_agent(docs):
         print('excerpt: ', excerpt)
         
         
-        excerpt.encode(encoding = 'UTF-8', errors = 'strict')
+        excerpt = excerpt.encode(encoding = 'UTF-8', errors = 'ignore')
+        #excerpt.encode(encoding = 'UTF-8', errors = 'ignore')
         """
         excerpt.replace("\'","")
         excerpt.replace("“","")
