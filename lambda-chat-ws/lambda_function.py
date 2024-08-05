@@ -989,7 +989,10 @@ def get_references_for_agent(docs):
         name = ""
         if "name" in doc.metadata:
             name = doc.metadata['name']
-            #print('name: ', name)        
+            #print('name: ', name)     
+        name.replace('`','')
+        name.replace('\"','')        
+           
         sourceType = ""
         if "from" in doc.metadata:
             sourceType = doc.metadata['from']
