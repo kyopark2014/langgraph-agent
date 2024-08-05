@@ -1577,7 +1577,7 @@ def run_corrective_rag(connectionId, requestId, app, query):
 ####################### LangGraph #######################
 # Self RAG
 #########################################################
-MAX_RETRIES = 3
+MAX_RETRIES = 2 # total 3
 
 class SelfRagState(TypedDict):
     question : str
