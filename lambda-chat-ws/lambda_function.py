@@ -996,10 +996,12 @@ def get_references_for_agent(docs):
             sourceType = doc.metadata['from']
         #print('sourceType: ', sourceType)
         excerpt = doc.page_content
-        #print('excerpt: ', excerpt)
+        
+        print('excerpt: ', excerpt)
         excerpt.replace('\'','')
         excerpt.replace('\"','')
         excerpt.replace('\`','')
+        print('replaced excerpt: ', excerpt)
         
         if page:                
             reference = reference + f"{i+1}. {page}page in <a href={uri} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
