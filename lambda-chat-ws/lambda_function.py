@@ -1683,7 +1683,7 @@ def decide_to_generate_with_retires(state: SelfRagState, config):
     filtered_documents = state["documents"]
     
     count = state["count"] if state.get("count") is not None else -1
-    max_count = config.get("configurable", {}).get("max_counts", MAX_RETRIES)
+    max_count = config.get("configurable", {}).get("max_count", MAX_RETRIES)
     print("count: ", count)
     
     if not filtered_documents:
