@@ -995,24 +995,8 @@ def get_references_for_agent(docs):
         if "from" in doc.metadata:
             sourceType = doc.metadata['from']
         #print('sourceType: ', sourceType)
-        excerpt = doc.page_content
-        
-        print('excerpt: ', excerpt)
-        
-        
-        excerpt = excerpt.encode(encoding = 'UTF-8', errors = 'ignore')
-        #excerpt.encode(encoding = 'UTF-8', errors = 'ignore')
-        """
-        excerpt.replace("\'","")
-        excerpt.replace("“","")
-        excerpt.replace("`","")
-        excerpt.replace("\"","")
-        excerpt.replace(" “", "")
-        excerpt.replace(" “", "")
-        excerpt.replace("“,", "")
-        excerpt.replace("\"", "")
-        """
-        print('replaced excerpt: ', excerpt)
+        excerpt = doc.page_content                        
+        excerpt = excerpt.encode(encoding='UTF-8', errors='ignore')
         
         if page:                
             reference = reference + f"{i+1}. {page}page in <a href={uri} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
