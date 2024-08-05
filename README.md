@@ -196,12 +196,12 @@ RAG를 위해 아래의 파일들을 다운로드한 후에 채팅창 아래의 
 
 메뉴에서 "Self-Corrective RAG"를 선택하여 "교보 다이렉트 보험의 장단점을 비교하여 설명하세요."라고 입력합니다.
 
-![image](https://github.com/user-attachments/assets/57e031c9-d5e9-4ce0-9e9c-61608b47bfb2)
+![image](https://github.com/user-attachments/assets/500cbed1-45fb-48d2-b3f4-7ca889f044e8)
 
 
-전체 25초가 소요되었고, 동작 Flow는 Self RAG와 동일합니다. Self Corrective RAG의 Workflow를 구성할 때에 환각(hallucination)과 답변의 유용성을 확인하여 max retry이상 일 경우에만 웹검색을 합니다. 현재의 질문은 아래와 같이 모두 "yes"이므로 웹검색을 수행하지 않았습니다.
+전체 16초가 소요되었고, 생성된 답변에 대한 환각(Hallucination)과 답변의 유용성을 평가합니다. 
 
-![image](https://github.com/user-attachments/assets/559e933f-9024-4713-9a8f-c81de0597508)
+![image](https://github.com/user-attachments/assets/b4f46226-cf5f-444c-95e5-f4524b834e12)
 
 
 
