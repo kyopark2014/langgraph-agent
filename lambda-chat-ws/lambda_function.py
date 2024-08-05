@@ -22,7 +22,7 @@ from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
 from langchain.memory import ConversationBufferWindowMemory
 from langchain_aws import ChatBedrock
 from langchain_community.vectorstores.opensearch_vector_search import OpenSearchVectorSearch
-from langchain_community.embeddings import BedrockEmbeddings
+from langchain_aws import BedrockEmbeddings
 from multiprocessing import Process, Pipe
 
 from langchain.agents import tool
@@ -1920,7 +1920,7 @@ def buildSelCorrectivefRAG():
     # Compile
     return workflow.compile()
 
-scrag_app = buildSelfRAG()
+scrag_app = buildSelCorrectivefRAG()
 
 def run_self_corrective_rag(connectionId, requestId, app, query):
     global langMode
