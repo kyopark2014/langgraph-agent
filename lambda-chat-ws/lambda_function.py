@@ -1696,8 +1696,8 @@ def decide_to_generate_with_retires(state: SelfRagState, config):
         print("---DECISION: GENERATE---")
         return "document"
 
-def grade_generation(state: SelfRagState, config):
-    print("###### grade_generation ######")
+def grade_generation_for_srag(state: SelfRagState, config):
+    print("###### grade_generation_for_srag ######")
     question = state["question"]
     documents = state["documents"]
     generation = state["generation"]
@@ -1758,7 +1758,7 @@ def buildSelfRAG():
     workflow.add_edge("rewrite", "retrieve")
     workflow.add_conditional_edges(
         "generate",
-        grade_generation,
+        grade_generation_for_srag,
         {
             "not supported": "generate",
             "useful": END,
@@ -1886,6 +1886,45 @@ def generate_for_scrag(state: SelfCorrectiveRagState):
     
     return {"retries": retries + 1, "candidate_answer": generation.content}
 
+def grade_generation_for_scrag(state: SelfCorrectiveRagState, config):
+    print("###### grade_generation_for_scrag ######")
+    question = state["question"]
+    documents = state["documents"]
+    generation = state["candidate_answer"]
+    web_fallback = state["web_fallback"]
+    
+    retries = state["retries"] if state.get("retries") is not None else -1
+    max_retries = config.get("configurable", {}).get("max_retries", MAX_RETRIES)
+
+    if not web_fallback:
+        return "finalize_response"
+    print("---Hallucination?---")
+    
+    hallucination_grader = get_hallucination_grader()
+    score = hallucination_grader.invoke(
+        {"documents": documents, "generation": generation}
+    )
+    hallucination_grade = score.binary_score
+
+    # Check hallucination
+    if hallucination_grade.binary_score == "no":
+        print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
+        return "generate" if retries < max_retries else "websearch"
+
+    print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
+    print("---GRADE GENERATION vs QUESTION---")
+
+    # Check question-answering
+    answer_grader = get_answer_grader()    
+    answer_grade = answer_grader.invoke({"question": question, "generation": generation})
+    print("answer_grade: ", answer_grade)
+    if answer_grade.binary_score == "yes":
+        print("---DECISION: GENERATION ADDRESSES QUESTION---")
+        return "finalize_response"
+    else:
+        print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
+        return "rewrite" if retries < max_retries else "websearch"
+
 def finalize_response(state: SelfCorrectiveRagState):
     return {"messages": [AIMessage(content=state["candidate_answer"])]}
     
@@ -1908,7 +1947,7 @@ def buildSelCorrectivefRAG():
 
     workflow.add_conditional_edges(
         "generate",
-        grade_generation,
+        grade_generation_for_scrag,
         {
             "generate": "generate",
             "websearch": "websearch",
