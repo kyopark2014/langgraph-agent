@@ -2202,6 +2202,7 @@ def readStreamMsg(connectionId, requestId, stream):
     return msg
     
 def sendMessage(id, body):
+    print('sendMessage size: ', len(body))
     try:
         client.post_to_connection(
             ConnectionId=id, 
