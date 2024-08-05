@@ -998,6 +998,9 @@ def get_references_for_agent(docs):
         excerpt = doc.page_content                        
         excerpt = excerpt.encode(encoding='UTF-8', errors='ignore')
         
+        if len(excerpt)>2000:  # prevent too long excerpt
+            excerpt = excerpt[:2000]
+        
         if page:                
             reference = reference + f"{i+1}. {page}page in <a href={uri} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
         else:
@@ -2202,7 +2205,6 @@ def readStreamMsg(connectionId, requestId, stream):
     return msg
     
 def sendMessage(id, body):
-    print('sendMessage size: ', len(body))
     try:
         client.post_to_connection(
             ConnectionId=id, 
