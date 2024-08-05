@@ -204,6 +204,10 @@ RAG를 위해 아래의 파일들을 다운로드한 후에 채팅창 아래의 
 ![image](https://github.com/user-attachments/assets/b4f46226-cf5f-444c-95e5-f4524b834e12)
 
 
+"교보 다이렉트 자동차 보험의 장단점을 비교하여 설명하세요."라고 입력합니다.
+
+![image](https://github.com/user-attachments/assets/727c39e0-6a54-47cc-82fd-ba492c81d784)
+
 
 ### Reflection Agent
 
