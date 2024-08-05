@@ -994,6 +994,8 @@ def get_references_for_agent(docs):
         sourceType = ""
         if "from" in doc.metadata:
             sourceType = doc.metadata['from']
+        else:
+            sourceType = "OpenSearch"
         #print('sourceType: ', sourceType)
         excerpt = ""+doc.page_content
         
