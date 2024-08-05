@@ -996,7 +996,7 @@ def get_references_for_agent(docs):
             sourceType = doc.metadata['from']
         #print('sourceType: ', sourceType)
         excerpt = doc.page_content                        
-        excerpt = excerpt.encode(encoding='UTF-8', errors='ignore')
+        excerpt = excerpt.decode('cp949').encode(encoding='UTF-8', errors='ignore')
         
         if len(excerpt)>2000:  # prevent too long excerpt
             excerpt = excerpt[:2000]
