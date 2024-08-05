@@ -1905,9 +1905,9 @@ def grade_generation_for_scrag(state: SelfCorrectiveRagState, config):
         {"documents": documents, "generation": generation}
     )
     hallucination_grade = score.binary_score
-
+         
     # Check hallucination
-    if hallucination_grade.binary_score == "no":
+    if hallucination_grade == "no":
         print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
         return "generate" if retries < max_retries else "websearch"
 
@@ -1918,7 +1918,7 @@ def grade_generation_for_scrag(state: SelfCorrectiveRagState, config):
     answer_grader = get_answer_grader()    
     answer_grade = answer_grader.invoke({"question": question, "generation": generation})
     print("answer_grade: ", answer_grade)
-    if answer_grade.binary_score == "yes":
+    if answer_grade == "yes":
         print("---DECISION: GENERATION ADDRESSES QUESTION---")
         return "finalize_response"
     else:
