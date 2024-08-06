@@ -1000,10 +1000,10 @@ def get_references_for_agent(docs):
         
         excerpt=re.findall("\w",doc.page_content)
         
-        if len(doc.page_content)>=1000:
-            excerpt = ""+doc.page_content[:1000]
-        else:
-            excerpt = ""+doc.page_content
+        #if len(doc.page_content)>=1000:
+        #    excerpt = ""+doc.page_content[:1000]
+        #else:
+        #    excerpt = ""+doc.page_content
         
         if page:                
             reference = reference + f"{i+1}. {page}page in <a href={uri} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
