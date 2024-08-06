@@ -998,10 +998,11 @@ def get_references_for_agent(docs):
             sourceType = "OpenSearch"
         #print('sourceType: ', sourceType)        
         
-        if len(doc.page_content)>=1000:
-            excerpt = ""+doc.page_content[:1000]
-        else:
-            excerpt = ""+doc.page_content
+        #if len(doc.page_content)>=1000:
+        #    excerpt = ""+doc.page_content[:1000]
+        #else:
+        #    excerpt = ""+doc.page_content
+        excerpt = ""+doc.page_content
         print('excerpt: ', excerpt)
         
         # for some of unusual case 
