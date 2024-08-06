@@ -1002,6 +1002,13 @@ def get_references_for_agent(docs):
             excerpt = ""+doc.page_content[:1000]
         else:
             excerpt = ""+doc.page_content
+        print('excerpt: ', excerpt)
+        
+        # for some of unusual case 
+        #excerpt = excerpt.replace('"', '')        
+        #excerpt = ''.join(c for c in excerpt if c not in '"')
+        excerpt = re.sub('"', '', excerpt)
+        print('excerpt(quotation removed): ', excerpt)
         
         if page:                
             reference = reference + f"{i+1}. {page}page in <a href={uri} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
