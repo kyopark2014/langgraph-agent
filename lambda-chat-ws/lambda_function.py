@@ -998,6 +998,8 @@ def get_references_for_agent(docs):
             sourceType = "OpenSearch"
         #print('sourceType: ', sourceType)        
         
+        excerpt=re.findall("\w",doc.page_content)
+        
         if len(doc.page_content)>=1000:
             excerpt = ""+doc.page_content[:1000]
         else:
