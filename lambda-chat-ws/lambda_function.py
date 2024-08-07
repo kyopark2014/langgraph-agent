@@ -1511,7 +1511,12 @@ def web_search(state: CragState):
     web_search_tool = TavilySearchResults(k=3)
     
     docs = web_search_tool.invoke({"query": question})
-    web_results = "\n".join([d["content"] for d in docs])
+    
+    for d in docs:
+        print("d: ", d)
+        web_results = "\n".join()(d["content"]) if d.get("content") is not None
+
+    #web_results = "\n".join([d["content"] for d in docs])
     web_results = Document(page_content=web_results)
     print("web_results: ", web_results)
     
