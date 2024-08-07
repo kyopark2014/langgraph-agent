@@ -1002,6 +1002,7 @@ def get_references_for_agent(docs):
         #    excerpt = ""+doc.page_content[:1000]
         #else:
         #    excerpt = ""+doc.page_content
+        excerpt = ""+doc.page_content
         print('excerpt: ', excerpt)
         
         # for some of unusual case 
