@@ -1007,8 +1007,8 @@ def get_references_for_agent(docs):
         
         # for some of unusual case 
         #excerpt = excerpt.replace('"', '')        
-        #excerpt = ''.join(c for c in excerpt if c not in '"')
-        excerpt = re.sub('"', '', excerpt)
+        excerpt = ''.join(c for c in excerpt if c not in '"')
+        #excerpt = re.sub('"', '', excerpt)
         print('excerpt(quotation removed): ', excerpt)
         
         if page:                
