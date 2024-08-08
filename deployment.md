@@ -4,8 +4,9 @@
 
 LLM으로 Anthropic의 Claude3을 사용하기 위하여, Amazon Bedrock의 us-west-2 리전을 사용합니다. [Model access](https://us-west-2.console.aws.amazon.com/bedrock/home?region=us-west-2#/modelaccess)에 접속해서 [Edit]를 선택하여 "Titan Text Embeddings V2"와 "Anthropic Claude3 Sonnet"을 Vector Embedding과 LLM을 위해 enable 합니다.
 
-![image](https://github.com/user-attachments/assets/564c7757-3751-4a92-afb8-95b8d7507e36)
+![image](https://github.com/user-attachments/assets/f259bb17-cbd4-4f9e-8025-6552953a5899)
 
+![image](https://github.com/user-attachments/assets/1d36a962-27db-4fcf-857d-8b1e8b67af75)
 
 
 ## CDK를 이용한 인프라 설치하기
