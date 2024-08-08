@@ -71,6 +71,11 @@ cdk deploy --all
 
 ![noname](https://github.com/user-attachments/assets/21488aac-9319-4f80-bc7f-c2c855a68ac9)
 
+9) Output의 HtmlUpdateCommend을 아래와 같이 복사하여 실행합니다.
+
+![noname](https://github.com/user-attachments/assets/f7971246-3b38-441e-935c-b1ebfd5b3be9)
+
+    
 
 9) Hybrid 검색을 위한 Nori Plug-in 설치
 
