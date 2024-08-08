@@ -2,11 +2,9 @@
 
 ## Bedrock 사용 권한 설정하기
 
-LLM으로 Anthropic의 Claude3을 사용하기 위하여, Amazon Bedrock의 us-west-2 리전을 사용합니다. [Model access](https://us-west-2.console.aws.amazon.com/bedrock/home?region=us-west-2#/modelaccess)에 접속해서 [Edit]를 선택하여 Anthropic Claude의 Sonnet과 "Titan Text Embeddings V2"은 LLM 및 Vector Embedding을 위해 enable 합니다.
+LLM으로 Anthropic의 Claude3을 사용하기 위하여, Amazon Bedrock의 us-west-2 리전을 사용합니다. [Model access](https://us-west-2.console.aws.amazon.com/bedrock/home?region=us-west-2#/modelaccess)에 접속해서 [Edit]를 선택하여 "Titan Text Embeddings V2"와 "Anthropic Claude3 Sonnet"을 Vector Embedding과 LLM을 위해 enable 합니다.
 
-![image](https://github.com/kyopark2014/stream-chatbot-for-amazon-bedrock/assets/52392004/d0367605-0f23-47cb-a9f8-1c38bc1b0d0c)
-
-![image](https://github.com/user-attachments/assets/5b6c2b0b-615d-4af8-b379-d7bb64809453)
+![image](https://github.com/user-attachments/assets/564c7757-3751-4a92-afb8-95b8d7507e36)
 
 
 
