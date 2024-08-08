@@ -69,7 +69,8 @@ cdk deploy --all
 
 인프라가 설치가 되면 아래와 같은 Output을 확인할 수 있습니다. 
 
-![noname](https://github.com/kyopark2014/stream-chatbot-for-amazon-bedrock/assets/52392004/5c876093-3faa-4faf-a7d2-ed9659a75473)
+![noname](https://github.com/user-attachments/assets/21488aac-9319-4f80-bc7f-c2c855a68ac9)
+
 
 9) Hybrid 검색을 위한 Nori Plug-in 설치
 
