@@ -51,7 +51,7 @@ chain = prompt | chat
 GradeDocuments Class를 정의하고 structed out을 이용하여, document가 관련된 문서인지를 yes/no로 응답하도록 합니다. 
 
 ```python
-**class GradeDocuments(BaseModel):
+class GradeDocuments(BaseModel):
     """Binary score for relevance check on retrieved documents."""
 
     binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
