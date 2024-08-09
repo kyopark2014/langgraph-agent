@@ -1585,9 +1585,9 @@ def run_corrective_rag(connectionId, requestId, app, query):
     for output in app.stream(inputs, config):   
         for key, value in output.items():
             print(f"Finished running: {key}:")
-            print("value: ", value)
+            # print("value: ", value)
             
-    print('value: ', value)
+    #print('value: ', value)
         
     readStreamMsg(connectionId, requestId, value["generation"].content)
     
@@ -1802,9 +1802,9 @@ def run_self_rag(connectionId, requestId, app, query):
     for output in app.stream(inputs, config):   
         for key, value in output.items():
             print(f"Finished running: {key}:")
-            print("value: ", value)
+            # print("value: ", value)
             
-    print('value: ', value)
+    #print('value: ', value)
         
     readStreamMsg(connectionId, requestId, value["generation"].content)
     
@@ -1994,10 +1994,10 @@ def run_self_corrective_rag(connectionId, requestId, app, query):
     for output in app.stream(inputs, config):   
         for key, value in output.items():
             print(f"Finished running: {key}:")
-            print("value: ", value)
+            #print("value: ", value)
             
-    print('value: ', value)
-    print('content: ', value["messages"][-1].content)
+    #print('value: ', value)
+    #print('content: ', value["messages"][-1].content)
         
     readStreamMsg(connectionId, requestId, value["messages"][-1].content)
     
