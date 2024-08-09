@@ -168,6 +168,39 @@ def get_chat():
     
     return chat
 
+def get_multi_region_chat(models, selected):
+    profile = models[selected]
+    bedrock_region =  profile['bedrock_region']
+    modelId = profile['model_id']
+    print(f'selected_chat: {selected}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+                          
+    # bedrock   
+    boto3_bedrock = boto3.client(
+        service_name='bedrock-runtime',
+        region_name=bedrock_region,
+        config=Config(
+            retries = {
+                'max_attempts': 30
+            }
+        )
+    )
+    parameters = {
+        "max_tokens":maxOutputTokens,     
+        "temperature":0.1,
+        "top_k":250,
+        "top_p":0.9,
+        "stop_sequences": [HUMAN_PROMPT]
+    }
+    # print('parameters: ', parameters)
+
+    chat = ChatBedrock(   # new chat model
+        model_id=modelId,
+        client=boto3_bedrock, 
+        model_kwargs=parameters,
+    )    
+    
+    return chat
+
 def get_multimodal():
     profile = LLM_for_multimodal[selected_multimodal]
     bedrock_region =  profile['bedrock_region']
@@ -883,25 +916,8 @@ class GradeDocuments(BaseModel):
 
     binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
 
-def get_retrieval_grader():
-    system = """You are a grader assessing relevance of a retrieved document to a user question. \n 
-    If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant. \n
-    Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."""
-
-    grade_prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system),
-            ("human", "Retrieved document: \n\n {document} \n\n User question: {question}"),
-        ]
-    )
-    
-    chat = get_chat()
-    structured_llm_grader = chat.with_structured_output(GradeDocuments)
-    retrieval_grader = grade_prompt | structured_llm_grader
-    return retrieval_grader
-
-def grade_document_based_on_relevance(conn, question, doc):     
-    retrieval_grader = get_retrieval_grader()       
+def grade_document_based_on_relevance(conn, question, doc, chat):     
+    retrieval_grader = get_retrieval_grader(chat)       
     score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
     # print(f"score: {score}")
     
@@ -916,18 +932,52 @@ def grade_document_based_on_relevance(conn, question, doc):
     conn.close()
     
 def grade_documents_using_parallel_processing(question, documents):
+    models = [
+        {
+            "bedrock_region": "us-west-2", # Oregon
+            "model_type": "claude3",
+            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+        },
+        {
+            "bedrock_region": "us-east-1", # N.Virginia
+            "model_type": "claude3",
+            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+        },
+        {
+            "bedrock_region": "ca-central-1", # Canada
+            "model_type": "claude3",
+            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+        },
+        {
+            "bedrock_region": "eu-west-2", # London
+            "model_type": "claude3",
+            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+        },
+        {
+            "bedrock_region": "sa-east-1", # Sao Paulo
+            "model_type": "claude3",
+            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+        }
+    ]
+    
     relevant_docs = []    
 
     processes = []
     parent_connections = []
     
+    selected = 0
     for i, doc in enumerate(documents):
         #print(f"grading doc[{i}]: {doc.page_content}")        
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
             
-        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc))
+        chat = get_multi_region_chat(models, selected)
+        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, chat))
         processes.append(process)
+        
+        selected = selected + 1
+        if selected == len(models):
+            selected = 0
 
     for process in processes:
         process.start()
@@ -948,13 +998,14 @@ def grade_documents(question, documents):
     print("###### grade_documents ######")
     
     filtered_docs = []
-    if useParallelRAG == 'true':  # parallel processing
+    if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
         print("start grading...")
         filtered_docs = grade_documents_using_parallel_processing(question, documents)
 
     else:
         # Score each doc    
-        retrieval_grader = get_retrieval_grader()
+        chat = get_chat()
+        retrieval_grader = get_retrieval_grader(chat)
         for doc in documents:
             score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
             grade = score.binary_score
@@ -1227,7 +1278,7 @@ class GradeDocuments(BaseModel):
 
     binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
 
-def get_retrieval_grader():
+def get_retrieval_grader(chat):
     system = """You are a grader assessing relevance of a retrieved document to a user question. \n 
     If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant. \n
     Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."""
@@ -1239,7 +1290,6 @@ def get_retrieval_grader():
         ]
     )
     
-    chat = get_chat()
     structured_llm_grader = chat.with_structured_output(GradeDocuments)
     retrieval_grader = grade_prompt | structured_llm_grader
     return retrieval_grader
@@ -1437,7 +1487,8 @@ def grade_documents_for_crag(state: CragState):
     filtered_docs = []
     web_search = "No"
     
-    retrieval_grader = get_retrieval_grader()
+    chat = get_chat()
+    retrieval_grader = get_retrieval_grader(chat)
     for doc in documents:
         score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
         grade = score.binary_score
@@ -1676,7 +1727,8 @@ def grade_documents_with_count(state: SelfRagState):
     
     # Score each doc
     filtered_docs = []
-    retrieval_grader = get_retrieval_grader()
+    chat = get_chat()
+    retrieval_grader = get_retrieval_grader(chat)
     for doc in documents:
         score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
         grade = score.binary_score
@@ -2431,6 +2483,14 @@ def getResponse(connectionId, jsonBody):
     print('body: ', body)
     convType = jsonBody['convType']
     print('convType: ', convType)
+    multi_mode = jsonBody['multi_mode']
+    print('multi_mode: ', multi_mode)
+    
+    global multiRegionGrade
+    if multi_mode == 'enable':
+        multiRegionGrade = 'enable'
+    else:
+        multiRegionGrade = 'disable'
     
     print('initiate....')
     global reference_docs
@@ -2449,7 +2509,7 @@ def getResponse(connectionId, jsonBody):
     
     # create memory
     if userId in map_chain:  
-        print('memory exist. reuse it!')        
+        print('memory exist. reuse it!')
         memory_chain = map_chain[userId]
     else: 
         print('memory does not exist. create new one!')        
