@@ -1596,7 +1596,7 @@ def run_corrective_rag(connectionId, requestId, app, query):
 ####################### LangGraph #######################
 # Self RAG
 #########################################################
-MAX_RETRIES = 1 # total 2
+MAX_RETRIES = 2 # total 3
 
 class SelfRagState(TypedDict):
     question : str
@@ -2230,7 +2230,7 @@ def sendMessage(id, body):
     except Exception:
         err_msg = traceback.format_exc()
         print('err_msg: ', err_msg)
-        raise Exception ("Not able to send a message")
+        # raise Exception ("Not able to send a message")
 
 def sendResultMessage(connectionId, requestId, msg):    
     result = {
