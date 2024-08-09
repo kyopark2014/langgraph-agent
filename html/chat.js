@@ -208,7 +208,7 @@ if(conversationType=="") {
 console.log('conversationType: ', conversationType);
 
 // multi region
-let multi_region = localStorage.getItem('multi_region'); // set userID if exists 
+let multi_region = localStorage.getItem('multiRegion'); // set userID if exists 
 if(multi_region=="" || multi_region==null) {
     multi_mode = 'disable';    
 }

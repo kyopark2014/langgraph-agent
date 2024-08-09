@@ -21,6 +21,16 @@ else {
 console.log(userInput.value);
 console.log(convtypeInput.value);
 
+const multiRegionInput = document.querySelector('#multiRegion');
+let multi_region = localStorage.getItem('multiRegion'); // set conversationType if exists 
+if(multi_region != '') {
+    multiRegionInput.value = multi_region;
+}
+else {
+    multiRegionInput.value = "disable"  // general conversation
+}
+console.log(multiRegionInput.value);
+
 // provisioning
 getProvisioningInfo(userId);
 
@@ -28,12 +38,16 @@ function onSubmit(e) {
     e.preventDefault();
     console.log(userInput.value);
     console.log(convtypeInput.value);
+    console.log(multiRegionInput.value);
 
     localStorage.setItem('userId',userInput.value);
     console.log('Save Profile> userId:', userInput.value)    
 
     localStorage.setItem('convType',convtypeInput.value);
     console.log('Save Profile> convtype:', convtypeInput.value)
+
+    localStorage.setItem('multiRegion',multiRegionInput.value);
+    console.log('Save config> multiRegion:', multiRegionInput.value)
 
     window.location.href = "chat.html";
 }
