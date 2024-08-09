@@ -28,67 +28,37 @@ UpdateRelStyle($lineColor=$COLOR_REL_LINE, $textColor=$COLOR_REL_TEXT)
 
 LAYOUT_WITH_LEGEND()
 
-
 'Container(start, "Start")
-
 Container(retrieve, "retrieve")
-
 Container(generate, "generate")
-
 Container(websearch, "websearch")
-
 Container(rewrite, "rewrite")
-
 Container(finalize_response, "finalize_response")
 
-
-
 Rel(start, retrieve, "question")
-
 Rel(retrieve, generate, "question\ndocuments\nweb_fallback=True")
-
 Rel(rewrite, retrieve, "better \nquestion")
-
 Rel(websearch, generate, "documents\nweb_facllback=False")
-
-
 Rel(finalize_response, END, "generation")
 
-
 Boundary(c2, "grade generation") {
-  SystemQueue_Ext(web_fallback, "web_fallback?")
-  
+  SystemQueue_Ext(web_fallback, "web_fallback?")  
   SystemQueue_Ext(hallucination, "hallucination?")
-
   SystemQueue_Ext(hallucination_retry, "max_retries?")
-
   SystemQueue_Ext(answers_question, "answers question?")
-
   SystemQueue_Ext(answers_retry, "max_retries?")
 }
 
 Rel(generate, web_fallback, "retries+1\ngeneration\nweb_fallback")
-
-
 Rel(web_fallback, finalize_response, "web_fallback=False")
-
 Rel(web_fallback, hallucination, "web_fallback=True")
-
 Rel(hallucination, hallucination_retry, "yes")
-
 Rel(hallucination_retry, generate, "not max_retries")
-
 Rel(hallucination_retry, websearch, "max_retries")
-
 Rel(hallucination, answers_question, "no")
-
 Rel(answers_question, finalize_response, "yes")
-
 Rel(answers_question, answers_retry, "no")
-
 Rel(answers_retry, rewrite, "not max_retries")
-
 Rel(answers_retry, websearch, "max_retries")
-
 
 @enduml
