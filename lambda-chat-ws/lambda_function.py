@@ -916,7 +916,8 @@ class GradeDocuments(BaseModel):
 
     binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
 
-def grade_document_based_on_relevance(conn, question, doc, chat):     
+def grade_document_based_on_relevance(conn, question, doc, models, selected):     
+    chat = get_multi_region_chat(models, selected)
     retrieval_grader = get_retrieval_grader(chat)       
     score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
     #print("question: ", question)
@@ -926,7 +927,7 @@ def grade_document_based_on_relevance(conn, question, doc, chat):
     grade = score.binary_score    
     print("grade: ", grade)
     
-    if grade.lower() == 'yes':
+    if grade.lower() == "yes":
         print("---GRADE: DOCUMENT RELEVANT---")
         conn.send(doc)
     else:  # no
@@ -974,9 +975,8 @@ def grade_documents_using_parallel_processing(question, documents):
         #print(f"grading doc[{i}]: {doc.page_content}")        
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
-            
-        chat = get_multi_region_chat(models, selected)
-        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, chat))
+                    
+        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, models, selected))
         processes.append(process)
         
         selected = selected + 1
