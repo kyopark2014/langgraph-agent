@@ -942,7 +942,9 @@ def grade_documents_using_parallel_processing(question, documents):
             "bedrock_region": "us-west-2", # Oregon
             "model_type": "claude3",
             "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-        },
+        }
+        """
+        ,
         {
             "bedrock_region": "us-east-1", # N.Virginia
             "model_type": "claude3",
@@ -962,7 +964,7 @@ def grade_documents_using_parallel_processing(question, documents):
             "bedrock_region": "sa-east-1", # Sao Paulo
             "model_type": "claude3",
             "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-        }
+        }"""
     ]
     
     relevant_docs = []    
