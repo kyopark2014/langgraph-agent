@@ -942,10 +942,30 @@ def grade_documents_using_parallel_processing(question, documents):
             "bedrock_region": "us-west-2", # Oregon
             "model_type": "claude3",
             "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+        },
+        {
+            "bedrock_region": "us-east-1", # N.Virginia
+            "model_type": "claude3",
+            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+        },
+        {
+            "bedrock_region": "ca-central-1", # Canada
+            "model_type": "claude3",
+            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+        },
+        {
+            "bedrock_region": "eu-west-2", # London
+            "model_type": "claude3",
+            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+        },
+        {
+            "bedrock_region": "sa-east-1", # Sao Paulo
+            "model_type": "claude3",
+            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
         }
     ]
     
-    relevant_docs = []    
+    filtered_docs = []    
 
     processes = []
     parent_connections = []
@@ -967,16 +987,16 @@ def grade_documents_using_parallel_processing(question, documents):
         process.start()
             
     for parent_conn in parent_connections:
-        doc = parent_conn.recv()
+        relevant_doc = parent_conn.recv()
 
-        if doc is not None:
-            relevant_docs.append(doc)    
+        if relevant_doc is not None:
+            filtered_docs.append(relevant_doc)
 
     for process in processes:
         process.join()
     
-    #print('relevant_docs: ', relevant_docs)
-    return relevant_docs
+    #print('filtered_docs: ', filtered_docs)
+    return filtered_docs
 
 def grade_documents(question, documents):
     print("###### grade_documents ######")
