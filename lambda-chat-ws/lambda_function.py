@@ -2483,7 +2483,10 @@ def getResponse(connectionId, jsonBody):
     print('body: ', body)
     convType = jsonBody['convType']
     print('convType: ', convType)
-    multi_mode = jsonBody['multi_mode']
+    
+    multi_mode = 'disable'
+    if "multi_mode" in jsonBody:
+        multi_mode = jsonBody['multi_mode']
     print('multi_mode: ', multi_mode)
     
     global multiRegionGrade
