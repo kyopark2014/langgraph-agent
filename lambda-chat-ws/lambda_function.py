@@ -923,7 +923,7 @@ def grade_document_based_on_relevance(conn, question, doc, chat):
     print("doc: ", doc)
     
     grade = score.binary_score    
-    if grade == 'yes':
+    if grade.lower() == 'yes':
         print("---GRADE: DOCUMENT RELEVANT---")
         conn.send(doc)
     else:  # no
