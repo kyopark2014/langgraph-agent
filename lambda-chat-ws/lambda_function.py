@@ -919,8 +919,8 @@ class GradeDocuments(BaseModel):
 def grade_document_based_on_relevance(conn, question, doc, chat):     
     retrieval_grader = get_retrieval_grader(chat)       
     score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
-    print("doc.page_content: ", doc.page_content)
-    # print(f"score: {score}")
+    print("question: ", question)
+    print("doc: ", doc)
     
     grade = score.binary_score    
     if grade == 'yes':
@@ -1008,6 +1008,7 @@ def grade_documents(question, documents):
         chat = get_chat()
         retrieval_grader = get_retrieval_grader(chat)
         for doc in documents:
+            print('doc: ', doc)
             score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
             grade = score.binary_score
             # Document relevant
