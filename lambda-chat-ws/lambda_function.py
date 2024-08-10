@@ -168,7 +168,7 @@ def get_chat():
     
     return chat
 
-def get_multi_region_chat(models, selected):
+def get_multi_region_chat(selected):
     profile = models[selected]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
@@ -978,8 +978,10 @@ def grade_documents_using_parallel_processing(question, documents):
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
         
-        chat = get_multi_region_chat(models, selected)
-        retrieval_grader = get_retrieval_grader(chat)
+        #chat = get_chat()
+        
+        chat2 = get_multi_region_chat(selected)
+        retrieval_grader = get_retrieval_grader(chat2)
                     
         process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, retrieval_grader))
         processes.append(process)
