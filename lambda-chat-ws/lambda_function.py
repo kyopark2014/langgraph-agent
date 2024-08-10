@@ -916,9 +916,9 @@ class GradeDocuments(BaseModel):
 
     binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
 
-def grade_document_based_on_relevance(conn, question, doc, models, selected):     
+def grade_document_based_on_relevance(conn, question, doc, models, selected, retrieval_grader):     
     chat = get_multi_region_chat(models, selected)
-    retrieval_grader = get_retrieval_grader(chat)       
+    #retrieval_grader = get_retrieval_grader(chat)       
     score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
     #print("question: ", question)
     #print("doc: ", doc)    
@@ -936,9 +936,9 @@ def grade_document_based_on_relevance(conn, question, doc, models, selected):
         print("---GRADE: DOCUMENT NOT RELEVANT---")
         conn.send(None)
     
-    conn.close()
+    conn.close()    
     
-def grade_documents_using_parallel_processing(question, documents):
+def grade_documents_using_parallel_processing(question, documents, retrieval_grader):
     models = [
         {
             "bedrock_region": "us-west-2", # Oregon
@@ -978,7 +978,7 @@ def grade_documents_using_parallel_processing(question, documents):
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
                     
-        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, models, selected))
+        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, models, selected, retrieval_grader))
         processes.append(process)
         
         selected = selected + 1
@@ -1013,8 +1013,11 @@ def grade_documents(question, documents):
     
     filtered_docs = []
     if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
+        chat = get_chat()
+        retrieval_grader = get_retrieval_grader(chat)
+        
         print("start grading...")
-        filtered_docs = grade_documents_using_parallel_processing(question, documents)
+        filtered_docs = grade_documents_using_parallel_processing(question, documents, retrieval_grader)
         
         # Score each doc    
         chat = get_chat()
@@ -2548,7 +2551,7 @@ def getResponse(connectionId, jsonBody):
     profile = LLM_for_chat[selected_chat]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
-    print(f'selected_chat: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+    #print(f'selected_chat: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
     # print('profile: ', profile)
     
     chat = get_chat()    
