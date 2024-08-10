@@ -202,6 +202,7 @@ def get_multi_region_chat(models, selected):
     return chat
 
 def get_multimodal():
+    global selected_multimodal
     print('LLM_for_chat: ', LLM_for_chat)
     print('selected_multimodal: ', selected_multimodal)
     
