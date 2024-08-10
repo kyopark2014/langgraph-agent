@@ -1015,6 +1015,29 @@ def grade_documents(question, documents):
     if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
         print("start grading...")
         filtered_docs = grade_documents_using_parallel_processing(question, documents)
+        
+        # Score each doc    
+        chat = get_chat()
+        retrieval_grader = get_retrieval_grader(chat)
+        for doc in documents:
+            # print('doc: ', doc)
+            print_doc(doc)
+            
+            score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+            print("score: ", score)
+            
+            grade = score.binary_score
+            print("grade: ", grade)
+            # Document relevant
+            if grade.lower() == "yes":
+                print("---GRADE: DOCUMENT RELEVANT---")
+                filtered_docs.append(doc)
+            # Document not relevant
+            else:
+                print("---GRADE: DOCUMENT NOT RELEVANT---")
+                # We do not include the document in filtered_docs
+                # We set a flag to indicate that we want to run web search
+                continue
 
     else:
         # Score each doc    
