@@ -922,6 +922,8 @@ def grade_document_based_on_relevance(conn, question, doc, models, selected):
     score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
     #print("question: ", question)
     #print("doc: ", doc)    
+    print_doc(doc)
+    
     print("score: ", score)
     
     grade = score.binary_score    
@@ -998,6 +1000,14 @@ def grade_documents_using_parallel_processing(question, documents):
     #print('filtered_docs: ', filtered_docs)
     return filtered_docs
 
+def print_doc(doc):
+    if len(doc.page_content)>=100:
+        text = doc.page_content[:100]
+    else:
+        text = doc.page_content
+            
+    print(f"doc[{i}]: {text}, metadata:{doc.metadata}")
+    
 def grade_documents(question, documents):
     print("###### grade_documents ######")
     
@@ -1012,6 +1022,8 @@ def grade_documents(question, documents):
         retrieval_grader = get_retrieval_grader(chat)
         for doc in documents:
             # print('doc: ', doc)
+            print_doc(doc)
+            
             score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
             print("score: ", score)
             
