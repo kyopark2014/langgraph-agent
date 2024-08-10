@@ -924,7 +924,7 @@ def grade_document_based_on_relevance(conn, question, doc, models, selected):
     #print("doc: ", doc)    
     print_doc(doc)
     
-    print("score: ", score)
+    #print("score: ", score)
     
     grade = score.binary_score    
     print("grade: ", grade)
@@ -2706,12 +2706,14 @@ def getResponse(connectionId, jsonBody):
                 buffer = BytesIO()
                 img.save(buffer, format="PNG")
                 img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-                
-                commend  = jsonBody['commend']
-                print('commend: ', commend)
+                        
+                command = ""        
+                if 'command' in jsonBody:
+                    command  = jsonBody['command']
+                    print('command: ', command)
                 
                 # verify the image
-                msg = use_multimodal(img_base64, commend)       
+                msg = use_multimodal(img_base64, command)       
                 
                 # extract text from the image
                 text = extract_text(chat, img_base64)
