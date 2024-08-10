@@ -916,9 +916,9 @@ class GradeDocuments(BaseModel):
 
     binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
 
-def grade_document_based_on_relevance(conn, question, doc, models, selected, retrieval_grader):     
-    chat = get_multi_region_chat(models, selected)
-    #retrieval_grader = get_retrieval_grader(chat)       
+def grade_document_based_on_relevance(conn, question, doc, retrieval_grader):     
+    # chat = get_multi_region_chat(models, selected)
+    # retrieval_grader = get_retrieval_grader(chat)
     score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
     #print("question: ", question)
     #print("doc: ", doc)    
@@ -938,7 +938,7 @@ def grade_document_based_on_relevance(conn, question, doc, models, selected, ret
     
     conn.close()    
     
-def grade_documents_using_parallel_processing(question, documents, retrieval_grader):
+def grade_documents_using_parallel_processing(question, documents):
     models = [
         {
             "bedrock_region": "us-west-2", # Oregon
@@ -977,8 +977,11 @@ def grade_documents_using_parallel_processing(question, documents, retrieval_gra
         #print(f"grading doc[{i}]: {doc.page_content}")        
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
+        
+        chat = get_chat()
+        retrieval_grader = get_retrieval_grader(chat)
                     
-        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, models, selected, retrieval_grader))
+        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, retrieval_grader))
         processes.append(process)
         
         selected = selected + 1
@@ -1013,11 +1016,8 @@ def grade_documents(question, documents):
     
     filtered_docs = []
     if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
-        chat = get_chat()
-        retrieval_grader = get_retrieval_grader(chat)
-        
         print("start grading...")
-        filtered_docs = grade_documents_using_parallel_processing(question, documents, retrieval_grader)
+        filtered_docs = grade_documents_using_parallel_processing(question, documents)
         
         # Score each doc    
         chat = get_chat()
