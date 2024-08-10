@@ -1006,7 +1006,7 @@ def print_doc(doc):
     else:
         text = doc.page_content
             
-    print(f"doc[{i}]: {text}, metadata:{doc.metadata}")
+    print(f"doc: {text}, metadata:{doc.metadata}")
     
 def grade_documents(question, documents):
     print("###### grade_documents ######")
