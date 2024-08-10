@@ -81,8 +81,7 @@ cdk deploy --all
 
 [OpenSearch Console](https://us-west-2.console.aws.amazon.com/aos/home?region=us-west-2#opensearch/domains)에서 "langgraph-agent"로 들어가서 [Packages] - [Associate package]을 선택한 후에, 아래와 같이 "analysis-nori"을 설치합니다. 
 
-![Uploading image.png…]()
-
+![image](https://github.com/user-attachments/assets/9297a93a-cf25-4fea-aae1-8b6b00e79949)
 
 10) API에 대한 Credential을 획득하고 입력합니다.
 
