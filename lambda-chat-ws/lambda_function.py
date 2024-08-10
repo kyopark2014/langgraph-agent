@@ -978,7 +978,7 @@ def grade_documents_using_parallel_processing(question, documents):
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
         
-        chat = get_chat()
+        chat = get_multi_region_chat(models, selected)
         retrieval_grader = get_retrieval_grader(chat)
                     
         process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, retrieval_grader))
