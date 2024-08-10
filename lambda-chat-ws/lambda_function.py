@@ -1507,22 +1507,30 @@ def grade_documents_for_crag(state: CragState):
     filtered_docs = []
     web_search = "No"
     
-    chat = get_chat()
-    retrieval_grader = get_retrieval_grader(chat)
-    for doc in documents:
-        score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
-        grade = score.binary_score
-        # Document relevant
-        if grade.lower() == "yes":
-            print("---GRADE: DOCUMENT RELEVANT---")
-            filtered_docs.append(doc)
-        # Document not relevant
-        else:
-            print("---GRADE: DOCUMENT NOT RELEVANT---")
-            # We do not include the document in filtered_docs
-            # We set a flag to indicate that we want to run web search
+    if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
+        print("start grading...")
+        filtered_docs = grade_documents_using_parallel_processing(question, documents)
+        
+        if len(documents) != len(filtered_docs):
             web_search = "Yes"
-            continue
+
+    else:    
+        chat = get_chat()
+        retrieval_grader = get_retrieval_grader(chat)
+        for doc in documents:
+            score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+            grade = score.binary_score
+            # Document relevant
+            if grade.lower() == "yes":
+                print("---GRADE: DOCUMENT RELEVANT---")
+                filtered_docs.append(doc)
+            # Document not relevant
+            else:
+                print("---GRADE: DOCUMENT NOT RELEVANT---")
+                # We do not include the document in filtered_docs
+                # We set a flag to indicate that we want to run web search
+                web_search = "Yes"
+                continue
     print('len(docments): ', len(filtered_docs))
     print('web_search: ', web_search)
     
@@ -1745,23 +1753,28 @@ def grade_documents_with_count(state: SelfRagState):
     documents = state["documents"]
     count = state["count"] if state.get("count") is not None else -1
     
-    # Score each doc
-    filtered_docs = []
-    chat = get_chat()
-    retrieval_grader = get_retrieval_grader(chat)
-    for doc in documents:
-        score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
-        grade = score.binary_score
-        # Document relevant
-        if grade.lower() == "yes":
-            print("---GRADE: DOCUMENT RELEVANT---")
-            filtered_docs.append(doc)
-        # Document not relevant
-        else:
-            print("---GRADE: DOCUMENT NOT RELEVANT---")
-            # We do not include the document in filtered_docs
-            # We set a flag to indicate that we want to run web search
-            continue
+    if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
+        print("start grading...")
+        filtered_docs = grade_documents_using_parallel_processing(question, documents)
+
+    else:    
+        # Score each doc
+        filtered_docs = []
+        chat = get_chat()
+        retrieval_grader = get_retrieval_grader(chat)
+        for doc in documents:
+            score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+            grade = score.binary_score
+            # Document relevant
+            if grade.lower() == "yes":
+                print("---GRADE: DOCUMENT RELEVANT---")
+                filtered_docs.append(doc)
+            # Document not relevant
+            else:
+                print("---GRADE: DOCUMENT NOT RELEVANT---")
+                # We do not include the document in filtered_docs
+                # We set a flag to indicate that we want to run web search
+                continue
     print('len(docments): ', len(filtered_docs))    
     
     global reference_docs
