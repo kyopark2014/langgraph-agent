@@ -77,16 +77,20 @@ Self-Corrective RAG는 Corrective RAG처럼 vector store로 부터 얻어진 문
 ![image](https://github.com/user-attachments/assets/5769e8ed-6e76-4fda-a932-a1d3c461de50)
 
 
-### Human-in-the-loop (HIL)
 
-Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용합니다. [Human-in-the-loop (HIL)](./Human-in-the-loop.md)에서는 Human-in-the-loop (HIL)을 구현하는것을 설명합니다. Plan and Execute는 [Plan-and-Solve](https://arxiv.org/pdf/2305.04091)와 같이 CoT 방식의 성능을 향상시키는 방법입니다. 
-
-![image](https://github.com/user-attachments/assets/3cf0d104-67d3-45b5-9e31-bbe63d6d861a)
 
 
 ### Plan and Execute
 
 [plan-and-execuite.md](./plan-and-execuite.md)에서는 Plan and Execute 방식의 Agent를 생성하는 방법에 대해 설명합니다. 
+
+![image](https://github.com/user-attachments/assets/3cf0d104-67d3-45b5-9e31-bbe63d6d861a)
+
+
+### Human-in-the-loop (HIL)
+
+Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용합니다. [Human-in-the-loop (HIL)](./Human-in-the-loop.md)에서는 Human-in-the-loop (HIL)을 구현하는것을 설명합니다. Plan and Execute는 [Plan-and-Solve](https://arxiv.org/pdf/2305.04091)와 같이 CoT 방식의 성능을 향상시키는 방법입니다. 
+
 
 ## Reference
 
