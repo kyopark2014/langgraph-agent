@@ -32,6 +32,9 @@ LangGraph는 agent를 생성하고 여러개의 agent가 있을때의 흐름을 
 
 Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제공할 수 있습니다. [reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다. 
 
+![image](https://github.com/user-attachments/assets/255bf3c4-7ad4-4bdb-98ae-308c68f01b03)
+
+
 ### Agentic RAG
 
 Agentic RAG는 tool_condition을 통해 RAG에 retrival을 선택하고, 문서를 평가(grade)하여, 검색 결과가 만족스럽지 않다면 re-write를 통해 새로운 질문(better question)을 생성할 수 있습니다. 상세한 내용은 [agentic-rag.md](./agentic-rag.md)을 참조합니다. 
