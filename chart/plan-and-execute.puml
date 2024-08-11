@@ -36,6 +36,8 @@ Container(execute, "execute")
 
 Container(replan, "replan")
 
+Container(finalize_response, "finalize_response")
+
 Rel(start, plan, "input")
 
 Rel(plan, execute, "input,\nplan")
@@ -44,7 +46,7 @@ Rel(execute, replan, "input,\nplan,\npast_steps")
 
 
 'Boundary(c1, "should_end") {
-    SystemQueue_Ext(should_end, "decide_to_generate")
+    SystemQueue_Ext(should_end, "should_end")
 '}
 
 
@@ -52,6 +54,8 @@ Rel(replan, should_end, "response\nor\nplan")
 
 Rel(should_end, execute, "continue")
 
-Rel(should_end, END, "end")
+Rel(should_end, finalize_response, "end")
+
+Rel(finalize_response, END, "response")
 
 @enduml
