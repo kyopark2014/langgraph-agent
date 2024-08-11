@@ -42,6 +42,8 @@ Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제
 
 Agentic RAG는 tool_condition을 통해 RAG에 retrival을 선택하고, 문서를 평가(grade)하여, 검색 결과가 만족스럽지 않다면 re-write를 통해 새로운 질문(better question)을 생성할 수 있습니다. 상세한 내용은 [agentic-rag.md](./agentic-rag.md)을 참조합니다. 
 
+![image](https://github.com/user-attachments/assets/093c3ce9-195e-4b65-a000-fd21089884d7)
+
 ### Corrective RAG
 
 [corrective-rag-agent.md](./corrective-rag-agent.md)에서는 Corrective RAG을 이용한 RAG 성능 강화에 대해 설명합니다. Corrective RAG는 Vector Store에서 가져온 문서를 Refine하고 관련성이 적은 문서는 제외하고, 다른 데이터 소스나 Web 검색을 통해 RAG의 성능을 향상시킬 수 있습니다. 아래 그림은 Corrective RAG에 대한 activity diagram입니다. 
