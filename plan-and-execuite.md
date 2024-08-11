@@ -1,11 +1,12 @@
 # Planning Agent
-[LangGraph: Planning Agents](https://www.youtube.com/watch?v=uRya4zRrRx4)에서는 3가지 plan-and-execution 형태의 agent를 설명하고 있습니다. 
+[LangGraph: Planning Agents](https://www.youtube.com/watch?v=uRya4zRrRx4)에서는 3가지 plan-and-execution 형태의 agent를 설명하고 있습니다. [plan-and-execute.ipynb](https://github.com/langchain-ai/langgraph/blob/main/examples/plan-and-execute/plan-and-execute.ipynb)에서는 [Plan-and-Solve Prompting](https://arxiv.org/abs/2305.04091)에 대한 Agent를 정의하고 있습니다.
 
 LangGraph은 stateful하고 multi-actor 애플리케이션을 만들 수 있도록 돕는 오픈 소스 framework입니다. 이를 통해 빠르게 실행하고, 비용을 효율적으로 사용하고 성능을 향상 시킬 수 있습니다. 
 
-## Basic Plan-and-Execute
+## Plan-and-Execute
 
-[plan-and-execute.ipynb](https://github.com/langchain-ai/langgraph/blob/main/examples/plan-and-execute/plan-and-execute.ipynb)에서는 [Plan-and-Solve Prompting](https://arxiv.org/abs/2305.04091)에 대한 Agent를 정의합니다.
+[plan-and-execute.ipynb](./agent/plan-and-execute.ipynb)와 같이 Plan-and-Execute 동작을 수행하는 Agent를 만들 수 있습니다. 상세한 코드는 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다. 
+
 
 ![image](https://github.com/kyopark2014/llm-agent/assets/52392004/a97d0764-2891-4454-8854-522ef3249e44)
 
@@ -14,18 +15,153 @@ LangGraph은 stateful하고 multi-actor 애플리케이션을 만들 수 있도�
 ![image](https://github.com/user-attachments/assets/a96b1848-c58e-4a5c-a741-0b541a94f5e6)
 
 
-전체적인 구조는 아래와 같습니다. 
+## 상세 구현
 
-![image](https://github.com/kyopark2014/llm-agent/assets/52392004/3a311023-53d7-464a-b4a0-655c558bc058)
-
-class와 함수를 정의합니다. 
+Plan을 생성하는 Prompt를 준비합니다. 
 
 ```python
-"system" = """For the given objective, come up with a simple step by step plan. \
+def get_planner():
+    system = """For the given objective, come up with a simple step by step plan. \
 This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
 The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."""
+        
+    planner_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("placeholder", "{messages}"),
+        ]
+    )
+    
+    chat = get_chat()   
+    
+    planner = planner_prompt | chat
+    return planner
 
-replanner_prompt = ChatPromptTemplate.from_template(
+inputs = [HumanMessage(content=state["input"])]
+planner = get_planner()
+response = planner.invoke({"messages": inputs})
+print('response.content: ', response.content)
+```
+
+아래와 같이 plan을 생성하고 추출할 수 있습니다.
+
+```python
+class Plan(BaseModel):
+    """List of steps as a json format"""
+
+    steps: List[str] = Field(
+        description="different steps to follow, should be in sorted order"
+    )
+
+chat = get_chat()
+structured_llm = chat.with_structured_output(Plan, include_raw=True)
+info = structured_llm.invoke(response.content)
+
+parsed_info = info['parsed']
+print('steps: ', parsed_info.steps)
+```
+
+상기 내용을 적용한 plan() 함수는 아래와 같습니다.
+
+```python
+class PlanExecuteState(TypedDict):
+    input: str
+    plan: list[str]
+    past_steps: Annotated[List[Tuple], operator.add]
+    response: str
+
+def plan(state: PlanExecuteState):
+    print("###### plan ######")
+    print('input: ', state["input"])
+    
+    inputs = [HumanMessage(content=state["input"])]
+
+    planner = get_planner()
+    response = planner.invoke({"messages": inputs})
+    print('response.content: ', response.content)
+    
+    chat = get_chat()
+    structured_llm = chat.with_structured_output(Plan, include_raw=True)
+    info = structured_llm.invoke(response.content)
+    print('info: ', info)
+    
+    if not info['parsed'] == None:
+        parsed_info = info['parsed']
+        # print('parsed_info: ', parsed_info)        
+        print('steps: ', parsed_info.steps)
+        
+        return {
+            "input": state["input"],
+            "plan": parsed_info.steps
+        }
+    else:
+        print('parsing_error: ', info['parsing_error'])
+        
+        return {"plan": []}
+```
+
+Plan을 실행하기 위한 execution() 함수는 아래와 같습니다.
+
+```python
+def execute(state: PlanExecuteState):
+    print("###### execute ######")
+    print('input: ', state["input"])
+    plan = state["plan"]
+    print('plan: ', plan) 
+    
+    plan_str = "\n".join(f"{i+1}. {step}" for i, step in enumerate(plan))
+    #print("plan_str: ", plan_str)
+    
+    task = plan[0]
+    task_formatted = f"""For the following plan:{plan_str}\n\nYou are tasked with executing step {1}, {task}."""
+    print("request: ", task_formatted)     
+    request = HumanMessage(content=task_formatted)
+    
+    chat = get_chat()
+    prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system",
+            "다음의 Human과 Assistant의 친근한 이전 대화입니다."
+            "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.",
+        ),
+        MessagesPlaceholder(variable_name="messages"),
+    ]
+    )
+    chain = prompt | chat
+    
+    agent_response = chain.invoke({"messages": [request]})
+    #print("agent_response: ", agent_response)
+    
+    print('task: ', task)
+    print('executor output: ', agent_response.content)
+    
+    # print('plan: ', state["plan"])
+    # print('past_steps: ', task)
+    
+    return {
+        "input": state["input"],
+        "plan": state["plan"],
+        "past_steps": [task],
+    }
+```
+
+아래와 같이 replan() 함수를 정의합니다.
+
+```python
+class Response(BaseModel):
+    """Response to user."""
+    response: str
+    
+class Act(BaseModel):
+    """Action to perform as a json format"""
+    action: Union[Response, Plan] = Field(
+        description="Action to perform. If you want to respond to user, use Response. "
+        "If you need to further use tools to get the answer, use Plan."
+    )
+    
+def get_replanner():
+    replanner_prompt = ChatPromptTemplate.from_template(
     """For the given objective, come up with a simple step by step plan. \
 This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
 The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.
@@ -39,65 +175,97 @@ Your original plan was this:
 You have currently done the follow steps:
 {past_steps}
 
-Update your plan accordingly. If no more steps are needed and you can return to the user, then respond with that. Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan."""
-)
+Update your plan accordingly. If no more steps are needed and you can return to the user, then respond with that. \
+Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.""")
+       
+    chat = get_chat()
+    replanner = replanner_prompt | chat
+     
+    return replanner
 
-class Response(BaseModel):
-    """Response to user."""
-
-    response: str
-
-class Act(BaseModel):
-    """Action to perform."""
-
-    action: Union[Response, Plan] = Field(
-        description="Action to perform. If you want to respond to user, use Response. "
-        "If you need to further use tools to get the answer, use Plan."
-    )    
-
-async def plan_step(state: PlanExecute):  # planner
-
-async def execute_step(state: PlanExecute):  # agent
-
-async def replan_step(state: PlanExecute): # replan
-
-def should_end(state: PlanExecute) -> Literal["agent", "__end__"]:
+def replan(state: PlanExecuteState):
+    print('#### replan ####')
+    
+    replanner = get_replanner()
+    output = replanner.invoke(state)
+    print('replanner output: ', output.content)
+    
+    chat = get_chat()
+    structured_llm = chat.with_structured_output(Act, include_raw=True)    
+    info = structured_llm.invoke(output.content)
+    # print('info: ', info)
+    
+    result = info['parsed']
+    print('act output: ', result)
+    
+    if result == None:
+        return {"response": "답을 찾지 못하였습니다. 다시 해주세요."}
+    else:
+        if isinstance(result.action, Response):
+            return {"response": result.action.response}
+        else:
+            return {"plan": result.action.steps}
 ```
 
-Graph, Node, Edge를 정의합니다.
+반복 동작을 위해 should_end() 을 정의합니다.
 
 ```python
-from langgraph.graph import StateGraph
-
-workflow = StateGraph(PlanExecute)
-
-workflow.add_node("planner", plan_step)
-workflow.add_node("agent", execute_step)
-workflow.add_node("replan", replan_step)
-
-workflow.set_entry_point("planner")
-
-workflow.add_edge("planner", "agent")
-workflow.add_edge("agent", "replan")
-workflow.add_conditional_edges(
-    "replan",
-    # Next, we pass in the function that will determine which node is called next.
-    should_end,
-)
-
-app = workflow.compile()
+def should_end(state: PlanExecuteState) -> Literal["continue", "end"]:
+    print('#### should_end ####')
+    print('state: ', state)
+    if "response" in state and state["response"]:
+        return "end"
+    else:
+        return "continue"
 ```
 
-실행은 아래와 같습니다.
+아래와 같이 workflow를 정의합니다.
 
 ```python
-config = {"recursion_limit": 50}
-inputs = {"input": "what is the hometown of the 2024 Australia open winner?"}
-async for event in app.astream(inputs, config=config):
-    for k, v in event.items():
-        if k != "__end__":
-            print(v)
+def buildPlanAndExecute():
+    workflow = StateGraph(PlanExecuteState)
+    workflow.add_node("planner", plan)
+    workflow.add_node("executor", execute)
+    workflow.add_node("replaner", replan)
+    
+    workflow.set_entry_point("planner")
+    workflow.add_edge("planner", "executor")
+    workflow.add_edge("executor", "replaner")
+    workflow.add_conditional_edges(
+        "replaner",
+        should_end,
+        {
+            "continue": "executor",
+            "end": END,
+        },
+    )
+
+    return workflow.compile()
+
+plan_and_execute_app = buildPlanAndExecute()
+
+def run_plan_and_exeucute(connectionId, requestId, app, query):
+    isTyping(connectionId, requestId)
+    
+    inputs = {"input": query}
+    config = {"recursion_limit": 50}
+    
+    for output in app.stream(inputs, config):   
+        for key, value in output.items():
+            print(f"Finished: {key}")
+            #print("value: ", value)
+            
+    print('value: ', value)
+        
+    readStreamMsg(connectionId, requestId, value["response"])
+    
+    return value["response"]
 ```
+
+이렇게 정의한 graph는 아래와 같습니다.
+
+![image](https://github.com/kyopark2014/llm-agent/assets/52392004/3a311023-53d7-464a-b4a0-655c558bc058)
+
 
 
 ## 실행 결과
