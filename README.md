@@ -79,8 +79,14 @@ Self-Corrective RAG는 Corrective RAG처럼 vector store로 부터 얻어진 문
 
 ### Human-in-the-loop (HIL)
 
-Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용합니다. [Human-in-the-loop (HIL)](./Human-in-the-loop.md)에서는 Human-in-the-loop (HIL)을 구현하는것을 설명합니다.
+Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용합니다. [Human-in-the-loop (HIL)](./Human-in-the-loop.md)에서는 Human-in-the-loop (HIL)을 구현하는것을 설명합니다. Plan and Execute는 [Plan-and-Solve](https://arxiv.org/pdf/2305.04091)와 같이 CoT 방식의 성능을 향상시키는 방법입니다. 
 
+![image](https://github.com/user-attachments/assets/3cf0d104-67d3-45b5-9e31-bbe63d6d861a)
+
+
+### Plan and Execute
+
+[plan-and-execuite.md](./plan-and-execuite.md)에서는 Plan and Execute 방식의 Agent를 생성하는 방법에 대해 설명합니다. 
 
 ## Reference
 
@@ -248,6 +254,7 @@ RAG를 위해 아래의 파일들을 다운로드한 후에 채팅창 아래의 
 
 2문단: 대표적인 생성형 AI 기술로는 GPT-3, DALL-E, 뮤직 제너레이터 등이 있습니다. GPT-3는 OpenAI에서 개발한 거대한 언어 모델로, 175억 개의 매개변수를 가진 순환 신경망 기반의 모델입니다. 이 모델은 주어진 텍스트 프롬프트를 기반으로 다양한 형식의 텍스트를 생성할 수 있습니다. DALL-E는 OpenAI의 이미지 생성 AI로, 변분 자기부호기 기반의 모델입니다. 이 모델은 텍스트 설명을 입력받아 해당하는 이미지를 생성해냅니다. 뮤직 제너레이터는 기존 음원 데이터를 순환 신경망으로 학습하여 새로운 멜로디와 가사를 만들어냅니다.
 ```
+
 
 ## 결론
 
