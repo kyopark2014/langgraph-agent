@@ -2263,17 +2263,17 @@ def should_end(state: PlanExecuteState) -> Literal["continue", "end"]:
 def buildPlanAndExecute():
     workflow = StateGraph(PlanExecuteState)
     workflow.add_node("planner", plan)
-    workflow.add_node("agent", execute)
-    workflow.add_node("replan", replan)
+    workflow.add_node("executor", execute)
+    workflow.add_node("replaner", replan)
     
     workflow.set_entry_point("planner")
-    workflow.add_edge("planner", "agent")
-    workflow.add_edge("agent", "replan")
+    workflow.add_edge("planner", "executor")
+    workflow.add_edge("executor", "replaner")
     workflow.add_conditional_edges(
-        "replan",
+        "replaner",
         should_end,
         {
-            "continue": "agent",
+            "continue": "executor",
             "end": END,
         },
     )
