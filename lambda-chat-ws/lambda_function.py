@@ -2084,7 +2084,7 @@ def run_self_corrective_rag(connectionId, requestId, app, query):
             print(f"Finished running: {key}:")
             #print("value: ", value)
             
-    print('value: ', value)
+    #print('value: ', value)
     #print('content: ', value["messages"][-1].content)
         
     readStreamMsg(connectionId, requestId, value["messages"][-1].content)
@@ -2291,7 +2291,7 @@ def run_plan_and_exeucute(connectionId, requestId, app, query):
             print(f"Finished: {key}")
             #print("value: ", value)
             
-    #print('value: ', value)
+    print('value: ', value)
     #print('content: ', value["messages"][-1].content)
         
     readStreamMsg(connectionId, requestId, value["messages"][-1].content)
@@ -2826,7 +2826,6 @@ def getResponse(connectionId, jsonBody):
                 
                 elif convType == 'agent-plan-and-execute':  # self-corrective RAG
                     msg = run_plan_and_exeucute(connectionId, requestId, plan_and_execute_app, text)        
-                    print('final msg: ', msg)
                                                 
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
