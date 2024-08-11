@@ -126,7 +126,7 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 - [GPT Newspape](https://www.youtube.com/watch?v=E7nFHaSs3q8)에서는 신문요약에 대해 설명하고 있습니다. ([github](https://github.com/rotemweiss57/gpt-newspaper/tree/master) 링크)
 
-- [Essay Writer](https://github.com/kyopark2014/llm-agent/blob/main/essay-writer.md)에서는 essay를 작성하는 Agent를 생성합니다.
+- [Essay Writer](./essay-writer.md)에서는 essay를 작성하는 Agent를 생성합니다.
 
 
 
