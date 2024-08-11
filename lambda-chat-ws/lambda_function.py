@@ -1859,7 +1859,7 @@ def grade_generation_for_srag(state: SelfRagState, config):
         print("---GRADE GENERATION vs QUESTION---")
         score = answer_grader.invoke({"question": question, "generation": generation})
         answer_grade = score.binary_score        
-        print("answer_grade: ", answer_grade)
+        # print("answer_grade: ", answer_grade)
 
         if answer_grade == "yes":
             print("---DECISION: GENERATION ADDRESSES QUESTION---")
@@ -1979,7 +1979,7 @@ def rewrite_for_scrag(state: SelfCorrectiveRagState):
     return {"question": better_question.question, "documents": documents}
 
 def grade_generation_for_scrag(state: SelfCorrectiveRagState, config):
-    print("###### grade_generation_for_scrag ######")
+    print("###### grade_generation ######")
     question = state["question"]
     documents = state["documents"]
     generation = state["candidate_answer"]
