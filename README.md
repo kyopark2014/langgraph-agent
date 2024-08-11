@@ -28,7 +28,7 @@ LangGraph는 agent를 생성하고 여러개의 agent가 있을때의 흐름을 
 
 [agent-executor.md](./agent-executor.md)에서는 LangGraph를 이용해 각종 Tool을 실행하는 agent를 만드는 방법을 설명하고 있습니다. 아래는 agent executor의 activity diagram입니다.
 
-<img src="https://github.com/user-attachments/assets/836d7458-1dab-40db-8cde-fae0becbcce6" width="350">
+<img src="https://github.com/user-attachments/assets/836d7458-1dab-40db-8cde-fae0becbcce6" width="400">
 
   
 ### Reflection Agent
