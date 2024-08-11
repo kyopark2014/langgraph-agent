@@ -2170,14 +2170,14 @@ def execute(state: PlanExecuteState):
     
     chat = get_chat()
     prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system",
-                "다음의 Human과 Assistant의 친근한 이전 대화입니다."
-                "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-                "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.",
-            ),
-            MessagesPlaceholder(variable_name="messages"),
-        ]
+    [
+        ("system",
+            "다음의 Human과 Assistant의 친근한 이전 대화입니다."
+            "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.",
+        ),
+        MessagesPlaceholder(variable_name="messages"),
+    ]
     )
     chain = prompt | chat
     
@@ -2250,37 +2250,29 @@ def replan(state: PlanExecuteState):
     else:
         return {"plan": result.action.steps}
     
-def should_end(state: PlanExecuteState) -> Literal["continue", "finalize_response"]:
+def should_end(state: PlanExecuteState) -> Literal["continue", "end"]:
     print('#### should_end ####')
     print('state: ', state)
     if "response" in state and state["response"]:
-        return "finalize_response"
+        return "end"
     else:
         return "continue"    
-    
-def finalize_response_for_plan_and_execute(state: PlanExecuteState):  
-    print('#### finalize_response_for_plan_and_execute ####')
-    print('state: ', state) 
-     
-    return {"messages": [AIMessage(content=state["response"])]}
 
 def buildPlanAndExecute():
     workflow = StateGraph(PlanExecuteState)
     workflow.add_node("planner", plan)
     workflow.add_node("executor", execute)
     workflow.add_node("replaner", replan)
-    workflow.add_node("finalize_response", finalize_response_for_plan_and_execute)
     
     workflow.set_entry_point("planner")
     workflow.add_edge("planner", "executor")
     workflow.add_edge("executor", "replaner")
-    workflow.add_edge("finalize_response", END)    
     workflow.add_conditional_edges(
         "replaner",
         should_end,
         {
             "continue": "executor",
-            "finalize_response": "finalize_response",
+            "end": END,
         },
     )
 
@@ -2300,11 +2292,10 @@ def run_plan_and_exeucute(connectionId, requestId, app, query):
             #print("value: ", value)
             
     print('value: ', value)
-    #print('content: ', value["messages"][-1].content)
         
-    readStreamMsg(connectionId, requestId, value["messages"][-1].content)
+    readStreamMsg(connectionId, requestId, value["response"])
     
-    return value["messages"][-1].content
+    return value["response"]
 
 #########################################################
 def traslation(chat, text, input_language, output_language):
