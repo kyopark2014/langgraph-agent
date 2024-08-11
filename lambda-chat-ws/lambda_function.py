@@ -1420,6 +1420,7 @@ def web_search(question, documents):
     web_search_tool = TavilySearchResults(k=3)
     
     docs = web_search_tool.invoke({"query": question})
+    # print('web_search: ', len(docs))
     
     for d in docs:
         print("d: ", d)
@@ -1428,7 +1429,7 @@ def web_search(question, documents):
             
     #web_results = "\n".join([d["content"] for d in docs])
     web_results = Document(page_content=web_results)
-    print("web_results: ", web_results)
+    # print("web_results: ", web_results)
     
     if documents is not None:
         documents.append(web_results)
@@ -1674,7 +1675,7 @@ def run_corrective_rag(connectionId, requestId, app, query):
     
     for output in app.stream(inputs, config):   
         for key, value in output.items():
-            print(f"Finished running: {key}:")
+            print(f"Finished running: {key}")
             # print("value: ", value)
             
     #print('value: ', value)
@@ -1918,7 +1919,7 @@ def run_self_rag(connectionId, requestId, app, query):
     
     for output in app.stream(inputs, config):   
         for key, value in output.items():
-            print(f"Finished running: {key}:")
+            print(f"Finished running: {key}")
             # print("value: ", value)
             
     #print('value: ', value)
@@ -1999,7 +2000,7 @@ def grade_generation_for_scrag(state: SelfCorrectiveRagState, config):
          
     # Check hallucination
     if hallucination_grade == "no":
-        print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
+        print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS (Hallucination), RE-TRY---")
         return "generate" if retries < max_retries else "websearch"
 
     print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
@@ -2015,7 +2016,7 @@ def grade_generation_for_scrag(state: SelfCorrectiveRagState, config):
         print("---DECISION: GENERATION ADDRESSES QUESTION---")
         return "finalize_response"
     else:
-        print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
+        print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION (Not Answer)---")
         return "rewrite" if retries < max_retries else "websearch"
 
 def web_search_for_scrag(state: SelfCorrectiveRagState):
@@ -2074,7 +2075,7 @@ def run_self_corrective_rag(connectionId, requestId, app, query):
     
     for output in app.stream(inputs, config):   
         for key, value in output.items():
-            print(f"Finished running: {key}:")
+            print(f"Finished running: {key}")
             #print("value: ", value)
             
     #print('value: ', value)
