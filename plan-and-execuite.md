@@ -11,7 +11,7 @@ LangGraph은 stateful하고 multi-actor 애플리케이션을 만들 수 있도�
 
 이때의 activity diagram은 아래와 같습니다.
 
-![image](https://github.com/user-attachments/assets/e03c7e90-a8de-4594-9e0c-5ba4f1a26929)
+![image](https://github.com/user-attachments/assets/39744460-50bf-4368-9bfd-c21c7a1f9c69)
 
 
 전체적인 구조는 아래와 같습니다. 
