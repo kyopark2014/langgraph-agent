@@ -100,6 +100,7 @@ async for event in app.astream(inputs, config=config):
 ```
 
 
+## 실행 결과
 
 
 <img width="867" alt="image" src="https://github.com/user-attachments/assets/e7d4ee6d-ceb9-4782-9088-178024692977">
@@ -116,3 +117,25 @@ async for event in app.astream(inputs, config=config):
 "I have two pet cats. One of them is missing a leg. The other one has a normal number of legs for a cat to have. In total, how many legs do my cats have?"
 
 <img width="863" alt="image" src="https://github.com/user-attachments/assets/d29321fc-ddc1-484e-8c9d-c4ce34598eb0">
+
+
+아래와 같이 "넌센스 큐즈니 너무 고민하지 말고 대답해봐. 아빼 개구리는 깨굴깨굴 울고 엄마 개구리는 가굴가굴 울고 있는데, 아기 개구리는 어떻게 울까?"라고 질문을 했을때에 결과는 아래와 같습니다.
+
+![image](https://github.com/user-attachments/assets/78bb277d-9adc-46e8-bb88-03b8dc34fb0f)
+
+이때, LamgSmith의 로그를 보면 아래와 같습니다.
+
+![image](https://github.com/user-attachments/assets/71b22451-7dfa-436b-9c9e-da122feaaf40)
+
+```text
+1. 아빠 개구리의 울음소리 패턴을 파악합니다: '깨굴깨굴'
+2. 엄마 개구리의 울음소리 패턴을 파악합니다: '가굴가굴'
+3. 아빠와 엄마의 울음소리 패턴을 비교하여 공통점과 차이점을 찾습니다
+4. 공통점: 두 번 반복되는 발음 패턴
+5. 차이점: 아빠는 '깨'를, 엄마는 '가'를 발음함
+6. 아기 개구리의 울음소리는 아빠와 엄마의 울음소리 패턴을 따르되, 아기 개구리 나름의 발음으로 바꾼다고 가정합니다
+7. 아기 개구리 나름의 발음은 '애'라고 가정합니다
+8. 따라서 아기 개구리의 울음소리는 '애굴애굴'이 됩니다
+```
+
+나름 의미있는 유추이지만 아기 개구리는 울지 못합니다. 
