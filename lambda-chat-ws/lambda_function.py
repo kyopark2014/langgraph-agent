@@ -2245,10 +2245,13 @@ def replan(state: PlanExecuteState):
     result = info['parsed']
     print('act output: ', result)
     
-    if isinstance(result.action, Response):
-        return {"response": result.action.response}
+    if result.action == None:
+        return {"response": "답을 찾지 못하였습니다. 다시 해주세요."}
     else:
-        return {"plan": result.action.steps}
+        if isinstance(result.action, Response):
+            return {"response": result.action.response}
+        else:
+            return {"plan": result.action.steps}
     
 def should_end(state: PlanExecuteState) -> Literal["continue", "end"]:
     print('#### should_end ####')
