@@ -2250,11 +2250,11 @@ def replan(state: PlanExecuteState):
     else:
         return {"plan": result.action.steps}
     
-def should_end(state: PlanExecuteState) -> Literal["continue", "end"]:
+def should_end(state: PlanExecuteState) -> Literal["continue", "finalize_response"]:
     print('#### should_end ####')
     print('state: ', state)
     if "response" in state and state["response"]:
-        return "end"
+        return "finalize_response"
     else:
         return "continue"    
     
