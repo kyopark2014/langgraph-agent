@@ -100,3 +100,19 @@ async for event in app.astream(inputs, config=config):
 ```
 
 
+
+
+<img width="867" alt="image" src="https://github.com/user-attachments/assets/e7d4ee6d-ceb9-4782-9088-178024692977">
+
+![image](https://github.com/user-attachments/assets/05c2784a-814e-4062-b771-7760c42c2974)
+
+
+
+"내 고양이 두 마리가 있다. 그중 한 마리는 다리가 하나 없다. 다른 한 마리는 고양이가 정상적으로 가져야 할 다리 수를 가지고 있다. 전체적으로 보았을 때, 내 고양이들은 다리가 몇 개나 있을까? "
+
+<img width="857" alt="image" src="https://github.com/user-attachments/assets/6449bf02-a3f4-42d0-8103-b294fe60c729">
+
+
+"I have two pet cats. One of them is missing a leg. The other one has a normal number of legs for a cat to have. In total, how many legs do my cats have?"
+
+<img width="863" alt="image" src="https://github.com/user-attachments/assets/d29321fc-ddc1-484e-8c9d-c4ce34598eb0">
