@@ -270,12 +270,7 @@ def run_plan_and_exeucute(connectionId, requestId, app, query):
 
 ## 실행 결과
 
-
-<img width="867" alt="image" src="https://github.com/user-attachments/assets/e7d4ee6d-ceb9-4782-9088-178024692977">
-
-![image](https://github.com/user-attachments/assets/05c2784a-814e-4062-b771-7760c42c2974)
-
-
+아래와 같이 CoT 문제를 쉽게 해결할 수 있습니다.
 
 "내 고양이 두 마리가 있다. 그중 한 마리는 다리가 하나 없다. 다른 한 마리는 고양이가 정상적으로 가져야 할 다리 수를 가지고 있다. 전체적으로 보았을 때, 내 고양이들은 다리가 몇 개나 있을까? "
 
@@ -286,6 +281,11 @@ def run_plan_and_exeucute(connectionId, requestId, app, query):
 
 <img width="863" alt="image" src="https://github.com/user-attachments/assets/d29321fc-ddc1-484e-8c9d-c4ce34598eb0">
 
+조금 생각이 필요한 문제를 주더라도 답변을 찾아가는 것을 로그로 확인할 수 있습니다. 그런데 아래와 같이 중간 결과없이 최종 결과를 답변하고 있어서 개선이 필요합니다. (개선 방법 고민중)
+
+<img width="867" alt="image" src="https://github.com/user-attachments/assets/e7d4ee6d-ceb9-4782-9088-178024692977">
+
+![image](https://github.com/user-attachments/assets/05c2784a-814e-4062-b771-7760c42c2974)
 
 아래와 같이 "넌센스 큐즈니 너무 고민하지 말고 대답해봐. 아빼 개구리는 깨굴깨굴 울고 엄마 개구리는 가굴가굴 울고 있는데, 아기 개구리는 어떻게 울까?"라고 질문을 했을때에 결과는 아래와 같습니다.
 
