@@ -2084,7 +2084,7 @@ def run_self_corrective_rag(connectionId, requestId, app, query):
             print(f"Finished running: {key}:")
             #print("value: ", value)
             
-    #print('value: ', value)
+    print('value: ', value)
     #print('content: ', value["messages"][-1].content)
         
     readStreamMsg(connectionId, requestId, value["messages"][-1].content)
