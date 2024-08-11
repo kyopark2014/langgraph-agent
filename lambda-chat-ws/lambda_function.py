@@ -32,7 +32,6 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from PIL import Image
 from opensearchpy import OpenSearch
 
-from typing import TypedDict, Annotated, Sequence, List, Union
 from langchain_core.agents import AgentAction, AgentFinish
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from langgraph.prebuilt.tool_executor import ToolExecutor
@@ -41,7 +40,7 @@ from langgraph.prebuilt import ToolNode
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import tools_condition
 from langchain_core.pydantic_v1 import BaseModel, Field
-from typing import Literal
+from typing import Annotated, List, Tuple, TypedDict, Literal, Sequence, Union
 
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
@@ -2092,6 +2091,214 @@ def run_self_corrective_rag(connectionId, requestId, app, query):
     
     return value["messages"][-1].content
 
+####################### LangGraph #######################
+# Plan and Execute
+#########################################################
+class Plan(BaseModel):
+    """List of steps as a json format"""
+
+    steps: List[str] = Field(
+        description="different steps to follow, should be in sorted order"
+    )
+
+def get_planner():
+    system = """For the given objective, come up with a simple step by step plan. \
+This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
+The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."""
+        
+    planner_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("placeholder", "{messages}"),
+        ]
+    )
+    
+    chat = get_chat()   
+    
+    planner = planner_prompt | chat
+    return planner
+
+class PlanExecuteState(TypedDict):
+    messages: Annotated[list[BaseMessage], add_messages]
+    input: str
+    plan: list[str]
+    past_steps: Annotated[List[Tuple], operator.add]
+    response: int
+
+def plan(state: PlanExecuteState):
+    print("###### plan ######")
+    print('input: ', state["input"])
+    
+    inputs = [HumanMessage(content=state["input"])]
+
+    planner = get_planner()
+    response = planner.invoke({"messages": inputs})
+    print('response.content: ', response.content)
+    
+    chat = get_chat()
+    structured_llm = chat.with_structured_output(Plan, include_raw=True)
+    info = structured_llm.invoke(response.content)
+    print('info: ', info)
+    
+    if not info['parsed'] == None:
+        parsed_info = info['parsed']
+        print('parsed_info: ', parsed_info)        
+        print('steps: ', parsed_info.steps)
+        
+        return {
+            "input": state["input"],
+            "plan": parsed_info.steps
+        }
+    else:
+        print('parsing_error: ', info['parsing_error'])
+        
+        return {"plan": []}  
+
+def execute(state: PlanExecuteState):
+    print("###### execute ######")
+    print('input: ', state["input"])
+    plan = state["plan"]
+    print('plan: ', plan) 
+    
+    plan_str = "\n".join(f"{i+1}. {step}" for i, step in enumerate(plan))
+    #print("plan_str: ", plan_str)
+    
+    task = plan[0]
+    task_formatted = f"""For the following plan:{plan_str}\n\nYou are tasked with executing step {1}, {task}."""
+    print("task_formatted", task_formatted)     
+    request = HumanMessage(content=task_formatted)
+    
+    chat = get_chat()
+    prompt = ChatPromptTemplate.from_messages(
+    [
+        ("system",
+            "다음의 Human과 Assistant의 친근한 이전 대화입니다."
+            "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.",
+        ),
+        MessagesPlaceholder(variable_name="messages"),
+    ]
+    )
+    chain = prompt | chat
+    
+    agent_response = chain.invoke({"messages": [request]})
+    print("agent_response: ", agent_response)
+    
+    print('task: ', task)
+    print('agent_response.content: ', agent_response.content)
+    
+    
+    print('plan: ', state["plan"])
+    print('past_steps: ', task)
+    
+    return {
+        "input": state["input"],
+        "plan": state["plan"],
+        "past_steps": [task],
+    }
+
+class Response(BaseModel):
+    """Response to user."""
+    response: str
+    
+class Act(BaseModel):
+    """Action to perform as a json format"""
+    action: Union[Response, Plan] = Field(
+        description="Action to perform. If you want to respond to user, use Response. "
+        "If you need to further use tools to get the answer, use Plan."
+    )
+    
+def get_replanner():
+    replanner_prompt = ChatPromptTemplate.from_template(
+    """For the given objective, come up with a simple step by step plan. \
+This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
+The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.
+
+Your objective was this:
+{input}
+
+Your original plan was this:
+{plan}
+
+You have currently done the follow steps:
+{past_steps}
+
+Update your plan accordingly. If no more steps are needed and you can return to the user, then respond with that. \
+Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.""")
+       
+    chat = get_chat()
+    replanner = replanner_prompt | chat
+     
+    return replanner
+
+def replan(state: PlanExecuteState):
+    print('#### replan ####')
+    
+    replanner = get_replanner()
+    output = replanner.invoke(state)
+    print('output.content: ', output)
+    
+    chat = get_chat()
+    structured_llm = chat.with_structured_output(Act, include_raw=True)
+    
+    info = structured_llm.invoke(output.content)
+    print('info: ', info)
+    
+    result = info['parsed']
+    print('result: ', result)
+    
+    if isinstance(result.action, Response):
+        return {"response": result.action.response}
+    else:
+        return {"plan": result.action.steps}
+    
+def should_end(state: PlanExecuteState) -> Literal["continue", "end"]:
+    print('#### should_end ####')
+    print('state: ', state)
+    if "response" in state and state["response"]:
+        return "end"
+    else:
+        return "continue"    
+    
+def buildPlanAndExecute():
+    workflow = StateGraph(PlanExecuteState)
+    workflow.add_node("planner", plan)
+    workflow.add_node("agent", execute)
+    workflow.add_node("replan", replan)
+    
+    workflow.set_entry_point("planner")
+    workflow.add_edge("planner", "agent")
+    workflow.add_edge("agent", "replan")
+    workflow.add_conditional_edges(
+        "replan",
+        should_end,
+        {
+            "continue": "agent",
+            "end": END,
+        },
+    )
+
+    return workflow.compile()
+
+plan_and_execute_app = buildPlanAndExecute()
+
+def run_plan_and_exeucute(connectionId, requestId, app, query):
+    isTyping(connectionId, requestId)
+    
+    inputs = {"input": query}
+    config = {"recursion_limit": 50}
+    
+    for output in app.stream(inputs, config):   
+        for key, value in output.items():
+            print(f"Finished running: {key}:")
+            #print("value: ", value)
+            
+    #print('value: ', value)
+    #print('content: ', value["messages"][-1].content)
+        
+    readStreamMsg(connectionId, requestId, value["messages"][-1].content)
+    
+    return value["messages"][-1].content
 
 #########################################################
 def traslation(chat, text, input_language, output_language):
@@ -2618,6 +2825,9 @@ def getResponse(connectionId, jsonBody):
                     
                 elif convType == 'agent-scrag':  # self-corrective RAG
                     msg = run_self_corrective_rag(connectionId, requestId, scrag_app, text)        
+                
+                elif convType == 'agent-plan-and-execute':  # self-corrective RAG
+                    msg = run_plan_and_exeucute(connectionId, requestId, plan_and_execute_app, text)        
                                                 
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
