@@ -2119,7 +2119,6 @@ The result of the final step should be the final answer. Make sure that each ste
     return planner
 
 class PlanExecuteState(TypedDict):
-    messages: Annotated[list[BaseMessage], add_messages]
     input: str
     plan: list[str]
     past_steps: Annotated[List[Tuple], operator.add]
@@ -2245,7 +2244,7 @@ def replan(state: PlanExecuteState):
     result = info['parsed']
     print('act output: ', result)
     
-    if result.action == None:
+    if result == None:
         return {"response": "답을 찾지 못하였습니다. 다시 해주세요."}
     else:
         if isinstance(result.action, Response):
