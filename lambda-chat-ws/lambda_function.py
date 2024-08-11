@@ -2142,7 +2142,7 @@ def plan(state: PlanExecuteState):
     
     if not info['parsed'] == None:
         parsed_info = info['parsed']
-        print('parsed_info: ', parsed_info)        
+        # print('parsed_info: ', parsed_info)        
         print('steps: ', parsed_info.steps)
         
         return {
@@ -2165,7 +2165,7 @@ def execute(state: PlanExecuteState):
     
     task = plan[0]
     task_formatted = f"""For the following plan:{plan_str}\n\nYou are tasked with executing step {1}, {task}."""
-    print("task_formatted", task_formatted)     
+    print("request: ", task_formatted)     
     request = HumanMessage(content=task_formatted)
     
     chat = get_chat()
@@ -2182,14 +2182,13 @@ def execute(state: PlanExecuteState):
     chain = prompt | chat
     
     agent_response = chain.invoke({"messages": [request]})
-    print("agent_response: ", agent_response)
+    #print("agent_response: ", agent_response)
     
     print('task: ', task)
-    print('agent_response.content: ', agent_response.content)
+    print('executor output: ', agent_response.content)
     
-    
-    print('plan: ', state["plan"])
-    print('past_steps: ', task)
+    # print('plan: ', state["plan"])
+    # print('past_steps: ', task)
     
     return {
         "input": state["input"],
@@ -2236,16 +2235,15 @@ def replan(state: PlanExecuteState):
     
     replanner = get_replanner()
     output = replanner.invoke(state)
-    print('output.content: ', output)
+    print('replanner output: ', output.content)
     
     chat = get_chat()
-    structured_llm = chat.with_structured_output(Act, include_raw=True)
-    
+    structured_llm = chat.with_structured_output(Act, include_raw=True)    
     info = structured_llm.invoke(output.content)
-    print('info: ', info)
+    # print('info: ', info)
     
     result = info['parsed']
-    print('result: ', result)
+    print('act output: ', result)
     
     if isinstance(result.action, Response):
         return {"response": result.action.response}
@@ -2290,7 +2288,7 @@ def run_plan_and_exeucute(connectionId, requestId, app, query):
     
     for output in app.stream(inputs, config):   
         for key, value in output.items():
-            print(f"Finished running: {key}:")
+            print(f"Finished: {key}")
             #print("value: ", value)
             
     #print('value: ', value)
@@ -2828,6 +2826,7 @@ def getResponse(connectionId, jsonBody):
                 
                 elif convType == 'agent-plan-and-execute':  # self-corrective RAG
                     msg = run_plan_and_exeucute(connectionId, requestId, plan_and_execute_app, text)        
+                    print('final msg: ', msg)
                                                 
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
