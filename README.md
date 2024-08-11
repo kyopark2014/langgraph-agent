@@ -102,6 +102,8 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 ## Reference
 
+- [Essay Writer](./essay-writer.md)에서는 essay를 작성하는 Agent를 생성합니다.
+
 - [reflexion-agent.md](./reflexion-agent.md)에서는 Reflexion방식의 Agent에 대해 설명합니다.
 
 - [persistence-agent.md](./persistence-agent.md)에서는 checkpoint를 이용해 이전 state로 돌아가는 것을 보여줍니다.
@@ -126,7 +128,6 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 - [GPT Newspape](https://www.youtube.com/watch?v=E7nFHaSs3q8)에서는 신문요약에 대해 설명하고 있습니다. ([github](https://github.com/rotemweiss57/gpt-newspaper/tree/master) 링크)
 
-- [Essay Writer](./essay-writer.md)에서는 essay를 작성하는 Agent를 생성합니다.
 
 
 
