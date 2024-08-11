@@ -100,8 +100,6 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 ## Reference
 
-- [planning-agents.md](./planning-agents.md)에서는 plan-and-execution 형태의 agent를 생성하는 방법을 설명합니다.
-
 - [reflexion-agent.md](./reflexion-agent.md)에서는 Reflexion방식의 Agent에 대해 설명합니다.
 
 - [reflection-agent.md](./reflection-agent.md)에서는 reflection을 이용해 성능을 향상시키는 방법에 대해 설명합니다.
