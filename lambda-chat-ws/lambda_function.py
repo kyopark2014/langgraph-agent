@@ -151,7 +151,6 @@ def get_chat():
         "temperature":0.1,
         "top_k":250,
         "top_p":0.9,
-        "anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15",
         "stop_sequences": [HUMAN_PROMPT]
     }
     # print('parameters: ', parameters)
