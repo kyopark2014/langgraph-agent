@@ -1285,215 +1285,6 @@ def web_search(question, documents):
         )
     return documents
 
-# define tools
-tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
-
-####################### LangGraph #######################
-# Chat Agent Executor
-#########################################################
-chatModel = get_chat() 
-
-model = chatModel.bind_tools(tools)
-
-class ChatAgentState(TypedDict):
-    # messages: Annotated[Sequence[BaseMessage], operator.add]
-    messages: Annotated[list, add_messages]
-
-tool_node = ToolNode(tools)
-
-def should_continue(state: ChatAgentState) -> Literal["continue", "end"]:
-    messages = state["messages"]    
-    # print('(should_continue) messages: ', messages)
-    
-    last_message = messages[-1]
-    if not last_message.tool_calls:
-        return "end"
-    else:                
-        return "continue"
-
-def call_model(state: ChatAgentState):
-    question = state["messages"]
-    print('question: ', question)
-    
-    if isKorean(question[0].content)==True:
-        system = (
-            "다음의 Human과 Assistant의 친근한 이전 대화입니다."
-            "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
-            "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
-        )
-    else: 
-        system = (            
-            "Answer friendly for the newest question using the following conversation"
-            "If you don't know the answer, just say that you don't know, don't try to make up an answer."
-            "You will be acting as a thoughtful advisor."
-            "Put it in <result> tags."
-        )
-         
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system),
-            MessagesPlaceholder(variable_name="messages"),
-        ]
-    )
-    chain = prompt | model
-        
-    response = chain.invoke(question)
-    return {"messages": [response]}
-
-def buildChatAgent():
-    workflow = StateGraph(ChatAgentState)
-
-    workflow.add_node("agent", call_model)
-    workflow.add_node("action", tool_node)
-    workflow.add_edge(START, "agent")
-    workflow.add_conditional_edges(
-        "agent",
-        should_continue,
-        {
-            "continue": "action",
-            "end": END,
-        },
-    )
-    workflow.add_edge("action", "agent")
-
-    return workflow.compile()
-
-chat_app = buildChatAgent()
-
-def run_agent_executor(connectionId, requestId, app, query):
-    isTyping(connectionId, requestId)
-    
-    inputs = [HumanMessage(content=query)]
-    config = {"recursion_limit": 50}
-    
-    message = ""
-    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
-        # print('event: ', event)
-        
-        message = event["messages"][-1]
-        # print('message: ', message)
-
-    msg = readStreamMsg(connectionId, requestId, message.content)
-
-    return msg
-
-####################### LangGraph #######################
-# Reflection Agent
-#########################################################
-class ReflectionState(TypedDict):
-    # messages: Annotated[Sequence[BaseMessage], operator.add]
-    messages: Annotated[list, add_messages]
-
-def generation_for_reflection(state: ReflectionState):    
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "당신은 5문단의 에세이 작성을 돕는 작가이고 이름은 서연입니다"
-                "사용자의 요청에 대해 최고의 에세이를 작성하세요."
-                "사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요."
-                "최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
-            ),
-            MessagesPlaceholder(variable_name="messages"),
-        ]
-    )
-    
-    chat = get_chat()
-    chain = prompt | chat
-
-    response = chain.invoke(state["messages"])
-    return {"messages": [response]}
-
-def reflection_for_reflection(state: ReflectionState):
-    messages = state["messages"]
-    
-    reflection_prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
-                "이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다."
-                #"특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다"
-                "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.",
-            ),
-            MessagesPlaceholder(variable_name="messages"),
-        ]
-    )
-    
-    chat = get_chat()
-    reflect = reflection_prompt | chat
-    
-    cls_map = {"ai": HumanMessage, "human": AIMessage}
-    translated = [messages[0]] + [
-        cls_map[msg.type](content=msg.content) for msg in messages[1:]
-    ]
-    res = reflect.invoke({"messages": translated})    
-    response = HumanMessage(content=res.content)    
-    return {"messages": [response]}
-
-def should_continue_for_reflection(state: ReflectionState) -> Literal["continue", "end"]:
-    messages = state["messages"]
-    
-    if len(messages) >= 6:   # End after 3 iterations        
-        return "end"
-    else:
-        return "continue"
-
-def buildReflectionAgent():
-    workflow = StateGraph(ReflectionState)
-    workflow.add_node("generate", generation_for_reflection)
-    workflow.add_node("reflect", reflection_for_reflection)
-    workflow.set_entry_point("generate")
-    workflow.add_conditional_edges(
-        "generate",
-        should_continue_for_reflection,
-        {
-            "continue": "reflect",
-            "end": END,
-        },
-    )
-
-    workflow.add_edge("reflect", "generate")
-    return workflow.compile()
-
-reflection_app = buildReflectionAgent()
-
-def run_reflection_agent(connectionId, requestId, app, query):
-    isTyping(connectionId, requestId)
-    
-    inputs = [HumanMessage(content=query)]
-    config = {"recursion_limit": 50}
-    
-    msg = ""
-    
-    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
-        print('event: ', event)
-        
-        message = event["messages"][-1]
-        print('message: ', message)
-        
-        if len(event["messages"])>1:
-            if msg == "":
-                msg = message.content
-            else:
-                msg = f"{msg}\n\n{message.content}"
-
-            result = {
-                'request_id': requestId,
-                'msg': msg,
-                'status': 'proceeding'
-            }
-            #print('result: ', json.dumps(result))
-            sendMessage(connectionId, result)
-
-    return msg
-
-####################### LangGraph #######################
-# Corrective RAG
-#########################################################
-langMode = False
-
 class GradeDocuments(BaseModel):
     """Binary score for relevance check on retrieved documents."""
 
@@ -1567,140 +1358,349 @@ def get_rewrite():
     question_rewriter = re_write_prompt | structured_llm_rewriter
     return question_rewriter
 
-class CragState(TypedDict):
-    question : str
-    generation : str
-    web_search : str
-    documents : List[str]
+# define tools
+tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
 
-def retrieve_for_crag(state: CragState):
-    print("###### retrieve ######")
-    question = state["question"]
-    
-    docs = retrieve(question)
-    
-    return {"documents": docs, "question": question}
+####################### LangGraph #######################
+# Chat Agent Executor
+#########################################################
+def run_agent_executor(connectionId, requestId, query):
+    chatModel = get_chat() 
 
-def grade_documents_for_crag(state: CragState):
-    print("###### grade_documents ######")
-    question = state["question"]
-    documents = state["documents"]
-    
-    # Score each doc
-    filtered_docs = []
-    web_search = "No"
-    
-    if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
-        print("start grading...")
-        filtered_docs = grade_documents_using_parallel_processing(question, documents)
+    model = chatModel.bind_tools(tools)
+
+    class State(TypedDict):
+        # messages: Annotated[Sequence[BaseMessage], operator.add]
+        messages: Annotated[list, add_messages]
+
+    tool_node = ToolNode(tools)
+
+    def should_continue(state: State) -> Literal["continue", "end"]:
+        messages = state["messages"]    
+        # print('(should_continue) messages: ', messages)
         
-        if len(documents) != len(filtered_docs):
-            web_search = "Yes"
+        last_message = messages[-1]
+        if not last_message.tool_calls:
+            return "end"
+        else:                
+            return "continue"
 
-    else:    
+    def call_model(state: State):
+        question = state["messages"]
+        print('question: ', question)
+        
+        if isKorean(question[0].content)==True:
+            system = (
+                "다음의 Human과 Assistant의 친근한 이전 대화입니다."
+                "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+                "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+                "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
+            )
+        else: 
+            system = (            
+                "Answer friendly for the newest question using the following conversation"
+                "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+                "You will be acting as a thoughtful advisor."
+                "Put it in <result> tags."
+            )
+            
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        chain = prompt | model
+            
+        response = chain.invoke(question)
+        return {"messages": [response]}
+
+    def buildChatAgent():
+        workflow = StateGraph(State)
+
+        workflow.add_node("agent", call_model)
+        workflow.add_node("action", tool_node)
+        workflow.add_edge(START, "agent")
+        workflow.add_conditional_edges(
+            "agent",
+            should_continue,
+            {
+                "continue": "action",
+                "end": END,
+            },
+        )
+        workflow.add_edge("action", "agent")
+
+        return workflow.compile()
+
+    app = buildChatAgent()
+        
+    isTyping(connectionId, requestId)
+    
+    inputs = [HumanMessage(content=query)]
+    config = {"recursion_limit": 50}
+    
+    message = ""
+    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
+        # print('event: ', event)
+        
+        message = event["messages"][-1]
+        # print('message: ', message)
+
+    msg = readStreamMsg(connectionId, requestId, message.content)
+
+    return msg
+
+####################### LangGraph #######################
+# Reflection Agent
+#########################################################
+def run_reflection_agent(connectionId, requestId, app, query):
+    class State(TypedDict):
+        # messages: Annotated[Sequence[BaseMessage], operator.add]
+        messages: Annotated[list, add_messages]
+
+    def generation(state: State):    
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "당신은 5문단의 에세이 작성을 돕는 작가이고 이름은 서연입니다"
+                    "사용자의 요청에 대해 최고의 에세이를 작성하세요."
+                    "사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요."
+                    "최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
+                ),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        
         chat = get_chat()
-        retrieval_grader = get_retrieval_grader(chat)
-        for doc in documents:
-            score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
-            grade = score.binary_score
-            # Document relevant
-            if grade.lower() == "yes":
-                print("---GRADE: DOCUMENT RELEVANT---")
-                filtered_docs.append(doc)
-            # Document not relevant
+        chain = prompt | chat
+
+        response = chain.invoke(state["messages"])
+        return {"messages": [response]}
+
+    def reflection(state: State):
+        messages = state["messages"]
+        
+        reflection_prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
+                    "이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다."
+                    #"특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다"
+                    "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.",
+                ),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        
+        chat = get_chat()
+        reflect = reflection_prompt | chat
+        
+        cls_map = {"ai": HumanMessage, "human": AIMessage}
+        translated = [messages[0]] + [
+            cls_map[msg.type](content=msg.content) for msg in messages[1:]
+        ]
+        res = reflect.invoke({"messages": translated})    
+        response = HumanMessage(content=res.content)    
+        return {"messages": [response]}
+
+    def should_continue(state: State) -> Literal["continue", "end"]:
+        messages = state["messages"]
+        
+        if len(messages) >= 6:   # End after 3 iterations        
+            return "end"
+        else:
+            return "continue"
+
+    def buildReflectionAgent():
+        workflow = StateGraph(State)
+        workflow.add_node("generate", generation)
+        workflow.add_node("reflect", reflection)
+        workflow.set_entry_point("generate")
+        workflow.add_conditional_edges(
+            "generate",
+            should_continue,
+            {
+                "continue": "reflect",
+                "end": END,
+            },
+        )
+
+        workflow.add_edge("reflect", "generate")
+        return workflow.compile()
+
+    app = buildReflectionAgent()
+
+    isTyping(connectionId, requestId)
+    
+    inputs = [HumanMessage(content=query)]
+    config = {"recursion_limit": 50}
+    
+    msg = ""
+    
+    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
+        print('event: ', event)
+        
+        message = event["messages"][-1]
+        print('message: ', message)
+        
+        if len(event["messages"])>1:
+            if msg == "":
+                msg = message.content
             else:
-                print("---GRADE: DOCUMENT NOT RELEVANT---")
-                # We do not include the document in filtered_docs
-                # We set a flag to indicate that we want to run web search
-                web_search = "Yes"
-                continue
-    print('len(docments): ', len(filtered_docs))
-    print('web_search: ', web_search)
-    
-    global reference_docs
-    reference_docs += filtered_docs
-    
-    return {"question": question, "documents": filtered_docs, "web_search": web_search}
+                msg = f"{msg}\n\n{message.content}"
 
-def decide_to_generate(state: CragState):
-    print("###### decide_to_generate ######")
-    web_search = state["web_search"]
-    
-    if web_search == "Yes":
-        # All documents have been filtered check_relevance
-        # We will re-generate a new query
-        print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
-        return "rewrite"
-    else:
-        # We have relevant documents, so generate answer
-        print("---DECISION: GENERATE---")
-        return "generate"
+            result = {
+                'request_id': requestId,
+                'msg': msg,
+                'status': 'proceeding'
+            }
+            #print('result: ', json.dumps(result))
+            sendMessage(connectionId, result)
 
-def generate_for_crag(state: CragState):
-    print("###### generate ######")
-    question = state["question"]
-    documents = state["documents"]
-    
-    # RAG generation
-    rag_chain = get_reg_chain()
-    
-    generation = rag_chain.invoke({"context": documents, "question": question})
-    print('generation: ', generation.content)
-        
-    return {"documents": documents, "question": question, "generation": generation}
+    return msg
 
-def rewrite_for_crag(state: CragState):
-    print("###### rewrite ######")
-    question = state["question"]
-    documents = state["documents"]
-
-    # Prompt
-    question_rewriter = get_rewrite()
-    
-    better_question = question_rewriter.invoke({"question": question})
-    print("better_question: ", better_question.question)
-
-    return {"question": better_question.question, "documents": documents}
-
-def web_search_for_crag(state: CragState):
-    print("###### web_search ######")
-    question = state["question"]
-    documents = state["documents"]
-
-    documents = web_search(question, documents)
-        
-    return {"question": question, "documents": documents}
-
-def buildCorrectiveRAG():
-    workflow = StateGraph(CragState)
-        
-    # Define the nodes
-    workflow.add_node("retrieve", retrieve_for_crag)  
-    workflow.add_node("grade_documents", grade_documents_for_crag)
-    workflow.add_node("generate", generate_for_crag)
-    workflow.add_node("rewrite", rewrite_for_crag)
-    workflow.add_node("websearch", web_search_for_crag)
-
-    # Build graph
-    workflow.set_entry_point("retrieve")
-    workflow.add_edge("retrieve", "grade_documents")
-    workflow.add_conditional_edges(
-        "grade_documents",
-        decide_to_generate,
-        {
-            "rewrite": "rewrite",
-            "generate": "generate",
-        },
-    )
-    workflow.add_edge("rewrite", "websearch")
-    workflow.add_edge("websearch", "generate")
-    workflow.add_edge("generate", END)
-
-    return workflow.compile()
-
-crag_app = buildCorrectiveRAG()
+####################### LangGraph #######################
+# Corrective RAG
+#########################################################
+langMode = False
 
 def run_corrective_rag(connectionId, requestId, app, query):
+    class State(TypedDict):
+        question : str
+        generation : str
+        web_search : str
+        documents : List[str]
+
+    def retrieve(state: State):
+        print("###### retrieve ######")
+        question = state["question"]
+        
+        docs = retrieve(question)
+        
+        return {"documents": docs, "question": question}
+
+    def grade_documents(state: State):
+        print("###### grade_documents ######")
+        question = state["question"]
+        documents = state["documents"]
+        
+        # Score each doc
+        filtered_docs = []
+        web_search = "No"
+        
+        if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
+            print("start grading...")
+            filtered_docs = grade_documents_using_parallel_processing(question, documents)
+            
+            if len(documents) != len(filtered_docs):
+                web_search = "Yes"
+
+        else:    
+            chat = get_chat()
+            retrieval_grader = get_retrieval_grader(chat)
+            for doc in documents:
+                score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+                grade = score.binary_score
+                # Document relevant
+                if grade.lower() == "yes":
+                    print("---GRADE: DOCUMENT RELEVANT---")
+                    filtered_docs.append(doc)
+                # Document not relevant
+                else:
+                    print("---GRADE: DOCUMENT NOT RELEVANT---")
+                    # We do not include the document in filtered_docs
+                    # We set a flag to indicate that we want to run web search
+                    web_search = "Yes"
+                    continue
+        print('len(docments): ', len(filtered_docs))
+        print('web_search: ', web_search)
+        
+        global reference_docs
+        reference_docs += filtered_docs
+        
+        return {"question": question, "documents": filtered_docs, "web_search": web_search}
+
+    def decide_to_generate(state: State):
+        print("###### decide_to_generate ######")
+        web_search = state["web_search"]
+        
+        if web_search == "Yes":
+            # All documents have been filtered check_relevance
+            # We will re-generate a new query
+            print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
+            return "rewrite"
+        else:
+            # We have relevant documents, so generate answer
+            print("---DECISION: GENERATE---")
+            return "generate"
+
+    def generate(state: State):
+        print("###### generate ######")
+        question = state["question"]
+        documents = state["documents"]
+        
+        # RAG generation
+        rag_chain = get_reg_chain()
+        
+        generation = rag_chain.invoke({"context": documents, "question": question})
+        print('generation: ', generation.content)
+            
+        return {"documents": documents, "question": question, "generation": generation}
+
+    def rewrite_for_crag(state: State):
+        print("###### rewrite ######")
+        question = state["question"]
+        documents = state["documents"]
+
+        # Prompt
+        question_rewriter = get_rewrite()
+        
+        better_question = question_rewriter.invoke({"question": question})
+        print("better_question: ", better_question.question)
+
+        return {"question": better_question.question, "documents": documents}
+
+    def web_search(state: State):
+        print("###### web_search ######")
+        question = state["question"]
+        documents = state["documents"]
+
+        documents = web_search(question, documents)
+            
+        return {"question": question, "documents": documents}
+
+    def buildCorrectiveRAG():
+        workflow = StateGraph(State)
+            
+        # Define the nodes
+        workflow.add_node("retrieve", retrieve)  
+        workflow.add_node("grade_documents", grade_documents)
+        workflow.add_node("generate", generate)
+        workflow.add_node("rewrite", rewrite_for_crag)
+        workflow.add_node("websearch", web_search)
+
+        # Build graph
+        workflow.set_entry_point("retrieve")
+        workflow.add_edge("retrieve", "grade_documents")
+        workflow.add_conditional_edges(
+            "grade_documents",
+            decide_to_generate,
+            {
+                "rewrite": "rewrite",
+                "generate": "generate",
+            },
+        )
+        workflow.add_edge("rewrite", "websearch")
+        workflow.add_edge("websearch", "generate")
+        workflow.add_edge("generate", END)
+
+        return workflow.compile()
+
+    app = buildCorrectiveRAG()
+    
     global langMode
     langMode = isKorean(query)
             
@@ -1725,226 +1725,227 @@ def run_corrective_rag(connectionId, requestId, app, query):
 #########################################################
 MAX_RETRIES = 2 # total 3
 
-class SelfRagState(TypedDict):
-    question : str
-    generation : str
-    retries: int  # number of generation 
-    count: int # number of retrieval
-    documents : List[str]
-    
 class GraphConfig(TypedDict):
     max_retries: int    
     max_count: int
 
-def get_hallucination_grader():
-    class GradeHallucinations(BaseModel):
-        """Binary score for hallucination present in generation answer."""
 
-        binary_score: str = Field(
-            description="Answer is grounded in the facts, 'yes' or 'no'"
-        )
-    
-    system = """You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts. \n 
-        Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."""
-    hallucination_prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system),
-            ("human", "Set of facts: \n\n {documents} \n\n LLM generation: {generation}"),
-        ]
-    )
-    
-    chat = get_chat()
-    structured_llm_grade_hallucination = chat.with_structured_output(GradeHallucinations)
-    
-    hallucination_grader = hallucination_prompt | structured_llm_grade_hallucination
-    return hallucination_grader
+def run_self_rag(connectionId, requestId, query):
+    class State(TypedDict):
+        question : str
+        generation : str
+        retries: int  # number of generation 
+        count: int # number of retrieval
+        documents : List[str]
 
-def get_answer_grader():
-    class GradeAnswer(BaseModel):
-        """Binary score to assess answer addresses question."""
+    def get_hallucination_grader():
+        class GradeHallucinations(BaseModel):
+            """Binary score for hallucination present in generation answer."""
 
-        binary_score: str = Field(
-            description="Answer addresses the question, 'yes' or 'no'"
-        )
-    
-    chat = get_chat()
-    structured_llm_grade_answer = chat.with_structured_output(GradeAnswer)
-    
-    system = """You are a grader assessing whether an answer addresses / resolves a question \n 
-        Give a binary score 'yes' or 'no'. Yes' means that the answer resolves the question."""
-    answer_prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system),
-            ("human", "User question: \n\n {question} \n\n LLM generation: {generation}"),
-        ]
-    )
-    answer_grader = answer_prompt | structured_llm_grade_answer
-    return answer_grader
-
-def retrieve_for_srag(state: SelfRagState):
-    print("###### retrieve ######")
-    question = state["question"]
-    
-    docs = retrieve(question)
-    
-    return {"documents": docs, "question": question}
-
-def generate_for_srag(state: SelfRagState):
-    print("###### generate ######")
-    question = state["question"]
-    documents = state["documents"]
-    retries = state["retries"] if state.get("retries") is not None else -1
-    
-    # RAG generation
-    rag_chain = get_reg_chain()
-    
-    generation = rag_chain.invoke({"context": documents, "question": question})
-    print('generation: ', generation.content)
-    
-    return {"documents": documents, "question": question, "generation": generation, "retries": retries + 1}
+            binary_score: str = Field(
+                description="Answer is grounded in the facts, 'yes' or 'no'"
+            )
         
-def grade_documents_for_srag(state: SelfRagState):
-    print("###### grade_documents ######")
-    question = state["question"]
-    documents = state["documents"]
-    count = state["count"] if state.get("count") is not None else -1
-    
-    if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
-        print("start grading...")
-        filtered_docs = grade_documents_using_parallel_processing(question, documents)
-
-    else:    
-        # Score each doc
-        filtered_docs = []
+        system = """You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts. \n 
+            Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."""
+        hallucination_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                ("human", "Set of facts: \n\n {documents} \n\n LLM generation: {generation}"),
+            ]
+        )
+        
         chat = get_chat()
-        retrieval_grader = get_retrieval_grader(chat)
-        for doc in documents:
-            score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
-            grade = score.binary_score
-            # Document relevant
-            if grade.lower() == "yes":
-                print("---GRADE: DOCUMENT RELEVANT---")
-                filtered_docs.append(doc)
-            # Document not relevant
-            else:
-                print("---GRADE: DOCUMENT NOT RELEVANT---")
-                # We do not include the document in filtered_docs
-                # We set a flag to indicate that we want to run web search
-                continue
-    print('len(docments): ', len(filtered_docs))    
-    
-    global reference_docs
-    reference_docs += filtered_docs
-    
-    return {"question": question, "documents": filtered_docs, "count": count + 1}
-
-def decide_to_generate_for_srag(state: SelfRagState, config):
-    print("###### decide_to_generate ######")
-    filtered_documents = state["documents"]
-    
-    count = state["count"] if state.get("count") is not None else -1
-    max_count = config.get("configurable", {}).get("max_count", MAX_RETRIES)
-    print("count: ", count)
-    
-    if not filtered_documents:
-        # All documents have been filtered check_relevance
-        # We will re-generate a new query
-        print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
-        return "no document" if count < max_count else "not available"
-    else:
-        # We have relevant documents, so generate answer
-        print("---DECISION: GENERATE---")
-        return "document"
-
-def rewrite_for_srag(state: SelfRagState):
-    print("###### rewrite ######")
-    question = state["question"]
-    documents = state["documents"]
-
-    # Prompt
-    question_rewriter = get_rewrite()
-    
-    better_question = question_rewriter.invoke({"question": question})
-    print("better_question: ", better_question.question)
-
-    return {"question": better_question.question, "documents": documents}
-
-def grade_generation_for_srag(state: SelfRagState, config):
-    print("###### grade_generation ######")
-    question = state["question"]
-    documents = state["documents"]
-    generation = state["generation"]
-    
-    retries = state["retries"] if state.get("retries") is not None else -1
-    max_retries = config.get("configurable", {}).get("max_retries", MAX_RETRIES)
-
-    hallucination_grader = get_hallucination_grader()
-    score = hallucination_grader.invoke(
-        {"documents": documents, "generation": generation}
-    )
-    hallucination_grade = score.binary_score
-    
-    print("hallucination_grade: ", hallucination_grade)
-    print("retries: ", retries)
-
-    # Check hallucination
-    answer_grader = get_answer_grader()    
-    if hallucination_grade == "yes":
-        print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
-        # Check question-answering
-        print("---GRADE GENERATION vs QUESTION---")
-        score = answer_grader.invoke({"question": question, "generation": generation})
-        answer_grade = score.binary_score        
-        # print("answer_grade: ", answer_grade)
-
-        if answer_grade == "yes":
-            print("---DECISION: GENERATION ADDRESSES QUESTION---")
-            return "useful" 
-        else:
-            print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
-            return "not useful" if retries < max_retries else "not available"
-    else:
-        print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
-        return "not supported" if retries < max_retries else "not available"
-    
-def buildSelfRAG():
-    workflow = StateGraph(SelfRagState)
+        structured_llm_grade_hallucination = chat.with_structured_output(GradeHallucinations)
         
-    # Define the nodes
-    workflow.add_node("retrieve", retrieve_for_srag)  
-    workflow.add_node("grade_documents", grade_documents_for_srag)
-    workflow.add_node("generate", generate_for_srag)
-    workflow.add_node("rewrite", rewrite_for_srag)
+        hallucination_grader = hallucination_prompt | structured_llm_grade_hallucination
+        return hallucination_grader
 
-    # Build graph
-    workflow.set_entry_point("retrieve")
-    workflow.add_edge("retrieve", "grade_documents")
-    workflow.add_conditional_edges(
-        "grade_documents",
-        decide_to_generate_for_srag,
-        {
-            "no document": "rewrite",
-            "document": "generate",
-            "not available": "generate",
-        },
-    )
-    workflow.add_edge("rewrite", "retrieve")
-    workflow.add_conditional_edges(
-        "generate",
-        grade_generation_for_srag,
-        {
-            "not supported": "generate",
-            "useful": END,
-            "not useful": "rewrite",
-            "not available": END,
-        },
-    )
+    def get_answer_grader():
+        class GradeAnswer(BaseModel):
+            """Binary score to assess answer addresses question."""
 
-    return workflow.compile()
+            binary_score: str = Field(
+                description="Answer addresses the question, 'yes' or 'no'"
+            )
+        
+        chat = get_chat()
+        structured_llm_grade_answer = chat.with_structured_output(GradeAnswer)
+        
+        system = """You are a grader assessing whether an answer addresses / resolves a question \n 
+            Give a binary score 'yes' or 'no'. Yes' means that the answer resolves the question."""
+        answer_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                ("human", "User question: \n\n {question} \n\n LLM generation: {generation}"),
+            ]
+        )
+        answer_grader = answer_prompt | structured_llm_grade_answer
+        return answer_grader
 
-srag_app = buildSelfRAG()
+    def retrieve(state: State):
+        print("###### retrieve ######")
+        question = state["question"]
+        
+        docs = retrieve(question)
+        
+        return {"documents": docs, "question": question}
 
-def run_self_rag(connectionId, requestId, app, query):
+    def generate(state: State):
+        print("###### generate ######")
+        question = state["question"]
+        documents = state["documents"]
+        retries = state["retries"] if state.get("retries") is not None else -1
+        
+        # RAG generation
+        rag_chain = get_reg_chain()
+        
+        generation = rag_chain.invoke({"context": documents, "question": question})
+        print('generation: ', generation.content)
+        
+        return {"documents": documents, "question": question, "generation": generation, "retries": retries + 1}
+            
+    def grade_documents(state: State):
+        print("###### grade_documents ######")
+        question = state["question"]
+        documents = state["documents"]
+        count = state["count"] if state.get("count") is not None else -1
+        
+        if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
+            print("start grading...")
+            filtered_docs = grade_documents_using_parallel_processing(question, documents)
+
+        else:    
+            # Score each doc
+            filtered_docs = []
+            chat = get_chat()
+            retrieval_grader = get_retrieval_grader(chat)
+            for doc in documents:
+                score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+                grade = score.binary_score
+                # Document relevant
+                if grade.lower() == "yes":
+                    print("---GRADE: DOCUMENT RELEVANT---")
+                    filtered_docs.append(doc)
+                # Document not relevant
+                else:
+                    print("---GRADE: DOCUMENT NOT RELEVANT---")
+                    # We do not include the document in filtered_docs
+                    # We set a flag to indicate that we want to run web search
+                    continue
+        print('len(docments): ', len(filtered_docs))    
+        
+        global reference_docs
+        reference_docs += filtered_docs
+        
+        return {"question": question, "documents": filtered_docs, "count": count + 1}
+
+    def decide_to_generate(state: State, config):
+        print("###### decide_to_generate ######")
+        filtered_documents = state["documents"]
+        
+        count = state["count"] if state.get("count") is not None else -1
+        max_count = config.get("configurable", {}).get("max_count", MAX_RETRIES)
+        print("count: ", count)
+        
+        if not filtered_documents:
+            # All documents have been filtered check_relevance
+            # We will re-generate a new query
+            print("---DECISION: ALL DOCUMENTS ARE NOT RELEVANT TO QUESTION, INCLUDE WEB SEARCH---")
+            return "no document" if count < max_count else "not available"
+        else:
+            # We have relevant documents, so generate answer
+            print("---DECISION: GENERATE---")
+            return "document"
+
+    def rewrite(state: State):
+        print("###### rewrite ######")
+        question = state["question"]
+        documents = state["documents"]
+
+        # Prompt
+        question_rewriter = get_rewrite()
+        
+        better_question = question_rewriter.invoke({"question": question})
+        print("better_question: ", better_question.question)
+
+        return {"question": better_question.question, "documents": documents}
+
+    def grade_generation(state: State, config):
+        print("###### grade_generation ######")
+        question = state["question"]
+        documents = state["documents"]
+        generation = state["generation"]
+        
+        retries = state["retries"] if state.get("retries") is not None else -1
+        max_retries = config.get("configurable", {}).get("max_retries", MAX_RETRIES)
+
+        hallucination_grader = get_hallucination_grader()
+        score = hallucination_grader.invoke(
+            {"documents": documents, "generation": generation}
+        )
+        hallucination_grade = score.binary_score
+        
+        print("hallucination_grade: ", hallucination_grade)
+        print("retries: ", retries)
+
+        # Check hallucination
+        answer_grader = get_answer_grader()    
+        if hallucination_grade == "yes":
+            print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
+            # Check question-answering
+            print("---GRADE GENERATION vs QUESTION---")
+            score = answer_grader.invoke({"question": question, "generation": generation})
+            answer_grade = score.binary_score        
+            # print("answer_grade: ", answer_grade)
+
+            if answer_grade == "yes":
+                print("---DECISION: GENERATION ADDRESSES QUESTION---")
+                return "useful" 
+            else:
+                print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
+                return "not useful" if retries < max_retries else "not available"
+        else:
+            print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
+            return "not supported" if retries < max_retries else "not available"
+        
+    def build():
+        workflow = StateGraph(State)
+            
+        # Define the nodes
+        workflow.add_node("retrieve", retrieve)  
+        workflow.add_node("grade_documents", grade_documents)
+        workflow.add_node("generate", generate)
+        workflow.add_node("rewrite", rewrite)
+
+        # Build graph
+        workflow.set_entry_point("retrieve")
+        workflow.add_edge("retrieve", "grade_documents")
+        workflow.add_conditional_edges(
+            "grade_documents",
+            decide_to_generate,
+            {
+                "no document": "rewrite",
+                "document": "generate",
+                "not available": "generate",
+            },
+        )
+        workflow.add_edge("rewrite", "retrieve")
+        workflow.add_conditional_edges(
+            "generate",
+            grade_generation,
+            {
+                "not supported": "generate",
+                "useful": END,
+                "not useful": "rewrite",
+                "not available": END,
+            },
+        )
+
+        return workflow.compile()
+
+    app = build()    
+    
     global langMode
     langMode = isKorean(query)
     
@@ -1968,7 +1969,7 @@ def run_self_rag(connectionId, requestId, app, query):
 # Self-Corrective RAG
 #########################################################
 def run_self_corrective_rag(connectionId, requestId, query):
-    class GraphState(TypedDict):
+    class State(TypedDict):
         messages: Annotated[list[BaseMessage], add_messages]
         question: str
         documents: list[Document]
@@ -1976,7 +1977,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         retries: int
         web_fallback: bool
 
-    def retrieve(state: GraphState):
+    def retrieve(state: State):
         print("###### retrieve ######")
         question = state["question"]
         
@@ -1984,7 +1985,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         
         return {"documents": docs, "question": question, "web_fallback": True}
 
-    def generate(state: GraphState):
+    def generate(state: State):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
@@ -2001,7 +2002,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         
         return {"retries": retries + 1, "candidate_answer": generation.content}
 
-    def rewrite(state: GraphState):
+    def rewrite(state: State):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
@@ -2014,7 +2015,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
 
         return {"question": better_question.question, "documents": documents}
 
-    def grade_generation(state: GraphState, config):
+    def grade_generation(state: State, config):
         print("###### grade_generation ######")
         question = state["question"]
         documents = state["documents"]
@@ -2064,11 +2065,11 @@ def run_self_corrective_rag(connectionId, requestId, query):
             
         return {"question": question, "documents": documents}
 
-    def finalize_response(state: GraphState):
+    def finalize_response(state: State):
         return {"messages": [AIMessage(content=state["candidate_answer"])]}
         
     def buildSelCorrectivefRAG():
-        workflow = StateGraph(GraphState)
+        workflow = StateGraph(State)
             
         # Define the nodes
         workflow.add_node("retrieve", retrieve)  
@@ -2148,13 +2149,13 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         planner = planner_prompt | chat
         return planner
 
-    class PlanExecuteState(TypedDict):
+    class State(TypedDict):
         input: str
         plan: list[str]
         past_steps: Annotated[List[Tuple], operator.add]
         response: str
 
-    def plan(state: PlanExecuteState):
+    def plan(state: State):
         print("###### plan ######")
         print('input: ', state["input"])
         
@@ -2183,7 +2184,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             
             return {"plan": []}  
 
-    def execute(state: PlanExecuteState):
+    def execute(state: State):
         print("###### execute ######")
         print('input: ', state["input"])
         plan = state["plan"]
@@ -2259,7 +2260,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         
         return replanner
 
-    def replan(state: PlanExecuteState):
+    def replan(state: State):
         print('#### replan ####')
         
         replanner = get_replanner()
@@ -2282,7 +2283,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             else:
                 return {"plan": result.action.steps}
         
-    def should_end(state: PlanExecuteState) -> Literal["continue", "end"]:
+    def should_end(state: State) -> Literal["continue", "end"]:
         print('#### should_end ####')
         print('state: ', state)
         if "response" in state and state["response"]:
@@ -2291,7 +2292,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             return "continue"    
 
     def buildPlanAndExecute():
-        workflow = StateGraph(PlanExecuteState)
+        workflow = StateGraph(State)
         workflow.add_node("planner", plan)
         workflow.add_node("executor", execute)
         workflow.add_node("replaner", replan)
@@ -2857,21 +2858,21 @@ def getResponse(connectionId, jsonBody):
                     msg = general_conversation(connectionId, requestId, chat, text)                  
 
                 elif convType == 'agent-executor':
-                    msg = run_agent_executor(connectionId, requestId, chat_app, text)
+                    msg = run_agent_executor(connectionId, requestId, text)
                         
                 elif convType == 'agent-executor-chat':
                     revised_question = revise_question(connectionId, requestId, chat, text)     
                     print('revised_question: ', revised_question)  
-                    msg = run_agent_executor(connectionId, requestId, chat_app, revised_question)
+                    msg = run_agent_executor(connectionId, requestId, revised_question)
                         
                 elif convType == 'agent-reflection':  # reflection
-                    msg = run_reflection_agent(connectionId, requestId, reflection_app, text)      
+                    msg = run_reflection_agent(connectionId, requestId, text)      
                     
                 elif convType == 'agent-crag':  # corrective RAG
-                    msg = run_corrective_rag(connectionId, requestId, crag_app, text)
+                    msg = run_corrective_rag(connectionId, requestId, text)
                                         
                 elif convType == 'agent-srag':  # self RAG 
-                    msg = run_self_rag(connectionId, requestId, srag_app, text)
+                    msg = run_self_rag(connectionId, requestId, text)
                     
                 elif convType == 'agent-scrag':  # self-corrective RAG
                     msg = run_self_corrective_rag(connectionId, requestId, text)        
