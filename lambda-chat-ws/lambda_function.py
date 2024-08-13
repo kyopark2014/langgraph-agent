@@ -795,6 +795,9 @@ def search_by_opensearch(keyword: str) -> str:
             text = doc.page_content
             
         print(f"filtered doc[{i}]: {text}, metadata:{doc.metadata}")
+    
+    global reference_docs
+    reference_docs += filtered_docs
         
     answer = "" 
     for doc in filtered_docs:
