@@ -796,9 +796,6 @@ def search_by_opensearch(keyword: str) -> str:
             
         print(f"filtered doc[{i}]: {text}, metadata:{doc.metadata}")
     
-    global reference_docs
-    reference_docs += filtered_docs
-        
     answer = "" 
     for doc in filtered_docs:
         excerpt = doc.page_content
@@ -2836,11 +2833,15 @@ def getResponse(connectionId, jsonBody):
 
                 elif convType == 'agent-executor':
                     msg = run_agent_executor(connectionId, requestId, chat_app, text)
+                    if reference_docs:
+                        reference = get_references_for_agent(reference_docs)    
                         
                 elif convType == 'agent-executor-chat':
                     revised_question = revise_question(connectionId, requestId, chat, text)     
                     print('revised_question: ', revised_question)  
-                    msg = run_agent_executor(connectionId, requestId, chat_app, revised_question)                                      
+                    msg = run_agent_executor(connectionId, requestId, chat_app, revised_question)
+                    if reference_docs:
+                        reference = get_references_for_agent(reference_docs)    
                         
                 elif convType == 'agent-reflection':  # reflection
                     msg = run_reflection_agent(connectionId, requestId, reflection_app, text)      
