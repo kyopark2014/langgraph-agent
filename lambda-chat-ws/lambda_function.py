@@ -1123,206 +1123,6 @@ def get_references_for_agent(docs):
             reference = reference + f"{i+1}. <a href={uri} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
     return reference
 
-# define tools
-tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
-
-####################### LangGraph #######################
-# Chat Agent Executor
-#########################################################
-chatModel = get_chat() 
-
-model = chatModel.bind_tools(tools)
-
-class ChatAgentState(TypedDict):
-    # messages: Annotated[Sequence[BaseMessage], operator.add]
-    messages: Annotated[list, add_messages]
-
-tool_node = ToolNode(tools)
-
-def should_continue(state: ChatAgentState) -> Literal["continue", "end"]:
-    messages = state["messages"]    
-    # print('(should_continue) messages: ', messages)
-    
-    last_message = messages[-1]
-    if not last_message.tool_calls:
-        return "end"
-    else:                
-        return "continue"
-
-def call_model(state: ChatAgentState):
-    question = state["messages"]
-    print('question: ', question)
-    
-    if isKorean(question[0].content)==True:
-        system = (
-            "다음의 Human과 Assistant의 친근한 이전 대화입니다."
-            "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
-            "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
-        )
-    else: 
-        system = (            
-            "Answer friendly for the newest question using the following conversation"
-            "If you don't know the answer, just say that you don't know, don't try to make up an answer."
-            "You will be acting as a thoughtful advisor."
-            "Put it in <result> tags."
-        )
-         
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system),
-            MessagesPlaceholder(variable_name="messages"),
-        ]
-    )
-    chain = prompt | model
-        
-    response = chain.invoke(question)
-    return {"messages": [response]}
-
-def buildChatAgent():
-    workflow = StateGraph(ChatAgentState)
-
-    workflow.add_node("agent", call_model)
-    workflow.add_node("action", tool_node)
-    workflow.add_edge(START, "agent")
-    workflow.add_conditional_edges(
-        "agent",
-        should_continue,
-        {
-            "continue": "action",
-            "end": END,
-        },
-    )
-    workflow.add_edge("action", "agent")
-
-    return workflow.compile()
-
-chat_app = buildChatAgent()
-
-def run_agent_executor(connectionId, requestId, app, query):
-    isTyping(connectionId, requestId)
-    
-    inputs = [HumanMessage(content=query)]
-    config = {"recursion_limit": 50}
-    
-    message = ""
-    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
-        # print('event: ', event)
-        
-        message = event["messages"][-1]
-        # print('message: ', message)
-
-    msg = readStreamMsg(connectionId, requestId, message.content)
-
-    return msg
-
-####################### LangGraph #######################
-# Reflection Agent
-#########################################################
-def generation_node(state: ChatAgentState):    
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "당신은 5문단의 에세이 작성을 돕는 작가이고 이름은 서연입니다"
-                "사용자의 요청에 대해 최고의 에세이를 작성하세요."
-                "사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요."
-                "최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
-            ),
-            MessagesPlaceholder(variable_name="messages"),
-        ]
-    )
-    
-    chat = get_chat()
-    chain = prompt | chat
-
-    response = chain.invoke(state["messages"])
-    return {"messages": [response]}
-
-def reflection_node(state: ChatAgentState):
-    messages = state["messages"]
-    
-    reflection_prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
-                "이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다."
-                #"특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다"
-                "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.",
-            ),
-            MessagesPlaceholder(variable_name="messages"),
-        ]
-    )
-    
-    chat = get_chat()
-    reflect = reflection_prompt | chat
-    
-    cls_map = {"ai": HumanMessage, "human": AIMessage}
-    translated = [messages[0]] + [
-        cls_map[msg.type](content=msg.content) for msg in messages[1:]
-    ]
-    res = reflect.invoke({"messages": translated})    
-    response = HumanMessage(content=res.content)    
-    return {"messages": [response]}
-
-def should_continue_of_reflection(state: ChatAgentState) -> Literal["continue", "end"]:
-    messages = state["messages"]
-    
-    if len(messages) >= 6:   # End after 3 iterations        
-        return "end"
-    else:
-        return "continue"
-
-def buildReflectionAgent():
-    workflow = StateGraph(ChatAgentState)
-    workflow.add_node("generate", generation_node)
-    workflow.add_node("reflect", reflection_node)
-    workflow.set_entry_point("generate")
-    workflow.add_conditional_edges(
-        "generate",
-        should_continue_of_reflection,
-        {
-            "continue": "reflect",
-            "end": END,
-        },
-    )
-
-    workflow.add_edge("reflect", "generate")
-    return workflow.compile()
-
-reflection_app = buildReflectionAgent()
-
-def run_reflection_agent(connectionId, requestId, app, query):
-    isTyping(connectionId, requestId)
-    
-    inputs = [HumanMessage(content=query)]
-    config = {"recursion_limit": 50}
-    
-    msg = ""
-    
-    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
-        print('event: ', event)
-        
-        message = event["messages"][-1]
-        print('message: ', message)
-        
-        if len(event["messages"])>1:
-            if msg == "":
-                msg = message.content
-            else:
-                msg = f"{msg}\n\n{message.content}"
-
-            result = {
-                'request_id': requestId,
-                'msg': msg,
-                'status': 'proceeding'
-            }
-            #print('result: ', json.dumps(result))
-            sendMessage(connectionId, result)
-
-    return msg
-
 def retrieve(question):
     # Retrieval
     bedrock_embedding = get_embedding()
@@ -1484,6 +1284,210 @@ def web_search(question, documents):
             )
         )
     return documents
+
+# define tools
+tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
+
+####################### LangGraph #######################
+# Chat Agent Executor
+#########################################################
+chatModel = get_chat() 
+
+model = chatModel.bind_tools(tools)
+
+class ChatAgentState(TypedDict):
+    # messages: Annotated[Sequence[BaseMessage], operator.add]
+    messages: Annotated[list, add_messages]
+
+tool_node = ToolNode(tools)
+
+def should_continue(state: ChatAgentState) -> Literal["continue", "end"]:
+    messages = state["messages"]    
+    # print('(should_continue) messages: ', messages)
+    
+    last_message = messages[-1]
+    if not last_message.tool_calls:
+        return "end"
+    else:                
+        return "continue"
+
+def call_model(state: ChatAgentState):
+    question = state["messages"]
+    print('question: ', question)
+    
+    if isKorean(question[0].content)==True:
+        system = (
+            "다음의 Human과 Assistant의 친근한 이전 대화입니다."
+            "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+            "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
+        )
+    else: 
+        system = (            
+            "Answer friendly for the newest question using the following conversation"
+            "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+            "You will be acting as a thoughtful advisor."
+            "Put it in <result> tags."
+        )
+         
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            MessagesPlaceholder(variable_name="messages"),
+        ]
+    )
+    chain = prompt | model
+        
+    response = chain.invoke(question)
+    return {"messages": [response]}
+
+def buildChatAgent():
+    workflow = StateGraph(ChatAgentState)
+
+    workflow.add_node("agent", call_model)
+    workflow.add_node("action", tool_node)
+    workflow.add_edge(START, "agent")
+    workflow.add_conditional_edges(
+        "agent",
+        should_continue,
+        {
+            "continue": "action",
+            "end": END,
+        },
+    )
+    workflow.add_edge("action", "agent")
+
+    return workflow.compile()
+
+chat_app = buildChatAgent()
+
+def run_agent_executor(connectionId, requestId, app, query):
+    isTyping(connectionId, requestId)
+    
+    inputs = [HumanMessage(content=query)]
+    config = {"recursion_limit": 50}
+    
+    message = ""
+    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
+        # print('event: ', event)
+        
+        message = event["messages"][-1]
+        # print('message: ', message)
+
+    msg = readStreamMsg(connectionId, requestId, message.content)
+
+    return msg
+
+####################### LangGraph #######################
+# Reflection Agent
+#########################################################
+class ReflectionState(TypedDict):
+    # messages: Annotated[Sequence[BaseMessage], operator.add]
+    messages: Annotated[list, add_messages]
+
+def generation_for_reflection(state: ReflectionState):    
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "당신은 5문단의 에세이 작성을 돕는 작가이고 이름은 서연입니다"
+                "사용자의 요청에 대해 최고의 에세이를 작성하세요."
+                "사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요."
+                "최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
+            ),
+            MessagesPlaceholder(variable_name="messages"),
+        ]
+    )
+    
+    chat = get_chat()
+    chain = prompt | chat
+
+    response = chain.invoke(state["messages"])
+    return {"messages": [response]}
+
+def reflection_for_reflection(state: ReflectionState):
+    messages = state["messages"]
+    
+    reflection_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
+                "이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다."
+                #"특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다"
+                "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.",
+            ),
+            MessagesPlaceholder(variable_name="messages"),
+        ]
+    )
+    
+    chat = get_chat()
+    reflect = reflection_prompt | chat
+    
+    cls_map = {"ai": HumanMessage, "human": AIMessage}
+    translated = [messages[0]] + [
+        cls_map[msg.type](content=msg.content) for msg in messages[1:]
+    ]
+    res = reflect.invoke({"messages": translated})    
+    response = HumanMessage(content=res.content)    
+    return {"messages": [response]}
+
+def should_continue_for_reflection(state: ReflectionState) -> Literal["continue", "end"]:
+    messages = state["messages"]
+    
+    if len(messages) >= 6:   # End after 3 iterations        
+        return "end"
+    else:
+        return "continue"
+
+def buildReflectionAgent():
+    workflow = StateGraph(ReflectionState)
+    workflow.add_node("generate", generation_for_reflection)
+    workflow.add_node("reflect", reflection_for_reflection)
+    workflow.set_entry_point("generate")
+    workflow.add_conditional_edges(
+        "generate",
+        should_continue_for_reflection,
+        {
+            "continue": "reflect",
+            "end": END,
+        },
+    )
+
+    workflow.add_edge("reflect", "generate")
+    return workflow.compile()
+
+reflection_app = buildReflectionAgent()
+
+def run_reflection_agent(connectionId, requestId, app, query):
+    isTyping(connectionId, requestId)
+    
+    inputs = [HumanMessage(content=query)]
+    config = {"recursion_limit": 50}
+    
+    msg = ""
+    
+    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
+        print('event: ', event)
+        
+        message = event["messages"][-1]
+        print('message: ', message)
+        
+        if len(event["messages"])>1:
+            if msg == "":
+                msg = message.content
+            else:
+                msg = f"{msg}\n\n{message.content}"
+
+            result = {
+                'request_id': requestId,
+                'msg': msg,
+                'status': 'proceeding'
+            }
+            #print('result: ', json.dumps(result))
+            sendMessage(connectionId, result)
+
+    return msg
 
 ####################### LangGraph #######################
 # Corrective RAG
@@ -1963,140 +1967,139 @@ def run_self_rag(connectionId, requestId, app, query):
 ####################### LangGraph #######################
 # Self-Corrective RAG
 #########################################################
+def run_self_corrective_rag(connectionId, requestId, query):
+    class GraphState(TypedDict):
+        messages: Annotated[list[BaseMessage], add_messages]
+        question: str
+        documents: list[Document]
+        candidate_answer: str
+        retries: int
+        web_fallback: bool
 
-class SelfCorrectiveRagState(TypedDict):
-    messages: Annotated[list[BaseMessage], add_messages]
-    question: str
-    documents: list[Document]
-    candidate_answer: str
-    retries: int
-    web_fallback: bool
-
-def retrieve_for_scrag(state: SelfCorrectiveRagState):
-    print("###### retrieve ######")
-    question = state["question"]
-    
-    docs = retrieve(question)
-    
-    return {"documents": docs, "question": question, "web_fallback": True}
-
-def generate_for_scrag(state: SelfCorrectiveRagState):
-    print("###### generate ######")
-    question = state["question"]
-    documents = state["documents"]
-    retries = state["retries"] if state.get("retries") is not None else -1
-    
-    # RAG generation
-    rag_chain = get_reg_chain()
-    
-    generation = rag_chain.invoke({"context": documents, "question": question})
-    print('generation: ', generation.content)
-    
-    global reference_docs
-    reference_docs += documents
-    
-    return {"retries": retries + 1, "candidate_answer": generation.content}
-
-def rewrite_for_scrag(state: SelfCorrectiveRagState):
-    print("###### rewrite ######")
-    question = state["question"]
-    documents = state["documents"]
-
-    # Prompt
-    question_rewriter = get_rewrite()
-    
-    better_question = question_rewriter.invoke({"question": question})
-    print("better_question: ", better_question.question)
-
-    return {"question": better_question.question, "documents": documents}
-
-def grade_generation_for_scrag(state: SelfCorrectiveRagState, config):
-    print("###### grade_generation ######")
-    question = state["question"]
-    documents = state["documents"]
-    generation = state["candidate_answer"]
-    web_fallback = state["web_fallback"]
-    
-    retries = state["retries"] if state.get("retries") is not None else -1
-    max_retries = config.get("configurable", {}).get("max_retries", MAX_RETRIES)
-
-    if not web_fallback:
-        return "finalize_response"
-    
-    print("---Hallucination?---")    
-    hallucination_grader = get_hallucination_grader()
-    score = hallucination_grader.invoke(
-        {"documents": documents, "generation": generation}
-    )
-    hallucination_grade = score.binary_score
-         
-    # Check hallucination
-    if hallucination_grade == "no":
-        print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS (Hallucination), RE-TRY---")
-        return "generate" if retries < max_retries else "websearch"
-
-    print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
-    print("---GRADE GENERATION vs QUESTION---")
-
-    # Check question-answering
-    answer_grader = get_answer_grader()    
-    score = answer_grader.invoke({"question": question, "generation": generation})
-    answer_grade = score.binary_score     
-    print("answer_grade: ", answer_grade)
-    
-    if answer_grade == "yes":
-        print("---DECISION: GENERATION ADDRESSES QUESTION---")
-        return "finalize_response"
-    else:
-        print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION (Not Answer)---")
-        return "rewrite" if retries < max_retries else "websearch"
-
-def web_search_for_scrag(state: SelfCorrectiveRagState):
-    print("###### web_search ######")
-    question = state["question"]
-    documents = state["documents"]
-
-    documents = web_search(question, documents)
+    def retrieve(state: GraphState):
+        print("###### retrieve ######")
+        question = state["question"]
         
-    return {"question": question, "documents": documents}
-
-def finalize_response(state: SelfCorrectiveRagState):
-    return {"messages": [AIMessage(content=state["candidate_answer"])]}
-    
-def buildSelCorrectivefRAG():
-    workflow = StateGraph(SelfCorrectiveRagState)
+        docs = retrieve(question)
         
-    # Define the nodes
-    workflow.add_node("retrieve", retrieve_for_scrag)  
-    workflow.add_node("generate", generate_for_scrag) 
-    workflow.add_node("rewrite", rewrite_for_scrag)
-    workflow.add_node("websearch", web_search_for_scrag)
-    workflow.add_node("finalize_response", finalize_response)
+        return {"documents": docs, "question": question, "web_fallback": True}
 
-    # Build graph
-    workflow.set_entry_point("retrieve")
-    workflow.add_edge("retrieve", "generate")
-    workflow.add_edge("rewrite", "retrieve")
-    workflow.add_edge("websearch", "generate")
-    workflow.add_edge("finalize_response", END)
+    def generate(state: GraphState):
+        print("###### generate ######")
+        question = state["question"]
+        documents = state["documents"]
+        retries = state["retries"] if state.get("retries") is not None else -1
+        
+        # RAG generation
+        rag_chain = get_reg_chain()
+        
+        generation = rag_chain.invoke({"context": documents, "question": question})
+        print('generation: ', generation.content)
+        
+        global reference_docs
+        reference_docs += documents
+        
+        return {"retries": retries + 1, "candidate_answer": generation.content}
 
-    workflow.add_conditional_edges(
-        "generate",
-        grade_generation_for_scrag,
-        {
-            "generate": "generate",
-            "websearch": "websearch",
-            "rewrite": "rewrite",
-            "finalize_response": "finalize_response",
-        },
-    )
+    def rewrite(state: GraphState):
+        print("###### rewrite ######")
+        question = state["question"]
+        documents = state["documents"]
 
-    # Compile
-    return workflow.compile()
+        # Prompt
+        question_rewriter = get_rewrite()
+        
+        better_question = question_rewriter.invoke({"question": question})
+        print("better_question: ", better_question.question)
 
-scrag_app = buildSelCorrectivefRAG()
+        return {"question": better_question.question, "documents": documents}
 
-def run_self_corrective_rag(connectionId, requestId, app, query):
+    def grade_generation(state: GraphState, config):
+        print("###### grade_generation ######")
+        question = state["question"]
+        documents = state["documents"]
+        generation = state["candidate_answer"]
+        web_fallback = state["web_fallback"]
+        
+        retries = state["retries"] if state.get("retries") is not None else -1
+        max_retries = config.get("configurable", {}).get("max_retries", MAX_RETRIES)
+
+        if not web_fallback:
+            return "finalize_response"
+        
+        print("---Hallucination?---")    
+        hallucination_grader = get_hallucination_grader()
+        score = hallucination_grader.invoke(
+            {"documents": documents, "generation": generation}
+        )
+        hallucination_grade = score.binary_score
+            
+        # Check hallucination
+        if hallucination_grade == "no":
+            print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS (Hallucination), RE-TRY---")
+            return "generate" if retries < max_retries else "websearch"
+
+        print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
+        print("---GRADE GENERATION vs QUESTION---")
+
+        # Check question-answering
+        answer_grader = get_answer_grader()    
+        score = answer_grader.invoke({"question": question, "generation": generation})
+        answer_grade = score.binary_score     
+        print("answer_grade: ", answer_grade)
+        
+        if answer_grade == "yes":
+            print("---DECISION: GENERATION ADDRESSES QUESTION---")
+            return "finalize_response"
+        else:
+            print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION (Not Answer)---")
+            return "rewrite" if retries < max_retries else "websearch"
+
+    def web_search(state: State):
+        print("###### web_search ######")
+        question = state["question"]
+        documents = state["documents"]
+
+        documents = web_search(question, documents)
+            
+        return {"question": question, "documents": documents}
+
+    def finalize_response(state: GraphState):
+        return {"messages": [AIMessage(content=state["candidate_answer"])]}
+        
+    def buildSelCorrectivefRAG():
+        workflow = StateGraph(GraphState)
+            
+        # Define the nodes
+        workflow.add_node("retrieve", retrieve)  
+        workflow.add_node("generate", generate) 
+        workflow.add_node("rewrite", rewrite)
+        workflow.add_node("websearch", web_search)
+        workflow.add_node("finalize_response", finalize_response)
+
+        # Build graph
+        workflow.set_entry_point("retrieve")
+        workflow.add_edge("retrieve", "generate")
+        workflow.add_edge("rewrite", "retrieve")
+        workflow.add_edge("websearch", "generate")
+        workflow.add_edge("finalize_response", END)
+
+        workflow.add_conditional_edges(
+            "generate",
+            grade_generation,
+            {
+                "generate": "generate",
+                "websearch": "websearch",
+                "rewrite": "rewrite",
+                "finalize_response": "finalize_response",
+            },
+        )
+
+        # Compile
+        return workflow.compile()
+
+    app = buildSelCorrectivefRAG()
+
     global langMode
     langMode = isKorean(query)
     
@@ -2120,195 +2123,195 @@ def run_self_corrective_rag(connectionId, requestId, app, query):
 ####################### LangGraph #######################
 # Plan and Execute
 #########################################################
-class Plan(BaseModel):
-    """List of steps as a json format"""
+def run_plan_and_exeucute(connectionId, requestId, query):
+    class Plan(BaseModel):
+        """List of steps as a json format"""
 
-    steps: List[str] = Field(
-        description="different steps to follow, should be in sorted order"
-    )
+        steps: List[str] = Field(
+            description="different steps to follow, should be in sorted order"
+        )
 
-def get_planner():
-    system = """For the given objective, come up with a simple step by step plan. \
-This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
-The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."""
+    def get_planner():
+        system = """For the given objective, come up with a simple step by step plan. \
+    This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
+    The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."""
+            
+        planner_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                ("placeholder", "{messages}"),
+            ]
+        )
         
-    planner_prompt = ChatPromptTemplate.from_messages(
+        chat = get_chat()   
+        
+        planner = planner_prompt | chat
+        return planner
+
+    class PlanExecuteState(TypedDict):
+        input: str
+        plan: list[str]
+        past_steps: Annotated[List[Tuple], operator.add]
+        response: str
+
+    def plan(state: PlanExecuteState):
+        print("###### plan ######")
+        print('input: ', state["input"])
+        
+        inputs = [HumanMessage(content=state["input"])]
+
+        planner = get_planner()
+        response = planner.invoke({"messages": inputs})
+        print('response.content: ', response.content)
+        
+        chat = get_chat()
+        structured_llm = chat.with_structured_output(Plan, include_raw=True)
+        info = structured_llm.invoke(response.content)
+        print('info: ', info)
+        
+        if not info['parsed'] == None:
+            parsed_info = info['parsed']
+            # print('parsed_info: ', parsed_info)        
+            print('steps: ', parsed_info.steps)
+            
+            return {
+                "input": state["input"],
+                "plan": parsed_info.steps
+            }
+        else:
+            print('parsing_error: ', info['parsing_error'])
+            
+            return {"plan": []}  
+
+    def execute(state: PlanExecuteState):
+        print("###### execute ######")
+        print('input: ', state["input"])
+        plan = state["plan"]
+        print('plan: ', plan) 
+        
+        plan_str = "\n".join(f"{i+1}. {step}" for i, step in enumerate(plan))
+        #print("plan_str: ", plan_str)
+        
+        task = plan[0]
+        task_formatted = f"""For the following plan:{plan_str}\n\nYou are tasked with executing step {1}, {task}."""
+        print("request: ", task_formatted)     
+        request = HumanMessage(content=task_formatted)
+        
+        chat = get_chat()
+        prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", system),
-            ("placeholder", "{messages}"),
+            ("system",
+                "다음의 Human과 Assistant의 친근한 이전 대화입니다."
+                "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+                "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.",
+            ),
+            MessagesPlaceholder(variable_name="messages"),
         ]
-    )
-    
-    chat = get_chat()   
-    
-    planner = planner_prompt | chat
-    return planner
-
-class PlanExecuteState(TypedDict):
-    input: str
-    plan: list[str]
-    past_steps: Annotated[List[Tuple], operator.add]
-    response: str
-
-def plan(state: PlanExecuteState):
-    print("###### plan ######")
-    print('input: ', state["input"])
-    
-    inputs = [HumanMessage(content=state["input"])]
-
-    planner = get_planner()
-    response = planner.invoke({"messages": inputs})
-    print('response.content: ', response.content)
-    
-    chat = get_chat()
-    structured_llm = chat.with_structured_output(Plan, include_raw=True)
-    info = structured_llm.invoke(response.content)
-    print('info: ', info)
-    
-    if not info['parsed'] == None:
-        parsed_info = info['parsed']
-        # print('parsed_info: ', parsed_info)        
-        print('steps: ', parsed_info.steps)
+        )
+        chain = prompt | chat
+        
+        agent_response = chain.invoke({"messages": [request]})
+        #print("agent_response: ", agent_response)
+        
+        print('task: ', task)
+        print('executor output: ', agent_response.content)
+        
+        # print('plan: ', state["plan"])
+        # print('past_steps: ', task)
         
         return {
             "input": state["input"],
-            "plan": parsed_info.steps
+            "plan": state["plan"],
+            "past_steps": [task],
         }
-    else:
-        print('parsing_error: ', info['parsing_error'])
+
+    class Response(BaseModel):
+        """Response to user."""
+        response: str
         
-        return {"plan": []}  
+    class Act(BaseModel):
+        """Action to perform as a json format"""
+        action: Union[Response, Plan] = Field(
+            description="Action to perform. If you want to respond to user, use Response. "
+            "If you need to further use tools to get the answer, use Plan."
+        )
+        
+    def get_replanner():
+        replanner_prompt = ChatPromptTemplate.from_template(
+        """For the given objective, come up with a simple step by step plan. \
+    This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
+    The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.
 
-def execute(state: PlanExecuteState):
-    print("###### execute ######")
-    print('input: ', state["input"])
-    plan = state["plan"]
-    print('plan: ', plan) 
-    
-    plan_str = "\n".join(f"{i+1}. {step}" for i, step in enumerate(plan))
-    #print("plan_str: ", plan_str)
-    
-    task = plan[0]
-    task_formatted = f"""For the following plan:{plan_str}\n\nYou are tasked with executing step {1}, {task}."""
-    print("request: ", task_formatted)     
-    request = HumanMessage(content=task_formatted)
-    
-    chat = get_chat()
-    prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system",
-            "다음의 Human과 Assistant의 친근한 이전 대화입니다."
-            "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.",
-        ),
-        MessagesPlaceholder(variable_name="messages"),
-    ]
-    )
-    chain = prompt | chat
-    
-    agent_response = chain.invoke({"messages": [request]})
-    #print("agent_response: ", agent_response)
-    
-    print('task: ', task)
-    print('executor output: ', agent_response.content)
-    
-    # print('plan: ', state["plan"])
-    # print('past_steps: ', task)
-    
-    return {
-        "input": state["input"],
-        "plan": state["plan"],
-        "past_steps": [task],
-    }
+    Your objective was this:
+    {input}
 
-class Response(BaseModel):
-    """Response to user."""
-    response: str
-    
-class Act(BaseModel):
-    """Action to perform as a json format"""
-    action: Union[Response, Plan] = Field(
-        description="Action to perform. If you want to respond to user, use Response. "
-        "If you need to further use tools to get the answer, use Plan."
-    )
-    
-def get_replanner():
-    replanner_prompt = ChatPromptTemplate.from_template(
-    """For the given objective, come up with a simple step by step plan. \
-This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
-The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.
+    Your original plan was this:
+    {plan}
 
-Your objective was this:
-{input}
+    You have currently done the follow steps:
+    {past_steps}
 
-Your original plan was this:
-{plan}
+    Update your plan accordingly. If no more steps are needed and you can return to the user, then respond with that. \
+    Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.""")
+        
+        chat = get_chat()
+        replanner = replanner_prompt | chat
+        
+        return replanner
 
-You have currently done the follow steps:
-{past_steps}
-
-Update your plan accordingly. If no more steps are needed and you can return to the user, then respond with that. \
-Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.""")
-       
-    chat = get_chat()
-    replanner = replanner_prompt | chat
-     
-    return replanner
-
-def replan(state: PlanExecuteState):
-    print('#### replan ####')
-    
-    replanner = get_replanner()
-    output = replanner.invoke(state)
-    print('replanner output: ', output.content)
-    
-    chat = get_chat()
-    structured_llm = chat.with_structured_output(Act, include_raw=True)    
-    info = structured_llm.invoke(output.content)
-    # print('info: ', info)
-    
-    result = info['parsed']
-    print('act output: ', result)
-    
-    if result == None:
-        return {"response": "답을 찾지 못하였습니다. 다시 해주세요."}
-    else:
-        if isinstance(result.action, Response):
-            return {"response": result.action.response}
+    def replan(state: PlanExecuteState):
+        print('#### replan ####')
+        
+        replanner = get_replanner()
+        output = replanner.invoke(state)
+        print('replanner output: ', output.content)
+        
+        chat = get_chat()
+        structured_llm = chat.with_structured_output(Act, include_raw=True)    
+        info = structured_llm.invoke(output.content)
+        # print('info: ', info)
+        
+        result = info['parsed']
+        print('act output: ', result)
+        
+        if result == None:
+            return {"response": "답을 찾지 못하였습니다. 다시 해주세요."}
         else:
-            return {"plan": result.action.steps}
+            if isinstance(result.action, Response):
+                return {"response": result.action.response}
+            else:
+                return {"plan": result.action.steps}
+        
+    def should_end(state: PlanExecuteState) -> Literal["continue", "end"]:
+        print('#### should_end ####')
+        print('state: ', state)
+        if "response" in state and state["response"]:
+            return "end"
+        else:
+            return "continue"    
+
+    def buildPlanAndExecute():
+        workflow = StateGraph(PlanExecuteState)
+        workflow.add_node("planner", plan)
+        workflow.add_node("executor", execute)
+        workflow.add_node("replaner", replan)
+        
+        workflow.set_entry_point("planner")
+        workflow.add_edge("planner", "executor")
+        workflow.add_edge("executor", "replaner")
+        workflow.add_conditional_edges(
+            "replaner",
+            should_end,
+            {
+                "continue": "executor",
+                "end": END,
+            },
+        )
+
+        return workflow.compile()
+
+    app = buildPlanAndExecute()    
     
-def should_end(state: PlanExecuteState) -> Literal["continue", "end"]:
-    print('#### should_end ####')
-    print('state: ', state)
-    if "response" in state and state["response"]:
-        return "end"
-    else:
-        return "continue"    
-
-def buildPlanAndExecute():
-    workflow = StateGraph(PlanExecuteState)
-    workflow.add_node("planner", plan)
-    workflow.add_node("executor", execute)
-    workflow.add_node("replaner", replan)
-    
-    workflow.set_entry_point("planner")
-    workflow.add_edge("planner", "executor")
-    workflow.add_edge("executor", "replaner")
-    workflow.add_conditional_edges(
-        "replaner",
-        should_end,
-        {
-            "continue": "executor",
-            "end": END,
-        },
-    )
-
-    return workflow.compile()
-
-plan_and_execute_app = buildPlanAndExecute()
-
-def run_plan_and_exeucute(connectionId, requestId, app, query):
     isTyping(connectionId, requestId)
     
     inputs = {"input": query}
@@ -2325,6 +2328,28 @@ def run_plan_and_exeucute(connectionId, requestId, app, query):
     
     return value["response"]
 
+####################### LangGraph #######################
+# Plan and Execute
+#########################################################
+def run_essay_writer(connectionId, requestId, essay_writer_app, text):
+    app = buildPlanAndExecute()    
+    
+    isTyping(connectionId, requestId)
+    
+    inputs = {"input": query}
+    config = {"recursion_limit": 50}
+    
+    for output in app.stream(inputs, config):   
+        for key, value in output.items():
+            print(f"Finished: {key}")
+            #print("value: ", value)
+            
+    print('value: ', value)
+        
+    readStreamMsg(connectionId, requestId, value["response"])
+    
+    return value["response"]
+    
 #########################################################
 def traslation(chat, text, input_language, output_language):
     system = (
@@ -2833,35 +2858,36 @@ def getResponse(connectionId, jsonBody):
 
                 elif convType == 'agent-executor':
                     msg = run_agent_executor(connectionId, requestId, chat_app, text)
-                    if reference_docs:
-                        reference = get_references_for_agent(reference_docs)    
                         
                 elif convType == 'agent-executor-chat':
                     revised_question = revise_question(connectionId, requestId, chat, text)     
                     print('revised_question: ', revised_question)  
                     msg = run_agent_executor(connectionId, requestId, chat_app, revised_question)
-                    if reference_docs:
-                        reference = get_references_for_agent(reference_docs)    
                         
                 elif convType == 'agent-reflection':  # reflection
                     msg = run_reflection_agent(connectionId, requestId, reflection_app, text)      
                     
                 elif convType == 'agent-crag':  # corrective RAG
                     msg = run_corrective_rag(connectionId, requestId, crag_app, text)
-                    
+                                        
                 elif convType == 'agent-srag':  # self RAG 
                     msg = run_self_rag(connectionId, requestId, srag_app, text)
                     
                 elif convType == 'agent-scrag':  # self-corrective RAG
-                    msg = run_self_corrective_rag(connectionId, requestId, scrag_app, text)        
+                    msg = run_self_corrective_rag(connectionId, requestId, text)        
                 
                 elif convType == 'agent-plan-and-execute':  # self-corrective RAG
-                    msg = run_plan_and_exeucute(connectionId, requestId, plan_and_execute_app, text)        
+                    msg = run_plan_and_exeucute(connectionId, requestId, text)        
                                                 
+                #elif convType == 'agent-essay-writer':  # essay writer
+                #    msg = run_essay_writer(connectionId, requestId, essay_writer_app, text)      
+                
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
+                
                 elif convType == "grammar":
                     msg = check_grammer(chat, text)  
+                
                 else:
                     msg = general_conversation(connectionId, requestId, chat, text)  
                     
