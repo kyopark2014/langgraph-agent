@@ -151,6 +151,7 @@ def get_chat():
         "temperature":0.1,
         "top_k":250,
         "top_p":0.9,
+        "anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15",
         "stop_sequences": [HUMAN_PROMPT]
     }
     # print('parameters: ', parameters)
@@ -959,7 +960,7 @@ def grade_documents_using_parallel_processing(question, documents):
             "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
         },
         {
-            "bedrock_region": "ap-northeast-1", # Tokyo
+            "bedrock_region": "eu-central-01", # Frankfurt
             "model_type": "claude3.5",
             "max_tokens": 4096,
             "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"

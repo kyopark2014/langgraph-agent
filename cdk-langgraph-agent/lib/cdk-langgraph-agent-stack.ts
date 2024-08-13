@@ -51,7 +51,7 @@ const claude3_5_sonnet = [
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "claude3.5",
-    "max_tokens": 4096,
+    "max_tokens": 8192,
     "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
   }
 ];
