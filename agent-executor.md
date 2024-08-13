@@ -29,7 +29,7 @@ model = chatModel.bind_tools(tools)
 tool_node = ToolNode(tools)
 ```
 
-state를 위한 ChatAgentState을 정의하고 node를 구성합니다.
+state를 위한 ChatAgentState을 정의하고 node와 conditional edge를 구성합니다.
 
 ```python
 class ChatAgentState(TypedDict):
@@ -73,25 +73,6 @@ def call_model(state: ChatAgentState):
     chain = prompt | model
         
     response = chain.invoke(question)
-    return {"messages": [response]}
-```
-
-class AgentState(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], operator.add]
-    
-tool_node = ToolNode(tools)
-
-def should_continue(state):
-    messages = state["messages"]
-    last_message = messages[-1]
-    if not last_message.tool_calls:
-        return "end"
-    else:
-        return "continue"
-
-def call_model(state):
-    messages = state["messages"]
-    response = model.invoke(messages)
     return {"messages": [response]}
 ```
 
