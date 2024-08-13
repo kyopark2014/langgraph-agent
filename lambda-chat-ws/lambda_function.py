@@ -60,7 +60,6 @@ LLM_embedding = json.loads(os.environ.get('LLM_embedding'))
 selected_chat = 0
 selected_multimodal = 0
 selected_embedding = 0
-maxOutputTokens = 4096
 separated_chat_history = os.environ.get('separated_chat_history')
 enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
 enableHybridSearch = os.environ.get('enableHybridSearch')
@@ -134,6 +133,7 @@ def get_chat():
     profile = LLM_for_chat[selected_chat]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
+    maxOutputTokens = profile['max_tokens']
     print(f'selected_chat: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
                           
     # bedrock   
@@ -171,6 +171,7 @@ def get_multi_region_chat(models, selected):
     profile = models[selected]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
+    maxOutputTokens = profile['max_tokens']
     print(f'selected_chat: {selected}, bedrock_region: {bedrock_region}, modelId: {modelId}')
                           
     # bedrock   
@@ -208,6 +209,7 @@ def get_multimodal():
     profile = LLM_for_multimodal[selected_multimodal]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
+    maxOutputTokens = profile['max_tokens']
     print(f'selected_multimodal: {selected_multimodal}, bedrock_region: {bedrock_region}, modelId: {modelId}')
                           
     # bedrock   
@@ -942,33 +944,63 @@ def grade_document_based_on_relevance(conn, question, doc, models, selected):
     conn.close()
     
 def grade_documents_using_parallel_processing(question, documents):
-    models = [
+    models = [        
+        # claude 3.5
         {
             "bedrock_region": "us-west-2", # Oregon
+            "model_type": "claude3.5",
+            "max_tokens": 4096,
+            "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+        },
+        {
+            "bedrock_region": "us-east-1", # N.Virginia
+            "model_type": "claude3.5",
+            "max_tokens": 4096,
+            "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+        },
+        {
+            "bedrock_region": "ap-northeast-1", # Tokyo
+            "model_type": "claude3.5",
+            "max_tokens": 4096,
+            "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+        },
+        {
+            "bedrock_region": "eu-central-01", # Frankfurt
+            "model_type": "claude3.5",
+            "max_tokens": 4096,
+            "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+        }
+    ]
+    """{   # Claude 3.0
+            "bedrock_region": "us-west-2", # Oregon
             "model_type": "claude3",
+            "max_tokens": 4096,
             "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
         },
         {
             "bedrock_region": "us-east-1", # N.Virginia
             "model_type": "claude3",
+            "max_tokens": 4096,
             "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
         },
         {
             "bedrock_region": "ca-central-1", # Canada
             "model_type": "claude3",
+            "max_tokens": 4096,
             "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
         },
         {
             "bedrock_region": "eu-west-2", # London
             "model_type": "claude3",
+            "max_tokens": 4096,
             "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
         },
         {
             "bedrock_region": "sa-east-1", # Sao Paulo
             "model_type": "claude3",
+            "max_tokens": 4096,
             "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-        }
-    ]
+        }"""
     
     filtered_docs = []    
 

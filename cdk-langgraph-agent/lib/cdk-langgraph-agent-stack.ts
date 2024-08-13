@@ -42,7 +42,17 @@ const claude3_sonnet = [
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "claude3",
+    "max_tokens": 4096,
     "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+  }
+];
+
+const claude3_5_sonnet = [
+  {
+    "bedrock_region": "us-west-2", // Oregon
+    "model_type": "claude3.5",
+    "max_tokens": 4096,
+    "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
   }
 ];
 
@@ -50,6 +60,7 @@ const claude3_haiku = [
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "claude3",
+    "max_tokens": 4096,
     "model_id": "anthropic.claude-3-haiku-20240307-v1:0"
   }
 ];  
@@ -564,8 +575,8 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
         s3_prefix: s3_prefix,
         path: 'https://'+distribution.domainName+'/',   
         callLogTableName: callLogTableName,
-        LLM_for_chat: JSON.stringify(claude3_sonnet),
-        LLM_for_multimodal:JSON.stringify(claude3_sonnet),
+        LLM_for_chat: JSON.stringify(claude3_5_sonnet),
+        LLM_for_multimodal:JSON.stringify(claude3_5_sonnet),
         LLM_embedding: JSON.stringify(titan_embedding_v2),
         opensearch_account: opensearch_account,
         opensearch_passwd: opensearch_passwd,
@@ -701,8 +712,8 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
           sqsUrl: queueUrl[i],
           max_object_size: String(max_object_size),
           supportedFormat: supportedFormat,
-          LLM_for_chat: JSON.stringify(claude3_sonnet),
-          LLM_for_multimodal:JSON.stringify(claude3_sonnet),
+          LLM_for_chat: JSON.stringify(claude3_5_sonnet),
+          LLM_for_multimodal:JSON.stringify(claude3_5_sonnet),
           LLM_embedding: JSON.stringify(titan_embedding_v2),
           enableParallelSummary: enableParallelSummary,
           enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
