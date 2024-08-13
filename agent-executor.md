@@ -8,8 +8,9 @@ ReAct는 LLM을 다양한 데이터 소스와 실행 가능한 프로그램과 �
 
 ## Chat Agent Executor
 
+LangGraph에서 제공하는 기본 Sample에 한글 Prompt를 적용한 내용을 아래와 같이 반영하였습니다. 한글 Prompt를 부분적으로라도 쓰면, 적절한 한국어 답변을 생성하는데 도움이 됩니다. 
 
-Tool을 정의하고 chat model에 bind 합니다. 
+Tool을 정의하고 chat model에 bind 합니다. 또한 tool들을 실행하기 위한 tool_node을 정의합니다. 
 
 ```python
 import operator
@@ -17,15 +18,63 @@ from typing import Annotated, Sequence, TypedDict
 
 from langchain_core.messages import BaseMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
+from langgraph.prebuilt import ToolNode
 
-tools = [TavilySearchResults(max_results=1)]
-model = chat.bind_tools(tools)
+tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
+
+chatModel = get_chat() 
+
+model = chatModel.bind_tools(tools)
+
+tool_node = ToolNode(tools)
 ```
 
-state를 위한 AgentState를 정의하고 node를 구성합니다.
+state를 위한 ChatAgentState을 정의하고 node를 구성합니다.
 
 ```python
-from langgraph.prebuilt import ToolNode
+class ChatAgentState(TypedDict):
+    messages: Annotated[list, add_messages]
+
+def should_continue(state: ChatAgentState) -> Literal["continue", "end"]:
+    messages = state["messages"]    
+    # print('(should_continue) messages: ', messages)
+    
+    last_message = messages[-1]
+    if not last_message.tool_calls:
+        return "end"
+    else:                
+        return "continue"
+
+def call_model(state: ChatAgentState):
+    question = state["messages"]
+    print('question: ', question)
+    
+    if isKorean(question[0].content)==True:
+        system = (
+            "다음의 Human과 Assistant의 친근한 이전 대화입니다."
+            "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+            "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
+        )
+    else: 
+        system = (            
+            "Answer friendly for the newest question using the following conversation"
+            "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+            "You will be acting as a thoughtful advisor."
+            "Put it in <result> tags."
+        )
+
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            MessagesPlaceholder(variable_name="messages"),
+        ]
+    )
+    chain = prompt | model
+        
+    response = chain.invoke(question)
+    return {"messages": [response]}
+```
 
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
@@ -46,25 +95,26 @@ def call_model(state):
     return {"messages": [response]}
 ```
 
-Workflow를 정의합니다.
+아래와 같이 Workflow를 정의합니다.
 
 ```python
-workflow = StateGraph(AgentState)
+def buildChatAgent():
+    workflow = StateGraph(ChatAgentState)
 
-workflow.add_node("agent", call_model)
-workflow.add_node("action", tool_node)
-workflow.add_edge(START, "agent")
-workflow.add_conditional_edges(
-    "agent",
-    should_continue,
-    {
-        "continue": "action",
-        "end": END,
-    },
-)
-workflow.add_edge("action", "agent")
+    workflow.add_node("agent", call_model)
+    workflow.add_node("action", tool_node)
+    workflow.add_edge(START, "agent")
+    workflow.add_conditional_edges(
+        "agent",
+        should_continue,
+        {
+            "continue": "action",
+            "end": END,
+        },
+    )
+    workflow.add_edge("action", "agent")
 
-app = workflow.compile()
+    return workflow.compile()
 ```
 
 이렇게 구성된 workflow를 그려보면 아래와 같습니다.
@@ -78,10 +128,24 @@ display(Image(app.get_graph().draw_mermaid_png()))
 아래와 같이 실행합니다.
 
 ```python
-from langchain_core.messages import HumanMessage
+chat_app = buildChatAgent()
 
-inputs = {"messages": [HumanMessage(content="서울과 제주의 날씨 비교해줘.")]}
-app.invoke(inputs)
+def run_agent_executor(connectionId, requestId, app, query):
+    isTyping(connectionId, requestId)
+    
+    inputs = [HumanMessage(content=query)]
+    config = {"recursion_limit": 50}
+    
+    message = ""
+    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
+        # print('event: ', event)
+        
+        message = event["messages"][-1]
+        # print('message: ', message)
+
+    msg = readStreamMsg(connectionId, requestId, message.content)
+
+    return msg
 ```
 
 Stream으로도 실행할 수 있습니다.
