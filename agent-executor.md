@@ -8,7 +8,7 @@ ReAct는 LLM을 다양한 데이터 소스와 실행 가능한 프로그램과 �
 
 ## Chat Agent Executor
 
-LangGraph에서 제공하는 기본 Sample에 한글 Prompt를 적용한 내용을 아래와 같이 반영하였습니다. 한글 Prompt를 부분적으로라도 쓰면, 적절한 한국어 답변을 생성하는데 도움이 됩니다. 
+LangGraph에서 제공하는 기본 Sample에 한글 Prompt를 적용한 내용을 아래와 같이 반영하였습니다. 한글 Prompt를 부분적으로라도 쓰면, 적절한 한국어 답변을 생성하는데 도움이 됩니다. 상세한 코드는 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다.
 
 Tool을 정의하고 chat model에 bind 합니다. 또한 tool들을 실행하기 위한 tool_node을 정의합니다. 
 
