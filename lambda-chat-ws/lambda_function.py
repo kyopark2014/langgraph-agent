@@ -959,13 +959,13 @@ def grade_documents_using_parallel_processing(question, documents):
             "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
         },
         {
-            "bedrock_region": "eu-central-01", # Frankfurt
+            "bedrock_region": "eu-central-1", # Frankfurt
             "model_type": "claude3.5",
             "max_tokens": 4096,
             "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
         },
         {
-            "bedrock_region": "eu-central-01", # Frankfurt
+            "bedrock_region": "ap-northeast-1", # Tokyo
             "model_type": "claude3.5",
             "max_tokens": 4096,
             "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
