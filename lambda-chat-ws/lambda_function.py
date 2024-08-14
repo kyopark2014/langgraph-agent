@@ -2337,92 +2337,164 @@ def run_plan_and_exeucute(connectionId, requestId, query):
 def run_essay_writer(connectionId, requestId, topic):
     class State(TypedDict):
         task: str
-        plan: str
-        draft: str
+        plan: list[str]
+        essay: str
         critique: str
         content: List[str]
         revision_number: int
         max_revisions: int
 
-    class Plan(BaseModel):
-        """List of steps as a json format"""
-
-        steps: List[str] = Field(
-            description="different steps to follow, should be in sorted order"
-        )
-    
     def get_planner():
         system = """You are an expert writer tasked with writing a high level outline of an essay. \
-Write such an outline for the user provided topic. Give an outline of the essay along with any relevant notes \
-or instructions for the sections."""
-            
+    Write such an outline for the user provided topic. Give an outline of the essay along with any relevant notes \
+    or instructions for the sections. \
+    Make sure that each session has all the information needed."""
+        
+        #system = """You are an expert writer tasked with writing a high level outline of an essay.\
+    #For the given objective, come up with a simple step by step plan. \
+    #This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
+    #The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."""
+                
         planner_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", system),
                 ("placeholder", "{messages}"),
             ]
         )
-        
+            
         chat = get_chat()   
-        
+            
         planner = planner_prompt | chat
         return planner
         
     def plan(state: State):
         print("###### plan ######")
         print('task: ', state["task"])
-        
+            
         task = [HumanMessage(content=state["task"])]
 
         planner = get_planner()
-        response = planner.invoke({"messages": inputs})
+        response = planner.invoke({"messages": task})
         print('response.content: ', response.content)
-        
+            
         chat = get_chat()
         structured_llm = chat.with_structured_output(Plan, include_raw=True)
         info = structured_llm.invoke(response.content)
         print('info: ', info)
-        
+            
         if not info['parsed'] == None:
             parsed_info = info['parsed']
             # print('parsed_info: ', parsed_info)        
             print('steps: ', parsed_info.steps)
-            
+                
             return {
                 "task": state["task"],
                 "plan": parsed_info.steps
             }
         else:
             print('parsing_error: ', info['parsing_error'])
-            
+                
             return {"plan": []}  
+    
+    class Queries(BaseModel):
+        queries: List[str]
+    
+    def research_plan(state: State):
+        task = state['task']
+        print('task: ', task)
+        
+        system = """You are a researcher charged with providing information that can \
+    be used when writing the following essay. Generate a list of search queries that will gather \
+    any relevant information. Only generate 3 queries max."""
             
-    def generation(state: State):    
-        prompt = ChatPromptTemplate.from_messages(
+        research_prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    "system",
-                    "당신은 5문단의 에세이 작성을 돕는 작가이고 이름은 서연입니다"
-                    "사용자의 요청에 대해 최고의 에세이를 작성하세요."
-                    "사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요."
-                    "최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
-                ),
-                MessagesPlaceholder(variable_name="messages"),
+                ("system", system),
+                ("human", "{task}"),
             ]
         )
+            
+        chat = get_chat()   
+            
+        research = research_prompt | chat
         
+        response = research.invoke({"task": task})
+        print('response.content: ', response.content)
+        
+        chat = get_chat()
+        structured_llm = chat.with_structured_output(Queries, include_raw=True)
+        info = structured_llm.invoke(response.content)
+        # print('info: ', info)
+        
+        if not info['parsed'] == None:
+            queries = info['parsed']
+            print('queries: ', queries.queries)
+            
+        content = state["content"] if state.get("content") is not None else []
+        search = TavilySearchResults(k=2)
+        for q in queries.queries:
+            response = search.invoke(q)     
+            # print('response: ', response)        
+            for r in response:
+                content.append(r['content'])
+        return {        
+            "task": state['task'],
+            "plan": state['plan'],
+            "content": content,
+        }
+        
+    def generation(state: State):    
+        print('content: ', state['content'])
+        print('task: ', state['task'])
+        print('plan: ', state['plan'])
+                            
+        content = "\n\n".join(state['content'] or [])
+        
+    #    system = """You are an essay assistant tasked with writing excellent 5-paragraph essays.\
+    #Generate the best essay possible for the user's request and the initial outline. \
+    #If the user provides critique, respond with a revised version of your previous attempts. \
+    #Utilize all the information below as needed: """
+    #    system = """당신은 5문단의 에세이 작성을 돕는 작가입니다. \
+    #용자의 요청에 대해 최고의 에세이를 작성하세요. \
+    #사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요. \
+    #최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."""
+        system = """You are an essay assistant tasked with writing excellent 5-paragraph essays.\
+    Generate the best essay possible for the user's request and the initial outline. \
+    If the user provides critique, respond with a revised version of your previous attempts. \
+    Utilize all the information below as needed: 
+
+    <content>
+    {content}
+    </content>
+    """
+        
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                ("human", "{task}\n\nHere is my plan:\n\n{plan}"),
+            ]
+        )
+            
         chat = get_chat()
         chain = prompt | chat
 
-        response = chain.invoke(state["messages"])
-        return {"messages": [response]}
+        response = chain.invoke({
+            "content": content,
+            "task": state['task'],
+            "plan": state['plan']
+        })
+        # print('response: ', response)
+            
+        revision_number = state["revision_number"] if state.get("revision_number") is not None else 1
+        return {
+            "essay": response, 
+            "revision_number": revision_number + 1
+        }
 
-    def reflection(state: State):
-        messages = state["messages"]
-        
+    def reflection(state: State):    
         """You are a teacher grading an essay submission. \
-Generate critique and recommendations for the user's submission. \
-Provide detailed recommendations, including requests for length, depth, style, etc."""
+    Generate critique and recommendations for the user's submission. \
+    Provide detailed recommendations, including requests for length, depth, style, etc."""
 
         reflection_prompt = ChatPromptTemplate.from_messages(
             [
@@ -2433,110 +2505,100 @@ Provide detailed recommendations, including requests for length, depth, style, e
                     #"특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다"
                     "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.",
                 ),
-                MessagesPlaceholder(variable_name="messages"),
+                ("human", "{essay}"),
             ]
         )
         
         chat = get_chat()
         reflect = reflection_prompt | chat
-        
-        cls_map = {"ai": HumanMessage, "human": AIMessage}
-        translated = [messages[0]] + [
-            cls_map[msg.type](content=msg.content) for msg in messages[1:]
-        ]
-        res = reflect.invoke({"messages": translated})    
+                
+        res = reflect.invoke({"essay": state['essay'].content})    
         response = HumanMessage(content=res.content)    
-        return {"messages": [response]}
-    
-    def research_plan(state: State):
-        messages = state["messages"]
         
-        system = """You are a researcher charged with providing information that can \
-be used when writing the following essay. Generate a list of search queries that will gather \
-any relevant information. Only generate 3 queries max."""
-
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system),
-                MessagesPlaceholder(variable_name="messages"),
-            ]
-        )
-        
-        chat = get_chat()
-        research = prompt | chat
-        
-        cls_map = {"ai": HumanMessage, "human": AIMessage}
-        translated = [messages[0]] + [
-            cls_map[msg.type](content=msg.content) for msg in messages[1:]
-        ]
-        res = research.invoke({"messages": translated})    
-        response = HumanMessage(content=res.content)    
-        return {"messages": [response]}
+        return {
+            "critique": response,
+            "revision_number": int(state['revision_number'])
+        }
     
     def research_critique(state: State):
-        messages = state["messages"]
-        
         system = """You are a researcher charged with providing information that can \
-be used when making any requested revisions (as outlined below). \
-Generate a list of search queries that will gather any relevant information. Only generate 3 queries max."""
-
-        prompt = ChatPromptTemplate.from_messages(
+    be used when making any requested revisions (as outlined below). \
+    Generate a list of search queries that will gather any relevant information. Only generate 3 queries max."""
+        
+        critique_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", system),
-                MessagesPlaceholder(variable_name="messages"),
+                ("human", "{critique}"),
             ]
         )
         
+        chat = get_chat()           
+        critique = critique_prompt | chat    
+        response = critique.invoke({"critique": state['critique']})
+        print('response.content: ', response.content)
+        
         chat = get_chat()
-        critique = prompt | chat
+        structured_llm = chat.with_structured_output(Queries, include_raw=True)
+        info = structured_llm.invoke(response.content)
+        # print('info: ', info)
         
-        cls_map = {"ai": HumanMessage, "human": AIMessage}
-        translated = [messages[0]] + [
-            cls_map[msg.type](content=msg.content) for msg in messages[1:]
-        ]
-        res = critique.invoke({"messages": translated})    
-        response = HumanMessage(content=res.content)    
-        return {"messages": [response]}
+        content = ""
+        if not info['parsed'] == None:
+            queries = info['parsed']
+            print('queries: ', queries.queries)
+            
+            content = state["content"] if state.get("content") is not None else []
+            search = TavilySearchResults(k=2)
+            for q in queries.queries:
+                response = search.invoke(q)     
+                # print('response: ', response)        
+                for r in response:
+                    content.append(r['content'])
+        return {
+            "content": content,
+            "revision_number": int(state['revision_number'])
+        }
     
-    def should_continue(state: State) -> Literal["continue", "end"]:
-        messages = state["messages"]
-        
-        if len(messages) >= 6:   # End after 3 iterations        
+    MAX_REVISIONS = 2
+    config = {"recursion_limit": 50}
+    
+    def should_continue(state, config):
+        max_revisions = config.get("configurable", {}).get("max_revisions", MAX_REVISIONS)
+        print("max_revisions: ", max_revisions)
+            
+        if state["revision_number"] > max_revisions:
             return "end"
-        else:
-            return "continue"
-        
-    def buildPlanAndExecute():
+        return "contine"
+    
+    def buildEasyWriter():
         workflow = StateGraph(State)
 
-        workflow.add_node("plan", plan)
-        workflow.add_node("generate", generation)
-        workflow.add_node("reflect", reflection)
+        workflow.add_node("planner", plan)
+        workflow.add_node("generation", generation)
+        workflow.add_node("reflection", reflection)
         workflow.add_node("research_plan", research_plan)
         workflow.add_node("research_critique", research_critique)
 
-        workflow.set_entry_point("plann")
+        workflow.set_entry_point("planner")
 
         workflow.add_conditional_edges(
-            "generate", 
+            "generation", 
             should_continue, 
             {
                 "end": END, 
-                "continue": "reflect"
-            }
+                "contine": "reflection"}
         )
 
-        workflow.add_edge("plan", "research_plan")
-        workflow.add_edge("research_plan", "generate")
+        workflow.add_edge("planner", "research_plan")
+        workflow.add_edge("research_plan", "generation")
 
-        workflow.add_edge("reflect", "research_critique")
-        workflow.add_edge("research_critique", "generate")
-
+        workflow.add_edge("reflection", "research_critique")
+        workflow.add_edge("research_critique", "generation")
         # graph = builder.compile(checkpointer=memory)
 
         return workflow.compile()
     
-    app = buildPlanAndExecute()    
+    app = buildEasyWriter()    
     
     isTyping(connectionId, requestId)
     
@@ -2552,7 +2614,7 @@ Generate a list of search queries that will gather any relevant information. Onl
         
     readStreamMsg(connectionId, requestId, value["response"])
     
-    return value["response"]
+    return value["essay"]
     
 #########################################################
 def traslation(chat, text, input_language, output_language):
