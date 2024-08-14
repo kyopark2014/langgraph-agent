@@ -36,27 +36,26 @@ Container(generate, "generate")
 Container(reflect, "reflect")
 Container(research_plan, "research_plan")
 
-Rel(start, plan, "topic")
+Rel(start, plan, "task")
 
 'Boundary(c1, "tools_condition") {
     SystemQueue_Ext(should_continue, "should_continue")
 '}
 
-Rel(plan, research_plan, "list of plan")
+Rel(plan, research_plan, "plans")
 
-
-Rel(generate, should_continue, "question")
+Rel(generate, should_continue, "draft\nrevision_number")
 
 Rel(should_continue, END, "end")
 
-Rel(should_continue, reflect, "reflect")
+Rel(should_continue, reflect, "confinue")
 
 
-Rel(research_plan, generate, "filtered_plans")
+Rel(research_plan, generate, "content")
 
-Rel(reflect, research_critique, "plan")
+Rel(reflect, research_critique, "critique")
 
-Rel(research_critique, generate, "plan")
+Rel(research_critique, generate, "content")
 
 
 @enduml
