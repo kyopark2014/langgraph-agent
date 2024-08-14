@@ -2344,6 +2344,13 @@ def run_essay_writer(connectionId, requestId, query):
         revision_number: int
         max_revisions: int
 
+    class Plan(BaseModel):
+        """List of steps as a json format"""
+
+        steps: List[str] = Field(
+            description="different steps to follow, should be in sorted order"
+        )
+        
     def get_planner():
         system = """You are an expert writer tasked with writing a high level outline of an essay. \
     Write such an outline for the user provided topic. Give an outline of the essay along with any relevant notes \
