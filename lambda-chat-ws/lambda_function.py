@@ -2639,9 +2639,9 @@ Generate a list of search queries that will gather any relevant information. Onl
             
     print('value: ', value)
         
-    # readStreamMsg(connectionId, requestId, value["essay"])
+    readStreamMsg(connectionId, requestId, value["essay"].content)
     
-    return value["essay"]
+    return value["essay"].content
     
 #########################################################
 def traslation(chat, text, input_language, output_language):
