@@ -1,5 +1,14 @@
 # Essay Writer
 
+## Reflected Essay Writer
+
+![image](https://github.com/user-attachments/assets/f7cce78b-2339-454c-8286-f30739ecc392)
+
+
+![image](https://github.com/user-attachments/assets/622ac6db-e84f-4dce-8822-069b355d1e65)
+
+## Easy Writer
+
 [Essay Writer](https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/7/essay-writer)의 내용을 정리합니다.
 
 전체 Graph의 구성도는 아래와 같습니다.
