@@ -2413,9 +2413,13 @@ Make sure that each session has all the information needed."""
         task = state['task']
         print('task: ', task)
         
-        system = """You are a researcher charged with providing information that can \
-    be used when writing the following essay. Generate a list of search queries that will gather \
-    any relevant information. Only generate 3 queries max."""
+        if langMode:
+            system = """당신은 다음 에세이를 작성할 때 사용할 수 있는 정보를 제공하는 연구원입니다. \
+관련 정보를 수집할 수 있는 검색 쿼리 목록을 생성하세요. 최대 3개의 쿼리만 생성하세요."""
+        else:
+            system = """You are a researcher charged with providing information that can \
+be used when writing the following essay. Generate a list of search queries that will gather \
+any relevant information. Only generate 3 queries max."""
             
         research_prompt = ChatPromptTemplate.from_messages(
             [
@@ -2537,9 +2541,13 @@ Provide detailed recommendations, including requests for length, depth, style, e
         }
     
     def research_critique(state: State):
-        system = """You are a researcher charged with providing information that can \
-    be used when making any requested revisions (as outlined below). \
-    Generate a list of search queries that will gather any relevant information. Only generate 3 queries max."""
+        if langMode:
+            system = """당신은 요청된 수정 사항을 만들 때 사용할 수 있는 정보를 제공하는 연구원입니다. \
+관련 정보를 수집할 수 있는 검색 쿼리 목록을 생성하세요. 최대 3개의 쿼리만 생성하세요."""
+        else:
+            system = """You are a researcher charged with providing information that can \
+be used when making any requested revisions (as outlined below). \
+Generate a list of search queries that will gather any relevant information. Only generate 3 queries max."""
         
         critique_prompt = ChatPromptTemplate.from_messages(
             [
