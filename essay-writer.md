@@ -2,10 +2,9 @@
 
 ## Reflected Essay Writer
 
-![image](https://github.com/user-attachments/assets/f7cce78b-2339-454c-8286-f30739ecc392)
+![image](https://github.com/user-attachments/assets/ad19e5b8-6c02-4ce5-963d-1d9ed889c39e)
 
 
-![image](https://github.com/user-attachments/assets/622ac6db-e84f-4dce-8822-069b355d1e65)
 
 ## Easy Writer
 
@@ -171,6 +170,9 @@ from IPython.display import Image
 
 Image(graph.get_graph().draw_png())
 ```
+
+![image](https://github.com/user-attachments/assets/f7cce78b-2339-454c-8286-f30739ecc392)
+
 
 아래와 같이 실행합니다.
 
