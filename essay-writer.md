@@ -2,6 +2,10 @@
 
 ## Reflected Essay Writer
 
+[essay-writer.ipynb](./agent/essay-writer.ipynb)에서는 Easy Writer을 실행해보고 동작을 확인할 수 있습니다. Easy Writer는 [lambda_function.py](./lambda-chat-ws/lambda_function.py)에서 구현된 코드를 확인할 수 있습니다.
+
+
+
 ![image](https://github.com/user-attachments/assets/ad19e5b8-6c02-4ce5-963d-1d9ed889c39e)
 
 
