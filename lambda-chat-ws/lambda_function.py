@@ -2335,6 +2335,8 @@ def run_plan_and_exeucute(connectionId, requestId, query):
 # Essay Writer
 #########################################################
 def run_essay_writer(connectionId, requestId, query):
+    langMode = isKorean(query)
+        
     class State(TypedDict):
         task: str
         plan: list[str]
@@ -2352,16 +2354,17 @@ def run_essay_writer(connectionId, requestId, query):
         )
         
     def get_planner():
-        system = """You are an expert writer tasked with writing a high level outline of an essay. \
-    Write such an outline for the user provided topic. Give an outline of the essay along with any relevant notes \
-    or instructions for the sections. \
-    Make sure that each session has all the information needed."""
-        
-        #system = """You are an expert writer tasked with writing a high level outline of an essay.\
-    #For the given objective, come up with a simple step by step plan. \
-    #This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
-    #The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."""
-                
+        if langMode:
+            system = """당신은 에세이의 개요를 작성하고 있는 전문 작가입니다. \
+사용자가 제공한 주제에 대해 다음과 같은 개요를 작성하세요.  \
+에세이의 개요와 함께 각 섹션에 대한 관련 메모나 지시사항을 제공하세요. \
+각 세션에 필요한 모든 정보가 포함되어 있는지 확인하세요."""
+        else:
+            system = """You are an expert writer tasked with writing a high level outline of an essay. \
+Write such an outline for the user provided topic. Give an outline of the essay along with any relevant notes \
+or instructions for the sections. \
+Make sure that each session has all the information needed."""
+                        
         planner_prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", system),
@@ -2622,7 +2625,7 @@ def run_essay_writer(connectionId, requestId, query):
             
     print('value: ', value)
         
-    readStreamMsg(connectionId, requestId, value["essay"])
+    # readStreamMsg(connectionId, requestId, value["essay"])
     
     return value["essay"]
     
