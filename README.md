@@ -100,9 +100,13 @@ Self-Corrective RAG는 Corrective RAG처럼 vector store로 부터 얻어진 문
 Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용합니다. [Human-in-the-loop (HIL)](./Human-in-the-loop.md)에서는 Human-in-the-loop (HIL)을 구현하는것을 설명합니다. Plan and Execute는 [Plan-and-Solve](https://arxiv.org/pdf/2305.04091)와 같이 CoT 방식의 성능을 향상시키는 방법입니다. 
 
 
+### Easy Writer
+
+[Essay Writer](./essay-writer.md)에서는 essay를 작성하는 Agent를 생성합니다.
+
 ## Reference
 
-- [Essay Writer](./essay-writer.md)에서는 essay를 작성하는 Agent를 생성합니다.
+
 
 - [reflexion-agent.md](./reflexion-agent.md)에서는 Reflexion방식의 Agent에 대해 설명합니다.
 
