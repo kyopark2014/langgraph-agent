@@ -61,6 +61,10 @@ from langchain_core.pydantic_v1 import BaseModel
 class Queries(BaseModel):
     queries: List[str]
 
+from tavily import TavilyClient
+import os
+tavily = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
+
 def plan_node(state: AgentState):
     messages = [
         SystemMessage(content=PLAN_PROMPT), 
@@ -116,6 +120,11 @@ def research_critique_node(state: AgentState):
         for r in response['results']:
             content.append(r['content'])
     return {"content": content}
+
+def should_continue(state):
+    if state["revision_number"] > state["max_revisions"]:
+        return END
+    return "reflect"
 ```
 
 아래와 같이 Graph를 구성합니다.
