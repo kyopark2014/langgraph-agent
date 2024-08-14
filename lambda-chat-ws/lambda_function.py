@@ -2334,7 +2334,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
 ####################### LangGraph #######################
 # Essay Writer
 #########################################################
-def run_essay_writer(connectionId, requestId, topic):
+def run_essay_writer(connectionId, requestId, query):
     class State(TypedDict):
         task: str
         plan: list[str]
@@ -2602,8 +2602,11 @@ def run_essay_writer(connectionId, requestId, topic):
     
     isTyping(connectionId, requestId)
     
-    inputs = {"input": topic}
-    config = {"recursion_limit": 50}
+    inputs = {"task": query}
+    config = {
+        "recursion_limit": 50,
+        "max_revisions": 2
+    }
     
     for output in app.stream(inputs, config):   
         for key, value in output.items():
