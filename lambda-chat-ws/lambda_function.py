@@ -1454,7 +1454,7 @@ def run_agent_executor(connectionId, requestId, query):
 ####################### LangGraph #######################
 # Reflection Agent
 #########################################################
-def run_reflection_agent(connectionId, requestId, app, query):
+def run_reflection_agent(connectionId, requestId, query):
     class State(TypedDict):
         # messages: Annotated[Sequence[BaseMessage], operator.add]
         messages: Annotated[list, add_messages]
@@ -1569,7 +1569,7 @@ def run_reflection_agent(connectionId, requestId, app, query):
 #########################################################
 langMode = False
 
-def run_corrective_rag(connectionId, requestId, app, query):
+def run_corrective_rag(connectionId, requestId, query):
     class State(TypedDict):
         question : str
         generation : str
