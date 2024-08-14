@@ -2622,7 +2622,7 @@ def run_essay_writer(connectionId, requestId, query):
             
     print('value: ', value)
         
-    readStreamMsg(connectionId, requestId, value["response"])
+    readStreamMsg(connectionId, requestId, value["essay"])
     
     return value["essay"]
     
