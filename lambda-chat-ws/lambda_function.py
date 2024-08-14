@@ -1498,8 +1498,7 @@ def run_reflection_agent(connectionId, requestId, query):
         chat = get_chat()
         reflect = reflection_prompt | chat
         
-        #cls_map = {"ai": , "human": AIMessage}
-        cls_map = {"human": HumanMessage, "ai": AIMessage}
+        cls_map = {"ai": HumanMessage, "human": AIMessage}
         translated = [messages[0]] + [
             cls_map[msg.type](content=msg.content) for msg in messages[1:]
         ]
