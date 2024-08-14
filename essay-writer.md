@@ -116,18 +116,6 @@ def research_critique_node(state: AgentState):
         for r in response['results']:
             content.append(r['content'])
     return {"content": content}
-
-def research_critique_node(state: AgentState):
-    queries = model.with_structured_output(Queries).invoke([
-        SystemMessage(content=RESEARCH_CRITIQUE_PROMPT),
-        HumanMessage(content=state['critique'])
-    ])
-    content = state['content'] or []
-    for q in queries.queries:
-        response = tavily.search(query=q, max_results=2)
-        for r in response['results']:
-            content.append(r['content'])
-    return {"content": content}
 ```
 
 아래와 같이 Graph를 구성합니다.
