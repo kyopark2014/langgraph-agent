@@ -1502,6 +1502,8 @@ def run_reflection_agent(connectionId, requestId, app, query):
         translated = [messages[0]] + [
             cls_map[msg.type](content=msg.content) for msg in messages[1:]
         ]
+        print('translated: ', translated)
+        
         res = reflect.invoke({"messages": translated})    
         response = HumanMessage(content=res.content)    
         return {"messages": [response]}
@@ -2330,14 +2332,215 @@ def run_plan_and_exeucute(connectionId, requestId, query):
     return value["response"]
 
 ####################### LangGraph #######################
-# Plan and Execute
+# Essay Writer
 #########################################################
-def run_essay_writer(connectionId, requestId, essay_writer_app, text):
+def run_essay_writer(connectionId, requestId, topic):
+    class State(TypedDict):
+        task: str
+        plan: str
+        draft: str
+        critique: str
+        content: List[str]
+        revision_number: int
+        max_revisions: int
+
+    class Plan(BaseModel):
+        """List of steps as a json format"""
+
+        steps: List[str] = Field(
+            description="different steps to follow, should be in sorted order"
+        )
+    
+    def get_planner():
+        system = """You are an expert writer tasked with writing a high level outline of an essay. \
+Write such an outline for the user provided topic. Give an outline of the essay along with any relevant notes \
+or instructions for the sections."""
+            
+        planner_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                ("placeholder", "{messages}"),
+            ]
+        )
+        
+        chat = get_chat()   
+        
+        planner = planner_prompt | chat
+        return planner
+        
+    def plan(state: State):
+        print("###### plan ######")
+        print('task: ', state["task"])
+        
+        task = [HumanMessage(content=state["task"])]
+
+        planner = get_planner()
+        response = planner.invoke({"messages": inputs})
+        print('response.content: ', response.content)
+        
+        chat = get_chat()
+        structured_llm = chat.with_structured_output(Plan, include_raw=True)
+        info = structured_llm.invoke(response.content)
+        print('info: ', info)
+        
+        if not info['parsed'] == None:
+            parsed_info = info['parsed']
+            # print('parsed_info: ', parsed_info)        
+            print('steps: ', parsed_info.steps)
+            
+            return {
+                "task": state["task"],
+                "plan": parsed_info.steps
+            }
+        else:
+            print('parsing_error: ', info['parsing_error'])
+            
+            return {"plan": []}  
+            
+    def generation(state: State):    
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "당신은 5문단의 에세이 작성을 돕는 작가이고 이름은 서연입니다"
+                    "사용자의 요청에 대해 최고의 에세이를 작성하세요."
+                    "사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요."
+                    "최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
+                ),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        
+        chat = get_chat()
+        chain = prompt | chat
+
+        response = chain.invoke(state["messages"])
+        return {"messages": [response]}
+
+    def reflection(state: State):
+        messages = state["messages"]
+        
+        """You are a teacher grading an essay submission. \
+Generate critique and recommendations for the user's submission. \
+Provide detailed recommendations, including requests for length, depth, style, etc."""
+
+        reflection_prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
+                    "이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다."
+                    #"특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다"
+                    "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.",
+                ),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        
+        chat = get_chat()
+        reflect = reflection_prompt | chat
+        
+        cls_map = {"ai": HumanMessage, "human": AIMessage}
+        translated = [messages[0]] + [
+            cls_map[msg.type](content=msg.content) for msg in messages[1:]
+        ]
+        res = reflect.invoke({"messages": translated})    
+        response = HumanMessage(content=res.content)    
+        return {"messages": [response]}
+    
+    def research_plan(state: State):
+        messages = state["messages"]
+        
+        system = """You are a researcher charged with providing information that can \
+be used when writing the following essay. Generate a list of search queries that will gather \
+any relevant information. Only generate 3 queries max."""
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        
+        chat = get_chat()
+        research = prompt | chat
+        
+        cls_map = {"ai": HumanMessage, "human": AIMessage}
+        translated = [messages[0]] + [
+            cls_map[msg.type](content=msg.content) for msg in messages[1:]
+        ]
+        res = research.invoke({"messages": translated})    
+        response = HumanMessage(content=res.content)    
+        return {"messages": [response]}
+    
+    def research_critique(state: State):
+        messages = state["messages"]
+        
+        system = """You are a researcher charged with providing information that can \
+be used when making any requested revisions (as outlined below). \
+Generate a list of search queries that will gather any relevant information. Only generate 3 queries max."""
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        
+        chat = get_chat()
+        critique = prompt | chat
+        
+        cls_map = {"ai": HumanMessage, "human": AIMessage}
+        translated = [messages[0]] + [
+            cls_map[msg.type](content=msg.content) for msg in messages[1:]
+        ]
+        res = critique.invoke({"messages": translated})    
+        response = HumanMessage(content=res.content)    
+        return {"messages": [response]}
+    
+    def should_continue(state: State) -> Literal["continue", "end"]:
+        messages = state["messages"]
+        
+        if len(messages) >= 6:   # End after 3 iterations        
+            return "end"
+        else:
+            return "continue"
+        
+    def buildPlanAndExecute():
+        workflow = StateGraph(State)
+
+        workflow.add_node("plan", plan)
+        workflow.add_node("generate", generation)
+        workflow.add_node("reflect", reflection)
+        workflow.add_node("research_plan", research_plan)
+        workflow.add_node("research_critique", research_critique)
+
+        workflow.set_entry_point("plann")
+
+        workflow.add_conditional_edges(
+            "generate", 
+            should_continue, 
+            {
+                "end": END, 
+                "continue": "reflect"
+            }
+        )
+
+        workflow.add_edge("plan", "research_plan")
+        workflow.add_edge("research_plan", "generate")
+
+        workflow.add_edge("reflect", "research_critique")
+        workflow.add_edge("research_critique", "generate")
+
+        # graph = builder.compile(checkpointer=memory)
+
+        return workflow.compile()
+    
     app = buildPlanAndExecute()    
     
     isTyping(connectionId, requestId)
     
-    inputs = {"input": query}
+    inputs = {"input": topic}
     config = {"recursion_limit": 50}
     
     for output in app.stream(inputs, config):   
@@ -2880,8 +3083,8 @@ def getResponse(connectionId, jsonBody):
                 elif convType == 'agent-plan-and-execute':  # self-corrective RAG
                     msg = run_plan_and_exeucute(connectionId, requestId, text)        
                                                 
-                #elif convType == 'agent-essay-writer':  # essay writer
-                #    msg = run_essay_writer(connectionId, requestId, essay_writer_app, text)      
+                elif convType == 'agent-essay-writer':  # essay writer
+                    msg = run_essay_writer(connectionId, requestId, text)      
                 
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
