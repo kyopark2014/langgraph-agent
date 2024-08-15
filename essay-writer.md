@@ -1,10 +1,10 @@
 # Essay Writer
 
-## Reflected Essay Writer
+## Reflection을 이용한 Easy Writer의 구현
 
-[essay-writer.ipynb](./agent/essay-writer.ipynb)에서는 Easy Writer을 실행해보고 동작을 확인할 수 있습니다. Easy Writer는 [lambda_function.py](./lambda-chat-ws/lambda_function.py)에서 구현된 코드를 확인할 수 있습니다.
+[essay-writer.ipynb](./agent/essay-writer.ipynb)에서는 Easy Writer을 실행해보고 동작을 확인할 수 있습니다. Easy Writer는 [lambda_function.py](./lambda-chat-ws/lambda_function.py)에서 구현된 코드를 확인할 수 있습니다. 이 예제는 [deep learning.ai의 Essay Writer](https://learn.deeplearning.ai/courses/ai-agents-in-langgraph/lesson/7/essay-writer)라는 예제로 workflow를 이용해 주어진 주제에 적합한 Essay를 작성할 수 있도록 도와주십니다. [reflection-agent.md](./reflection-agent.md)와의 차이점은 reflection agend에서는 외부 검색없이 reflection을 이용해 LLM으로 생성된 essay를 업데이트 하는것에 비해 easy writer에서는 인터넷 검색에 필요한 keyword를 reflection으로 업데이트하고 있습니다. 성능은 검색된 데이터의 질과 양에 따라 달라지므로 성능의 비교보다는 workflow를 이해하는 용도로 활용합니다. 
 
-
+Easy writer의 activity diagram은 아래와 같습니다. 
 
 ![image](https://github.com/user-attachments/assets/ad19e5b8-6c02-4ce5-963d-1d9ed889c39e)
 
