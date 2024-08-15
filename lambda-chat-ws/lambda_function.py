@@ -2801,7 +2801,7 @@ def basin_search(query):
         message = event["messages"][-1]
         # print('message: ', message)
 
-    return message.content
+    return message.content[message.content.find('<result>')+8:len(message.content)-9]
 
 msg = basin_search("강남의 파스타 맛집")
 print('basic_search: ', msg)
