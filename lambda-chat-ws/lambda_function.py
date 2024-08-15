@@ -64,6 +64,7 @@ separated_chat_history = os.environ.get('separated_chat_history')
 enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
 enableHybridSearch = os.environ.get('enableHybridSearch')
 useParallelRAG = os.environ.get('useParallelRAG', 'true')
+useParrelWebSearch = True
 
 reference_docs = []
 # api key to get weather information in agent
@@ -1034,6 +1035,45 @@ def grade_documents_using_parallel_processing(question, documents):
     
     #print('filtered_docs: ', filtered_docs)
     return filtered_docs
+
+def tavily_search(conn, q, k):     
+    search = TavilySearchResults(k=k)
+    response = search.invoke(q)     
+    print('response: ', response)
+    
+    content = []
+    for r in response:
+        content.append(r['content'])
+        
+    conn.send(content)    
+    conn.close()
+    
+def tavily_search_using_parallel_processing(quries):
+    content = []    
+
+    processes = []
+    parent_connections = []
+    
+    k = 2
+    for i, q in enumerate(quries):
+        parent_conn, child_conn = Pipe()
+        parent_connections.append(parent_conn)
+                    
+        process = Process(target=tavily_search, args=(child_conn, q, k))
+        processes.append(process)
+        
+    for process in processes:
+        process.start()
+            
+    for parent_conn in parent_connections:
+        c = parent_conn.recv()
+        if c is not None:
+            content.append(c)
+
+    for process in processes:
+        process.join()
+    
+    return content
 
 def print_doc(doc):
     if len(doc.page_content)>=100:
@@ -2445,12 +2485,18 @@ any relevant information. Only generate 3 queries max."""
             print('queries: ', queries.queries)
             
         content = state["content"] if state.get("content") is not None else []
-        search = TavilySearchResults(k=2)
-        for q in queries.queries:
-            response = search.invoke(q)     
-            # print('response: ', response)        
-            for r in response:
-                content.append(r['content'])
+        
+        if useParrelWebSearch:
+            c = tavily_search_using_parallel_processing(queries.queries)
+            print('content: ', c)            
+            content.extend(c)
+        else:        
+            search = TavilySearchResults(k=2)
+            for q in queries.queries:
+                response = search.invoke(q)     
+                # print('response: ', response)        
+                for r in response:
+                    content.append(r['content'])
         return {        
             "task": state['task'],
             "plan": state['plan'],
@@ -2572,12 +2618,18 @@ Generate a list of search queries that will gather any relevant information. Onl
             print('queries: ', queries.queries)
             
             content = state["content"] if state.get("content") is not None else []
-            search = TavilySearchResults(k=2)
-            for q in queries.queries:
-                response = search.invoke(q)     
-                # print('response: ', response)        
-                for r in response:
-                    content.append(r['content'])
+            
+            if useParrelWebSearch:
+                c = tavily_search_using_parallel_processing(queries.queries)
+                print('content: ', c)            
+                content.extend(c)
+            else:
+                search = TavilySearchResults(k=2)
+                for q in queries.queries:
+                    response = search.invoke(q)     
+                    # print('response: ', response)        
+                    for r in response:
+                        content.append(r['content'])
         return {
             "content": content,
             "revision_number": int(state['revision_number'])
