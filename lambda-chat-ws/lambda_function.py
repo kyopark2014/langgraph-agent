@@ -1822,6 +1822,29 @@ def run_self_rag(connectionId, requestId, query):
         )
         answer_grader = answer_prompt | structured_llm_grade_answer
         return answer_grader
+    
+    def get_hallucination_grader():
+        class GradeHallucinations(BaseModel):
+            """Binary score for hallucination present in generation answer."""
+
+            binary_score: str = Field(
+                description="Answer is grounded in the facts, 'yes' or 'no'"
+            )
+        
+        system = """You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts. \n 
+            Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."""
+        hallucination_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                ("human", "Set of facts: \n\n {documents} \n\n LLM generation: {generation}"),
+            ]
+        )
+        
+        chat = get_chat()
+        structured_llm_grade_hallucination = chat.with_structured_output(GradeHallucinations)
+        
+        hallucination_grader = hallucination_prompt | structured_llm_grade_hallucination
+        return hallucination_grader
 
     def retrieve(state: State):
         print("###### retrieve ######")
@@ -1830,7 +1853,7 @@ def run_self_rag(connectionId, requestId, query):
         docs = retrieve(question)
         
         return {"documents": docs, "question": question}
-
+    
     def generate(state: State):
         print("###### generate ######")
         question = state["question"]
