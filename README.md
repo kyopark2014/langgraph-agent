@@ -5,8 +5,6 @@
 </p>
 
 
-![License: MIT](https://img.shields.io/badge/License-MIT-red.svg)
-
 ## LangGraph Agent 
 
 [Agent란](https://terms.tta.or.kr/dictionary/dictionaryView.do?word_seq=171384-1%29) 주변 환경을 탐지하여 자율적으로 동작하는 장치 또는 프로그램을 의미합니다. agent의 라틴어 어원인 [agere의 뜻](https://m.blog.naver.com/skyopenus/221783830658)은 to do 또는 to act의 의미를 가지고 있습니다. 
