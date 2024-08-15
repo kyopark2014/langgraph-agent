@@ -347,6 +347,11 @@ print("Final: ", value["essay"])
 
 실행한 결과는 아래와 같습니다. 
 
+![easy-writer](https://github.com/user-attachments/assets/6fda99c8-a902-49c8-a82a-994569429932)
+
+LangSmith로 확인한 동작은 아래와 같습니다. 전체 138초가 소요되었습니다.
+
+![image](https://github.com/user-attachments/assets/0b96a360-ce52-496b-9fa3-e7505c650fb3)
 
 
 
