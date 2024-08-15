@@ -28,7 +28,7 @@ Reflection은 Agent을 포함한 AI 시스템의 품질과 성공률을 높이�
 
 ### 상세구현
 
-State 클래스를 준비합니다.
+상세코드는 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다. State 클래스를 준비합니다.
 
 ```python
 class State(TypedDict):
