@@ -279,7 +279,7 @@ Generate a list of search queries that will gather any relevant information. Onl
     }
 ```
 
-should_continue()에서는 max_revision 반복하도록 합니다. 
+should_continue()에서는 max_revision 반복하도록 합니다. 
 
 ```python
 def should_continue(state, config):
