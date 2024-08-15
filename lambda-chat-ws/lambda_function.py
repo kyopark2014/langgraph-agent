@@ -1066,8 +1066,7 @@ def tavily_search_using_parallel_processing(quries):
         process.start()
             
     for parent_conn in parent_connections:
-        c = parent_conn.recv()
-        content += c
+        content += parent_conn.recv()
         
     for process in processes:
         process.join()
@@ -2486,8 +2485,7 @@ any relevant information. Only generate 3 queries max."""
         content = state["content"] if state.get("content") is not None else []
         
         if useParrelWebSearch:
-            c = tavily_search_using_parallel_processing(queries.queries)
-            content += c
+            content += tavily_search_using_parallel_processing(queries.queries)
             
         else:        
             search = TavilySearchResults(k=2)
