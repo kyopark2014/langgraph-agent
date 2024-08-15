@@ -2714,6 +2714,97 @@ Generate a list of search queries that will gather any relevant information. Onl
     readStreamMsg(connectionId, requestId, value["essay"].content)
     
     return value["essay"].content
+
+
+####################### LangGraph #######################
+# Knowledge Guru
+#########################################################
+
+def basin_search(query):
+    chatModel = get_chat() 
+
+    model = chatModel.bind_tools(tools)
+
+    class State(TypedDict):
+        messages: Annotated[list, add_messages]
+
+    tool_node = ToolNode(tools)
+
+    def should_continue(state: State) -> Literal["continue", "end"]:
+        messages = state["messages"]    
+        # print('(should_continue) messages: ', messages)
+        
+        last_message = messages[-1]
+        if not last_message.tool_calls:
+            return "end"
+        else:                
+            return "continue"
+
+    def call_model(state: State):
+        question = state["messages"]
+        print('question: ', question)
+        
+        if isKorean(question[0].content)==True:
+            system = (
+                "Assistant는 질문에 답변하기 위한 정보를 수집하는 연구원입니다."
+                "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+                "Assistant는 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+                "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
+            )
+        else: 
+            system = (            
+                "You are a researcher charged with providing information that can be used when making answer."
+                "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+                "You will be acting as a thoughtful advisor."
+                "Put it in <result> tags."
+            )
+            
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        chain = prompt | model
+            
+        response = chain.invoke(question)
+        return {"messages": [response]}
+
+    def buildChatAgent():
+        workflow = StateGraph(State)
+
+        workflow.add_node("agent", call_model)
+        workflow.add_node("action", tool_node)
+        
+        workflow.set_entry_point("agent")
+        workflow.add_conditional_edges(
+            "agent",
+            should_continue,
+            {
+                "continue": "action",
+                "end": END,
+            },
+        )
+        workflow.add_edge("action", "agent")
+
+        return workflow.compile()
+
+    app = buildChatAgent()
+        
+    inputs = [HumanMessage(content=query)]
+    config = {"recursion_limit": 50}
+    
+    message = ""
+    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
+        # print('event: ', event)
+        
+        message = event["messages"][-1]
+        # print('message: ', message)
+
+    return message.content
+
+msg = basin_search("강남의 파스타 맛집")
+print('basic_search: ', msg)
     
 #########################################################
 def traslation(chat, text, input_language, output_language):
