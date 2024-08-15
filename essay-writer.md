@@ -10,7 +10,7 @@ Easy writer의 activity diagram은 아래와 같습니다.
 
 ### 상세 구현
 
-LangGraph를 위한 State Class는 아래와 같습니다.
+LangGraph를 위한 State Class는 아래와 같습니다.
 
 ```python
 class State(TypedDict):
