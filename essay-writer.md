@@ -10,7 +10,7 @@ Easy writer의 activity diagram은 아래와 같습니다.
 
 ### 상세 구현
 
-노드사이에 데이터를 전달하기 위한 State 클래스는 아래와 같습니다.
+LangGraph를 위한 State Class는 아래와 같습니다.
 
 ```python
 class State(TypedDict):
