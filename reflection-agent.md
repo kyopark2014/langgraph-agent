@@ -26,102 +26,108 @@ Reflection은 Agent을 포함한 AI 시스템의 품질과 성공률을 높이�
 - [reflection.ipynb](https://github.com/langchain-ai/langgraph/blob/main/examples/reflection/reflection.ipynb)에서는 LangGraph로 Reflection에 대한 노트북입니다.
   
 
-### Node의 정의
+### 상세구현
 
-에세이 형태의 Prompt를 구성합니다. 
-
-```python
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
-prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "당신은 5문단의 에세이 작성을 돕는 작가이고 이름은 서연입니다"
-            "사용자의 요청에 대해 최고의 에세이를 작성하세요."
-            "사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요."
-            "완성된 에세이는 <result> tag를 붙여주세요.",
-        ),
-        MessagesPlaceholder(variable_name="messages"),
-    ]
-)
-chain = prompt | chat
-```
-
-Reflect를 위한 Prompt를 정의합니다.
+State 클래스를 준비합니다.
 
 ```python
-reflection_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
-            "이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다."
-            "특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다",
-        ),
-        MessagesPlaceholder(variable_name="messages"),
-    ]
-)
-reflect = reflection_prompt | chat
-```
-
-Workflow를 위한 Node 함수를 정의합니다.
-
-```python
-from langgraph.graph.message import add_messages
-from typing import TypedDict, Annotated, Sequence, List, Union
-
-class ChatAgentState(TypedDict):
-    # messages: Annotated[Sequence[BaseMessage], operator.add]
+class State(TypedDict):
     messages: Annotated[list, add_messages]
+```
 
-def generation_node(state: ChatAgentState):    
+에세이 생성을 위해 generation() 노드를 준비합니다. 
+
+```python
+def generation(state: State):    
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "당신은 5문단의 에세이 작성을 돕는 작가이고 이름은 서연입니다"
+                "사용자의 요청에 대해 최고의 에세이를 작성하세요."
+                "사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요."
+                "최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
+            ),
+            MessagesPlaceholder(variable_name="messages"),
+        ]
+    )
+        
+    chat = get_chat()
+    chain = prompt | chat
+
     response = chain.invoke(state["messages"])
     return {"messages": [response]}
+```
 
-def reflection_node(state: ChatAgentState):
+Reflection을 수행합니다.
+
+```python
+def reflection(state: State):
     messages = state["messages"]
-    
+        
+    reflection_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
+                "이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다."
+                "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.",
+            ),
+            MessagesPlaceholder(variable_name="messages"),
+        ]
+    )
+        
+    chat = get_chat()
+    reflect = reflection_prompt | chat
+        
     cls_map = {"ai": HumanMessage, "human": AIMessage}
     translated = [messages[0]] + [
         cls_map[msg.type](content=msg.content) for msg in messages[1:]
     ]
+    print('translated: ', translated)
+        
     res = reflect.invoke({"messages": translated})    
     response = HumanMessage(content=res.content)    
     return {"messages": [response]}
+```
 
-def should_continue(state: ChatAgentState):
+반복하는 횟수를 총 3회로 아래와 같이 설정합니다.
+
+```python
+def should_continue(state: State) -> Literal["continue", "end"]:
     messages = state["messages"]
-    
+        
     if len(messages) >= 6:   # End after 3 iterations        
         return "end"
     else:
         return "continue"
 ```
 
-StateGraph를 이용해 workflow를 정의합니다.
+Workflow를 Graph를 선언합니다.
 
 ```python
-from langgraph.graph import START, END, StateGraph
+def buildReflectionAgent():
+    workflow = StateGraph(State)
+    workflow.add_node("generate", generation)
+    workflow.add_node("reflect", reflection)
+    workflow.set_entry_point("generate")
+    workflow.add_conditional_edges(
+        "generate",
+        should_continue,
+        {
+            "continue": "reflect",
+            "end": END,
+        },
+    )
 
-workflow = StateGraph(ChatAgentState)
-workflow.add_node("generate", generation_node)
-workflow.add_node("reflect", reflection_node)
-workflow.set_entry_point("generate")
-workflow.add_conditional_edges(
-    "generate",
-    should_continue,
-    {
-        "continue": "reflect",
-        "end": END,
-    },
-)
+    workflow.add_edge("reflect", "generate")
+    return workflow.compile()
 
-workflow.add_edge("reflect", "generate")
-app_reflection = workflow.compile()
+app = buildReflectionAgent()
 ```
 
+
+ 
 구현된 workflow는 아래와 같습니다.
 
 ![image](https://github.com/user-attachments/assets/b2cccf4d-8a91-4955-9e32-330f77182cff)
