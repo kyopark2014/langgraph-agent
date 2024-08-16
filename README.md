@@ -90,10 +90,6 @@ Self-Corrective RAG는 Corrective RAG처럼 vector store로 부터 얻어진 문
 
 ![image](https://github.com/user-attachments/assets/5769e8ed-6e76-4fda-a932-a1d3c461de50)
 
-
-
-
-
 ### Plan and Execute
 
 [plan-and-execuite.md](./plan-and-execuite.md)에서는 Plan and Execute 방식의 Agent를 생성하는 방법에 대해 설명합니다. 
@@ -111,6 +107,12 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 [Essay Writer](./essay-writer.md)에서는 essay를 작성하는 Agent를 생성합니다.
 
 ![image](https://github.com/user-attachments/assets/b876e10b-aa5f-4b12-8e0d-a1f803cd7647)
+
+### Knowledge Gueu
+
+[knowledge-guru.md](./knowledge-guru.md)에서는 OpenSearch와 Tavily 검색으로 얻어진 정보로 초안(draft)를 만들고, 검색을 위한 keyword를 추출하여 다시 검색하는 방법으로 답변을 향상사키는(revise) 방법에 대해 설명합니다. 
+
+![image](https://github.com/user-attachments/assets/4dd4d670-6794-4723-a220-cd565ce5f46d)
 
 
 ## Reference
