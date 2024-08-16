@@ -108,7 +108,7 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 ![image](https://github.com/user-attachments/assets/b876e10b-aa5f-4b12-8e0d-a1f803cd7647)
 
-### Knowledge Gueu
+### Knowledge Guru
 
 [knowledge-guru.md](./knowledge-guru.md)에서는 OpenSearch와 Tavily 검색으로 얻어진 정보로 초안(draft)를 만들고, 검색을 위한 keyword를 추출하여 다시 검색하는 방법으로 답변을 향상사키는(revise) 방법에 대해 설명합니다. 
 
