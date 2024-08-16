@@ -2851,7 +2851,8 @@ def run_knowledge_guru(connectionId, requestId, query):
             if useEnhancedSearch:
                 for q in json.loads(queries.queries):
                     response = enhanced_search(q)     
-                    content.append(r['content'])                   
+                    #print('response: ', response)                    
+                    content.append(response)                   
             else:
                 search = TavilySearchResults(k=2)
                 for q in json.loads(queries.queries):
