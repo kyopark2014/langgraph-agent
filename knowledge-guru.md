@@ -114,7 +114,7 @@ class State(TypedDict):
     max_revisions: int
 ```
 
-검색을 수행하여 초찬(draft)를 생성합니다. 
+검색을 수행하여 초안(draft)를 생성합니다. 
 
 ```python
 def generation(state: State):    
