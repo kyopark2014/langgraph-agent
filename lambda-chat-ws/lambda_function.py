@@ -2968,9 +2968,10 @@ You should use the previous critique to add important information to your answer
             
     print('value: ', value)
         
-    readStreamMsg(connectionId, requestId, value["draft"].content)
+    readStreamMsg(connectionId, requestId, value["messages"][-1].content)
     
-    return value["draft"].content[value["draft"].content.find('<result>')+8:len(value["draft"].content)-9]
+    # return value["messages"][-1].content[value["messages"][-1].content.find('<result>')+8:len(value["messages"][-1].content)-9]
+    return value["messages"][-1].content
     
 #########################################################
 def traslation(chat, text, input_language, output_language):
