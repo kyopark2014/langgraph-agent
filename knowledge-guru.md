@@ -107,11 +107,9 @@ Graph를 위한 State를 정의합니다.
 ```python
 class State(TypedDict):
     task: str
-    draft: str
-    critique: str
-    content: List[str]
-    revision_number: int
-    max_revisions: int
+    messages: Annotated[list, add_messages]
+    reflection: list
+    search_queries: list
 ```
 
 검색을 수행하여 초안(draft)를 생성합니다. 
@@ -121,90 +119,122 @@ def generation(state: State):
     draft = enhanced_search(state['task'])  
     print('draft: ', draft)
         
-    return {"draft": draft}
+    return {
+        "task": state['task'],
+        "messages": [AIMessage(content=draft)]
+    }
 ```
 
-draft에서 적절한 검색어를 추출합니다. 이후 추출된 keyword를 이용하여 재검색을 하고, 이때 얻어진 정보로 content를 생성합니다. 
+
+Reflection과 search_queries를 구하기 위한 Research 클래스를 정의합니다.
+
+```python
+class Reflection(BaseModel):
+    missing: str = Field(description="Critique of what is missing.")
+    advisable: str = Field(description="Critique of what is helpful for better answer")
+    superfluous: str = Field(description="Critique of what is superfluous")
+
+class Research(BaseModel):
+    """Provide reflection and then follow up with search queries to improve the answer."""
+
+    reflection: Reflection = Field(description="Your reflection on the initial answer.")
+    search_queries: list[str] = Field(
+        description="1-3 search queries for researching improvements to address the critique of your current answer."
+    )
+```
+
+아래와 같이 reflection, search_queries를 추출합니다. 
 
 ```python    
-class Queries(BaseModel):
-    """List of quries as a json format"""
-    queries: str = Field(description="queries relevant to the question'")
-    
 def reflection(state: State):
-    system = """You are a researcher charged with providing information that can \
-be used when writing the following answer. Generate a list of search queries that will gather \
-any relevant information. Only generate 3 queries max. All queries should be words or string without numbers"""
+    print('draft: ', state["messages"][-1].content)
+    
+    reflection = []
+    search_queries = []
+    for attempt in range(5):
+        chat = get_chat()
+        structured_llm = chat.with_structured_output(Research, include_raw=True)
+            
+        info = structured_llm.invoke(state["messages"][-1].content)
+        print(f'attempt: {attempt}, info: {info}')
+                
+        if not info['parsed'] == None:
+            parsed_info = info['parsed']
+            # print('reflection: ', parsed_info.reflection)                
+            reflection = [parsed_info.reflection.missing, parsed_info.reflection.advisable]
+            search_queries = parsed_info.search_queries
+                
+            print('reflection: ', parsed_info.reflection)            
+            print('search_queries: ', search_queries)                
+            break
         
-    prompt = ChatPromptTemplate.from_messages(
+    return {
+        "task": state["task"],
+        "messages": state["messages"],
+        "reflection": reflection,
+        "search_queries": search_queries
+    }  
+```
+
+답변을 향상시킵니다.
+
+```python        
+def revise_answer(state: State):   
+    system = """Revise your previous answer using the new information. 
+You should use the previous critique to add important information to your answer. provide the final answer with <result> tag. 
+<critique>
+{reflection}
+</critique>
+
+<information>
+{content}
+</information>"""
+                    
+    reflection_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
-            ("human", "{answer}"),
+            MessagesPlaceholder(variable_name="messages"),
         ]
     )
             
     chat = get_chat()
-    chain = prompt | chat
-    response = chain.invoke({"answer": state['draft']})
-    print('response: ', response.content)
+    reflect = reflection_prompt | chat
+            
+    messages = [HumanMessage(content=state["task"])] + state["messages"]
+    cls_map = {"ai": HumanMessage, "human": AIMessage}
+    translated = [messages[0]] + [
+        cls_map[msg.type](content=msg.content) for msg in messages[1:]
+    ]
+    print('translated: ', translated)
         
-    chat = get_chat()
-    structured_llm = chat.with_structured_output(Queries, include_raw=True)
-    info = structured_llm.invoke(response.content)
-    print('info: ', info)
+    content = []        
+    if useEnhancedSearch:
+        for q in state["search_queries"]:
+            response = enhanced_search(q)     
+            print(f'q: {q}, response: {response}')
+            content.append(response)                   
+    else:
+        search = TavilySearchResults(k=2)
+        for q in state["search_queries"]:
+            response = search.invoke(q)     
+            for r in response:
+                content.append(r['content'])     
         
-    content = []
-    if not info['parsed'] == None:
-        queries = info['parsed']
-        print('queries: ', queries.queries)
-        
-        if useEnhancedSearch:
-            for q in json.loads(queries.queries):
-                response = enhanced_search(q)     
-                print(f'q: {q}, response: {response}')
-                content.append(response)                   
-        else:
-            search = TavilySearchResults(k=2)
-            for q in json.loads(queries.queries):
-                response = search.invoke(q)     
-                for r in response:
-                    content.append(r['content'])    
-    return {
-        "content": content,
-        "draft": state["draft"]
-    }    
-```
-
-검색을 통해 얻어온 content로 답변을 향상시킵니다.
-
-```python        
-def revise_answer(state: State):   
-    system = """Revise your previous answer using the new information as bellow. Then prvide the final answer with <result> tag.
-        
-    <information>
-    {content}
-    </information
-    """
-        
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system),
-            ("human", "<answer>{draft}</answer>"),
-        ]
-    )
-                
-    chat = get_chat()
-    chain = prompt | chat
-
-    response = chain.invoke({
-        "content": state['content'],
-        "draft": state['draft']
-    })
-    print('revise_answer: ', response.content)
+    res = reflect.invoke(
+        {
+            "messages": translated,
+            "reflection": state["reflection"],
+            "content": content
+        }
+    )    
+                                
+    response = HumanMessage(content=res.content[res.content.find('<result>')+8:len(res.content)-9])
+    print('response: ', response)
                 
     revision_number = state["revision_number"] if state.get("revision_number") is not None else 1
     return {
-        "draft": response, 
+        "task": state["task"],
+        "messages": [response], 
         "revision_number": revision_number + 1
     }
 ```
@@ -228,23 +258,22 @@ Workflow를 Graph로 정의합니다.
 def buildKnowledgeGuru():    
     workflow = StateGraph(State)
 
-    workflow.add_node("generation", generation)
-    workflow.add_node("reflection", reflection)
+    workflow.add_node("generate", generate)
+    workflow.add_node("reflect", reflect)
     workflow.add_node("revise_answer", revise_answer)
 
-    workflow.set_entry_point("generation")
+    workflow.set_entry_point("generate")
 
     workflow.add_conditional_edges(
         "revise_answer", 
         should_continue, 
         {
             "end": END, 
-            "contine": "reflection"
-        }
+            "contine": "reflect"}
     )
 
-    workflow.add_edge("generation", "reflection")
-    workflow.add_edge("reflection", "revise_answer")
+    workflow.add_edge("generate", "reflect")
+    workflow.add_edge("reflect", "revise_answer")
         
     app = workflow.compile()
         
@@ -270,9 +299,9 @@ for output in app.stream(inputs, config):
             
 print('value: ', value)
         
-readStreamMsg(connectionId, requestId, value["draft"].content)
+readStreamMsg(connectionId, requestId, value["messages"][-1].content)
     
-return value["draft"].content[value["draft"].content.find('<result>')+8:len(value["draft"].content)-9]
+return value["messages"][-1].content
 ```
 
 
