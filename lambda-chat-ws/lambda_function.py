@@ -991,7 +991,7 @@ def enhanced_search(query):
     inputs = [HumanMessage(content=query)]
     config = {"recursion_limit": 50}
         
-    result = app_enhanced_search.stream({"messages": inputs}, config, stream_mode="values"):   
+    result = app_enhanced_search.invoke({"messages": inputs}, config)   
     print('result: ', result)
             
     message = result["messages"][-1]
