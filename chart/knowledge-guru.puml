@@ -30,32 +30,27 @@ LAYOUT_WITH_LEGEND()
 'System(start, "Start")
 'System(END, "END")
 
-Container(research_critique, "research_critique")
-Container(plan, "plan")
-Container(generate, "generate")
-Container(reflect, "reflect")
-Container(research_plan, "research_plan")
+Container(generation, "generation")
+Container(reflection, "reflection")
+Container(revise_answer, "revise_answer")
 
-Rel(start, plan, "task")
+Rel(Start, generation, "task")
 
 'Boundary(c1, "tools_condition") {
-    SystemQueue_Ext(should_continue, "should_continue")
+    SystemQueue_Ext(should_continue, "should_continue\n(revision_number<max_revisions)")
 '}
 
-Rel(plan, research_plan, "plans")
+Rel(generation, reflection, "draft")
 
-Rel(generate, should_continue, "draft\nrevision_number")
+Rel(reflection, revise_answer, "draft,\ncontent")
+
+Rel(revise_answer, should_continue, "new draft,\nrevision_number")
 
 Rel(should_continue, END, "end")
 
-Rel(should_continue, reflect, "confinue")
+Rel(should_continue, reflection, "confinue")
 
 
-Rel(research_plan, generate, "content")
-
-Rel(reflect, research_critique, "critique")
-
-Rel(research_critique, generate, "content")
 
 
 @enduml
