@@ -65,6 +65,7 @@ enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
 enableHybridSearch = os.environ.get('enableHybridSearch')
 useParallelRAG = os.environ.get('useParallelRAG', 'true')
 useParrelWebSearch = True
+useEnhancedSearch = True
 
 reference_docs = []
 # api key to get weather information in agent
@@ -914,7 +915,7 @@ def lexical_search_for_tool(query, top_k):
         
     return docs
 
-def basin_search(query):
+def init_enhanced_search():
     chatModel = get_chat() 
 
     model = chatModel.bind_tools(tools)
@@ -982,21 +983,25 @@ def basin_search(query):
         workflow.add_edge("action", "agent")
 
         return workflow.compile()
-
+    
     app = buildChatAgent()
-            
+    
+    return app
+
+app_enhanced_search = init_enhanced_search()
+
+def enhanced_search(query):
     inputs = [HumanMessage(content=query)]
     config = {"recursion_limit": 50}
         
     message = ""
-    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
-        # print('event: ', event)
+    result = app_enhanced_search.stream({"messages": inputs}, config, stream_mode="values"):   
+    print('result: ', result)
             
-        message = event["messages"][-1]
-        # print('message: ', message)
+    message = result["messages"][-1]
+    print('enhanced_search: ', message)
 
     return message.content[message.content.find('<result>')+8:len(message.content)-9]
-
 
 class GradeDocuments(BaseModel):
     """Binary score for relevance check on retrieved documents."""
@@ -2811,7 +2816,7 @@ def run_knowledge_guru(connectionId, requestId, query):
         max_revisions: int
             
     def generation(state: State):    
-        draft = basin_search(state['task'])  
+        draft = enhanced_search(state['task'])  
         print('draft: ', draft)
         
         return {"draft": draft}
@@ -2847,14 +2852,16 @@ def run_knowledge_guru(connectionId, requestId, query):
             queries = info['parsed']
             print('queries: ', queries.queries)
         
-            search = TavilySearchResults(k=2)
-            for q in json.loads(queries.queries):
-                # print('q: ', q)
-                
-                response = search.invoke(q)     
-                # print('response: ', response)        
-                for r in response:
-                    content.append(r['content'])    
+            if useEnhancedSearch:
+                for q in json.loads(queries.queries):
+                    response = enhanced_search(q)     
+                    content.append(r['content'])                   
+            else:
+                search = TavilySearchResults(k=2)
+                for q in json.loads(queries.queries):
+                    response = search.invoke(q)     
+                    for r in response:
+                        content.append(r['content'])    
         return {
             "content": content,
             "draft": state["draft"]
@@ -2882,7 +2889,7 @@ def run_knowledge_guru(connectionId, requestId, query):
             "content": state['content'],
             "draft": state['draft']
         })
-        print('response: ', response)
+        print('revise_answer: ', response.content)
                 
         revision_number = state["revision_number"] if state.get("revision_number") is not None else 1
         return {
