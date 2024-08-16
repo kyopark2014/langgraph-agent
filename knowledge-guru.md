@@ -12,6 +12,96 @@ Knowledge Guru의 activity diagram은 아래와 같습니다.
 
 ## 구현
 
+검색에서 사용하는 함수는 OpenSearch와 Tavily를 모두 활용합니다. 
+
+```python
+tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
+
+def init_enhanced_search():
+    chat = get_chat() 
+
+    model = chat.bind_tools(tools)
+
+    class State(TypedDict):
+        messages: Annotated[list, add_messages]
+
+    tool_node = ToolNode(tools)
+
+    def should_continue(state: State) -> Literal["continue", "end"]:
+        messages = state["messages"]    
+        # print('(should_continue) messages: ', messages)
+            
+        last_message = messages[-1]
+        if not last_message.tool_calls:
+            return "end"
+        else:                
+            return "continue"
+
+    def call_model(state: State):
+        question = state["messages"]
+        print('question: ', question)
+            
+        if isKorean(question[0].content)==True:
+            system = (
+                "Assistant는 질문에 답변하기 위한 정보를 수집하는 연구원입니다."
+                "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+                "Assistant는 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+                "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
+            )
+        else: 
+            system = (            
+                "You are a researcher charged with providing information that can be used when making answer."
+                "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+                "You will be acting as a thoughtful advisor."
+                "Put it in <result> tags."
+            )
+                
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        chain = prompt | model
+                
+        response = chain.invoke(question)
+        return {"messages": [response]}
+
+    def buildChatAgent():
+        workflow = StateGraph(State)
+
+        workflow.add_node("agent", call_model)
+        workflow.add_node("action", tool_node)
+            
+        workflow.set_entry_point("agent")
+        workflow.add_conditional_edges(
+            "agent",
+            should_continue,
+            {
+                "continue": "action",
+                "end": END,
+            },
+        )
+        workflow.add_edge("action", "agent")
+        return workflow.compile()
+    
+    return buildChatAgent()
+
+app_enhanced_search = init_enhanced_search()
+
+def enhanced_search(query):
+    inputs = [HumanMessage(content=query)]
+    config = {"recursion_limit": 50}
+        
+    result = app_enhanced_search.invoke({"messages": inputs}, config)   
+    print('result: ', result)
+            
+    message = result["messages"][-1]
+    print('enhanced_search: ', message)
+
+    return message.content[message.content.find('<result>')+8:len(message.content)-9]
+```
+
 Graph를 위한 State를 정의합니다. 
 
 ```python
