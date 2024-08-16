@@ -193,6 +193,6 @@ return value["draft"].content[value["draft"].content.find('<result>')+8:len(valu
 ![image](https://github.com/user-attachments/assets/fe32f21c-0f3f-481c-ba4c-cc9728677996)
 
 
-아래와 같이 전체 250초가 소요되었습니다.
+아래와 같이 전체 251초가 소요되었습니다.
 
 ![image](https://github.com/user-attachments/assets/b5d31304-5727-4208-b840-28cb3bc548e5)
