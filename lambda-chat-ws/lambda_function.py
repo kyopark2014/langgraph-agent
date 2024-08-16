@@ -2809,7 +2809,7 @@ def run_knowledge_guru(connectionId, requestId, query):
         reflection: list
         search_queries: list
             
-    def generation(state: State):    
+    def generation_node(state: State):    
         draft = enhanced_search(state['task'])  
         print('draft: ', draft)
         
@@ -2831,7 +2831,7 @@ def run_knowledge_guru(connectionId, requestId, query):
             description="1-3 search queries for researching improvements to address the critique of your current answer."
         )
     
-    def reflection(state: State):
+    def reflection_node(state: State):
         print('draft: ', state["messages"][-1].content)
     
         reflection = []
@@ -2860,7 +2860,7 @@ def run_knowledge_guru(connectionId, requestId, query):
             "search_queries": search_queries
         }
 
-    def revise_answer(state: State):   
+    def revise_answer_node(state: State):   
         system = """Revise your previous answer using the new information. 
 You should use the previous critique to add important information to your answer. provide the final answer with <result> tag. 
 <critique>
@@ -2896,7 +2896,7 @@ You should use the previous critique to add important information to your answer
                 content.append(response)                   
         else:
             search = TavilySearchResults(k=2)
-            for q in json.loads(queries.queries):
+            for q in state["search_queries"]:
                 response = search.invoke(q)     
                 for r in response:
                     content.append(r['content'])     
@@ -2931,9 +2931,9 @@ You should use the previous critique to add important information to your answer
     def buildKnowledgeGuru():    
         workflow = StateGraph(State)
 
-        workflow.add_node("generation", generation)
-        workflow.add_node("reflection", reflection)
-        workflow.add_node("revise_answer", revise_answer)
+        workflow.add_node("generation", generation_node)
+        workflow.add_node("reflection", reflection_node)
+        workflow.add_node("revise_answer", revise_answer_node)
 
         workflow.set_entry_point("generation")
 
