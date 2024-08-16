@@ -7,7 +7,7 @@ Knowledge Guru의 activity diagram은 아래와 같습니다.
 3) 관련된 정보(content)와 reflection을 이용하여 답변을 업데이트(revise) 합니다.
 4) 2번 3번의 과정을 max_revision 만큼 반복합니다.
 
-![image](https://github.com/user-attachments/assets/b34da5aa-86c1-44c6-8da0-510dcf60b2c1)
+![image](https://github.com/user-attachments/assets/2f2125ab-b21f-416a-aa7f-6035463b397d)
 
 
 ## 구현
