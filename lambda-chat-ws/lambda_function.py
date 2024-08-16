@@ -981,12 +981,9 @@ def init_enhanced_search():
             },
         )
         workflow.add_edge("action", "agent")
-
         return workflow.compile()
     
-    app = buildChatAgent()
-    
-    return app
+    return buildChatAgent()
 
 app_enhanced_search = init_enhanced_search()
 
@@ -994,7 +991,6 @@ def enhanced_search(query):
     inputs = [HumanMessage(content=query)]
     config = {"recursion_limit": 50}
         
-    message = ""
     result = app_enhanced_search.stream({"messages": inputs}, config, stream_mode="values"):   
     print('result: ', result)
             
