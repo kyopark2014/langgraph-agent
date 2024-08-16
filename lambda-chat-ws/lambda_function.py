@@ -2851,7 +2851,7 @@ def run_knowledge_guru(connectionId, requestId, query):
             if useEnhancedSearch:
                 for q in json.loads(queries.queries):
                     response = enhanced_search(q)     
-                    print('response: ', response)                    
+                    print(f'q: {q}, response: {response}')
                     content.append(response)                   
             else:
                 search = TavilySearchResults(k=2)
@@ -2945,7 +2945,7 @@ def run_knowledge_guru(connectionId, requestId, query):
         
     readStreamMsg(connectionId, requestId, value["draft"].content)
     
-    return value["draft"].content
+    return value["draft"].content[value["draft"].content.find('<result>')+8:len(value["draft"].content)-9]
     
 #########################################################
 def traslation(chat, text, input_language, output_language):
