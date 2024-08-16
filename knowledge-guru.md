@@ -114,7 +114,7 @@ class State(TypedDict):
 검색을 수행하여 초안(draft)를 생성합니다. 
 
 ```python
-def generation(state: State):    
+def generate(state: State):    
     draft = enhanced_search(state['task'])  
     print('draft: ', draft)
         
@@ -145,7 +145,7 @@ class Research(BaseModel):
 아래와 같이 reflection, search_queries를 추출합니다. 
 
 ```python    
-def reflection(state: State):
+def reflect(state: State):
     print('draft: ', state["messages"][-1].content)
     
     reflection = []
