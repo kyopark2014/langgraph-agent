@@ -2809,7 +2809,7 @@ def run_knowledge_guru(connectionId, requestId, query):
         reflection: list
         search_queries: list
             
-    def generation_node(state: State):    
+    def generate(state: State):    
         draft = enhanced_search(state['task'])  
         print('draft: ', draft)
         
@@ -2831,7 +2831,7 @@ def run_knowledge_guru(connectionId, requestId, query):
             description="1-3 search queries for researching improvements to address the critique of your current answer."
         )
     
-    def reflection_node(state: State):
+    def reflect(state: State):
         print('draft: ', state["messages"][-1].content)
     
         reflection = []
@@ -2860,7 +2860,7 @@ def run_knowledge_guru(connectionId, requestId, query):
             "search_queries": search_queries
         }
 
-    def revise_answer_node(state: State):   
+    def revise_answer(state: State):   
         system = """Revise your previous answer using the new information. 
 You should use the previous critique to add important information to your answer. provide the final answer with <result> tag. 
 <critique>
@@ -2931,22 +2931,22 @@ You should use the previous critique to add important information to your answer
     def buildKnowledgeGuru():    
         workflow = StateGraph(State)
 
-        workflow.add_node("generation", generation_node)
-        workflow.add_node("reflection", reflection_node)
-        workflow.add_node("revise_answer", revise_answer_node)
+        workflow.add_node("generate", generate)
+        workflow.add_node("reflect", reflect)
+        workflow.add_node("revise_answer", revise_answer)
 
-        workflow.set_entry_point("generation")
+        workflow.set_entry_point("generate")
 
         workflow.add_conditional_edges(
             "revise_answer", 
             should_continue, 
             {
                 "end": END, 
-                "contine": "reflection"}
+                "contine": "reflect"}
         )
 
-        workflow.add_edge("generation", "reflection")
-        workflow.add_edge("reflection", "revise_answer")
+        workflow.add_edge("generate", "reflect")
+        workflow.add_edge("reflect", "revise_answer")
         
         app = workflow.compile()
         
