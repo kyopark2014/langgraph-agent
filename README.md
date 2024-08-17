@@ -116,6 +116,11 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 ![image](https://github.com/user-attachments/assets/7207687c-5649-4e2d-b4ab-c51ebf9c60f4)
 
 
+### Multi Agent 
+
+[multi-agent.md](./multi-agent.md)에서는 여러개의 Agent를 이용하는 방법에 대해 설명합니다. 
+
+
 ## Reference
 
 
@@ -137,8 +142,6 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 - [rewoo.md](./rewoo.md)에서는 Reasoning without Observation 방식의 Agent에 대해 설명합니다.
 
 - [llm-compiler.md](./llm-compiler.md)에서는 "An LLM Compiler for Parallel Function Calling"을 구현하는것에 대해 설명합니다. 
-
-- [multi-agent.md](./multi-agent.md)에서는 여러개의 Agent를 이용하는 방법에 대해 설명합니다. 
 
 - [stome-agent.md](./stome-agent.md)에서는 풍부한 기사를 생성(richer article generation) Storm Agent에 대해 설명합니다.
 
