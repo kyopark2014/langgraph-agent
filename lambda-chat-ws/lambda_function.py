@@ -1574,6 +1574,7 @@ def run_agent_executor(connectionId, requestId, query):
 
 ####################### LangGraph #######################
 # Chat Agent Executor (v2)
+# Reference: https://github.com/kyopark2014/langgraph-agent/blob/main/multi-agent.md
 #########################################################
 def run_agent_executor2(connectionId, requestId, query):
     chatModel = get_chat() 
@@ -1590,6 +1591,7 @@ def run_agent_executor2(connectionId, requestId, query):
         print("tool_names: ", tool_names)
                             
         system = (
+            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
             "You are a helpful AI assistant, collaborating with other assistants."
             "Use the provided tools to progress towards answering the question."
             "If you are unable to fully answer, that's OK, another assistant with different tools "
@@ -1641,37 +1643,7 @@ def run_agent_executor2(connectionId, requestId, query):
         else:                
             return "continue"
 
-    def call_model(state: State):
-        question = state["messages"]
-        print('question: ', question)
-        
-        if isKorean(question[0].content)==True:
-            system = (
-                "다음의 Human과 Assistant의 친근한 이전 대화입니다."
-                "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-                "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
-                "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
-            )
-        else: 
-            system = (            
-                "Answer friendly for the newest question using the following conversation"
-                "If you don't know the answer, just say that you don't know, don't try to make up an answer."
-                "You will be acting as a thoughtful advisor."
-                "Put it in <result> tags."
-            )
-            
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system),
-                MessagesPlaceholder(variable_name="messages"),
-            ]
-        )
-        chain = prompt | model
-            
-        response = chain.invoke(question)
-        return {"messages": [response]}
-
-    def buildChatAgent():
+    def buildAgentExecutor():
         workflow = StateGraph(State)
 
         workflow.add_node("agent", agent_node)
@@ -1689,7 +1661,7 @@ def run_agent_executor2(connectionId, requestId, query):
 
         return workflow.compile()
 
-    app = buildChatAgent()
+    app = buildAgentExecutor()
         
     isTyping(connectionId, requestId)
     
