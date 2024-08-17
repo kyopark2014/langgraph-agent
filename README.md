@@ -286,6 +286,13 @@ RAG를 위해 아래의 파일들을 다운로드한 후에 채팅창 아래의 
 
 ![easy-writer](https://github.com/user-attachments/assets/6fda99c8-a902-49c8-a82a-994569429932)
 
+### Knowledge Guru
+
+메뉴에서 "Knowledge Guru"를 선택하고 생성형 AI를 위해서는 데이터가 중요한데요. 데이터를 어떻게 가공할수 있는지 알려주세요."와 같이 검색합니다. 이때 OpenSearch에 생성형 AI와 관련된 데이터들이 있어야 합니다. "Knowledge Guru"의 경우에 OpenSearch의 검색 결과를 LLM으로 평가하여 관련된 문서만을 추출하여 답변을 생성합니다. 또한 추출된 답변에 추가 데이터를 제공하기 위하여 중요 키워드를 추출한 후에 OpenSearch를 이용해 추가 데이터를 수집하여 답변을 향상(Revise)합니다. 
+
+![noname](https://github.com/user-attachments/assets/ebd7fa92-ee56-4380-890b-6b3ec40ee1d6)
+
+
 
 ## 결론
 
