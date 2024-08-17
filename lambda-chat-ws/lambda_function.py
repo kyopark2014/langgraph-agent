@@ -33,7 +33,7 @@ from PIL import Image
 from opensearchpy import OpenSearch
 
 from langchain_core.agents import AgentAction, AgentFinish
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage, ToolMessage
 from langgraph.prebuilt.tool_executor import ToolExecutor
 from langgraph.graph import START, END, StateGraph
 from langgraph.prebuilt import ToolNode
@@ -41,7 +41,8 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import tools_condition
 from langchain_core.pydantic_v1 import BaseModel, Field
 from typing import Annotated, List, Tuple, TypedDict, Literal, Sequence, Union
-
+import functools
+    
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
 s3_prefix = os.environ.get('s3_prefix')
@@ -1539,6 +1540,141 @@ def run_agent_executor(connectionId, requestId, query):
         workflow = StateGraph(State)
 
         workflow.add_node("agent", call_model)
+        workflow.add_node("action", tool_node)
+        workflow.add_edge(START, "agent")
+        workflow.add_conditional_edges(
+            "agent",
+            should_continue,
+            {
+                "continue": "action",
+                "end": END,
+            },
+        )
+        workflow.add_edge("action", "agent")
+
+        return workflow.compile()
+
+    app = buildChatAgent()
+        
+    isTyping(connectionId, requestId)
+    
+    inputs = [HumanMessage(content=query)]
+    config = {"recursion_limit": 50}
+    
+    message = ""
+    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
+        # print('event: ', event)
+        
+        message = event["messages"][-1]
+        # print('message: ', message)
+
+    msg = readStreamMsg(connectionId, requestId, message.content)
+
+    return msg
+
+####################### LangGraph #######################
+# Chat Agent Executor (v2)
+#########################################################
+def run_agent_executor2(connectionId, requestId, query):
+    chatModel = get_chat() 
+    model = chatModel.bind_tools(tools)
+        
+    class State(TypedDict):
+        messages: Annotated[list, add_messages]
+        sender: str
+
+    tool_node = ToolNode(tools)
+            
+    def create_agent(llm, tools, system_message: str):
+        tool_names = ", ".join([tool.name for tool in tools])
+        print("tool_names: ", tool_names)
+                            
+        system = (
+            "You are a helpful AI assistant, collaborating with other assistants."
+            "Use the provided tools to progress towards answering the question."
+            "If you are unable to fully answer, that's OK, another assistant with different tools "
+            "will help where you left off. Execute what you can to make progress."
+            "If you or any of the other assistants have the final answer or deliverable,"
+            "prefix your response with FINAL ANSWER so the team knows to stop."
+            "You have access to the following tools: {tool_names}."
+            "{system_message}"
+        )
+        
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system",system),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        
+        prompt = prompt.partial(system_message=system_message)
+        prompt = prompt.partial(tool_names=tool_names)
+        
+        return prompt | llm.bind_tools(tools)
+    
+    def agent_node(state, agent, name):
+        result = agent.invoke(state)
+        # We convert the agent output into a format that is suitable to append to the global state
+        if isinstance(result, ToolMessage):
+            pass
+        else:
+            result = AIMessage(**result.dict(exclude={"type", "name"}), name=name)
+        return {
+            "messages": [result],
+            "sender": name,
+        }
+    
+    chat = get_chat()
+    #system_message = "You should provide accurate data for the chart_generator to use."
+    system_message = "You should provide accurate data for the questione."
+    agent = create_agent(chat, tools, system_message)
+    
+    agent_node = functools.partial(agent_node, agent=agent, name="agent")
+    
+    def should_continue(state: State) -> Literal["continue", "end"]:
+        messages = state["messages"]    
+        # print('(should_continue) messages: ', messages)
+        
+        last_message = messages[-1]
+        if not last_message.tool_calls:
+            return "end"
+        else:                
+            return "continue"
+
+    def call_model(state: State):
+        question = state["messages"]
+        print('question: ', question)
+        
+        if isKorean(question[0].content)==True:
+            system = (
+                "다음의 Human과 Assistant의 친근한 이전 대화입니다."
+                "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+                "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+                "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
+            )
+        else: 
+            system = (            
+                "Answer friendly for the newest question using the following conversation"
+                "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+                "You will be acting as a thoughtful advisor."
+                "Put it in <result> tags."
+            )
+            
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        chain = prompt | model
+            
+        response = chain.invoke(question)
+        return {"messages": [response]}
+
+    def buildChatAgent():
+        workflow = StateGraph(State)
+
+        workflow.add_node("agent", agent_node)
         workflow.add_node("action", tool_node)
         workflow.add_edge(START, "agent")
         workflow.add_conditional_edges(
@@ -3481,6 +3617,9 @@ def getResponse(connectionId, jsonBody):
 
                 elif convType == 'agent-executor':
                     msg = run_agent_executor(connectionId, requestId, text)
+                
+                elif convType == 'agent-executor2':
+                    msg = run_agent_executor2(connectionId, requestId, text)
                         
                 elif convType == 'agent-executor-chat':
                     revised_question = revise_question(connectionId, requestId, chat, text)     
