@@ -1576,17 +1576,14 @@ def run_agent_executor(connectionId, requestId, query):
 # Chat Agent Executor (v2)
 # Reference: https://github.com/kyopark2014/langgraph-agent/blob/main/multi-agent.md
 #########################################################
-def run_agent_executor2(connectionId, requestId, query):
-    chatModel = get_chat() 
-    model = chatModel.bind_tools(tools)
-        
+def run_agent_executor2(connectionId, requestId, query):        
     class State(TypedDict):
         messages: Annotated[list, add_messages]
         sender: str
 
     tool_node = ToolNode(tools)
             
-    def create_agent(llm, tools, system_message: str):
+    def create_agent(chat, tools, system_message: str):
         tool_names = ", ".join([tool.name for tool in tools])
         print("tool_names: ", tool_names)
                             
@@ -1612,7 +1609,7 @@ def run_agent_executor2(connectionId, requestId, query):
         prompt = prompt.partial(system_message=system_message)
         prompt = prompt.partial(tool_names=tool_names)
         
-        return prompt | llm.bind_tools(tools)
+        return prompt | chat.bind_tools(tools)
     
     def agent_node(state, agent, name):
         result = agent.invoke(state)
