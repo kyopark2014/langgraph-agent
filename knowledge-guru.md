@@ -310,7 +310,29 @@ return value["messages"][-1].content
 
 ![image](https://github.com/user-attachments/assets/fe32f21c-0f3f-481c-ba4c-cc9728677996)
 
-
 아래와 같이 전체 251초가 소요되었습니다.
 
 ![image](https://github.com/user-attachments/assets/b5d31304-5727-4208-b840-28cb3bc548e5)
+
+
+
+
+아래에서는 "서울에서 관광하기 좋은곳과 가까운 맛집들을 추천해줘."로 검색하였을때의 결과입니다. 일반적인 검색일 경우에는 Tavily를 통해 검색하여 얻은 결과를 활용합니다. 
+
+![noname](https://github.com/user-attachments/assets/a8e557dd-9b70-4a4e-a7d5-3e5eda544339)
+
+이때 전체 94초가 소요 되었습니다.
+
+![image](https://github.com/user-attachments/assets/30b2784a-7ba2-46d2-ac1f-3646e1b649bb)
+
+
+
+아래는 "생성형 AI를 위해서는 데이터가 중요한데요. 데이터를 어떻게 가공할수 있는지 알려주세요."와 같이 검색하여 OpenSearch를 중심으로 검색을 수행하였습니다.
+
+![noname](https://github.com/user-attachments/assets/ebd7fa92-ee56-4380-890b-6b3ec40ee1d6)
+
+이때의 실행히간은 아래와 같습니다.
+
+![image](https://github.com/user-attachments/assets/b084379a-54cd-4c6d-a707-b589a25e9aba)
+
+
