@@ -2,7 +2,7 @@
 
 [LangGraph: Multi-Agent Workflows](https://www.youtube.com/watch?v=hvAPnpSfSGo&list=PLfaIDFEXuae16n2TWUkKq5PgJ0w6Pkwtg&index=10)에서 설명하고 있는 3가지 multi agent에 대해 정리합니다. 
 
-## Multi agent 
+## Multi agent 방식으로 구현
 
 아래에서는 Function을 가지는 multi agent 구현에 대해 설명합니다. 상세한 코드는 [multi-agent-collaboration.ipynb](./multi-agent-collaboration.ipynb)와 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다.
 
