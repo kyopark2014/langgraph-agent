@@ -1390,6 +1390,51 @@ def get_rewrite():
     question_rewriter = re_write_prompt | structured_llm_rewriter
     return question_rewriter
 
+def get_answer_grader():
+    class GradeAnswer(BaseModel):
+        """Binary score to assess answer addresses question."""
+
+        binary_score: str = Field(
+            description="Answer addresses the question, 'yes' or 'no'"
+        )
+        
+    chat = get_chat()
+    structured_llm_grade_answer = chat.with_structured_output(GradeAnswer)
+        
+    system = """You are a grader assessing whether an answer addresses / resolves a question \n 
+        Give a binary score 'yes' or 'no'. Yes' means that the answer resolves the question."""
+    answer_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("human", "User question: \n\n {question} \n\n LLM generation: {generation}"),
+        ]
+    )
+    answer_grader = answer_prompt | structured_llm_grade_answer
+    return answer_grader
+
+def get_hallucination_grader():    
+    class GradeHallucinations(BaseModel):
+        """Binary score for hallucination present in generation answer."""
+
+        binary_score: str = Field(
+            description="Answer is grounded in the facts, 'yes' or 'no'"
+        )
+        
+    system = """You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts. \n 
+        Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."""
+    hallucination_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("human", "Set of facts: \n\n {documents} \n\n LLM generation: {generation}"),
+        ]
+    )
+        
+    chat = get_chat()
+    structured_llm_grade_hallucination = chat.with_structured_output(GradeHallucinations)
+        
+    hallucination_grader = hallucination_prompt | structured_llm_grade_hallucination
+    return hallucination_grader
+    
 # define tools
 tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
 
@@ -1466,6 +1511,7 @@ def init_enhanced_search():
 app_enhanced_search = init_enhanced_search()
 
 def enhanced_search(query):
+    print("###### enhanced_search ######")
     inputs = [HumanMessage(content=query)]
     config = {"recursion_limit": 50}
         
@@ -1497,6 +1543,7 @@ def run_agent_executor(connectionId, requestId, query):
     tool_node = ToolNode(tools)
 
     def should_continue(state: State) -> Literal["continue", "end"]:
+        print("###### should_continue ######")
         messages = state["messages"]    
         # print('(should_continue) messages: ', messages)
         
@@ -1507,6 +1554,7 @@ def run_agent_executor(connectionId, requestId, query):
             return "continue"
 
     def call_model(state: State):
+        print("###### call_model ######")
         question = state["messages"]
         print('question: ', question)
         
@@ -1586,7 +1634,7 @@ def run_agent_executor2(connectionId, requestId, query):
 
     tool_node = ToolNode(tools)
             
-    def create_agent(chat, tools, system_message: str):
+    def create_agent(chat, tools, system_message: str):        
         tool_names = ", ".join([tool.name for tool in tools])
         print("tool_names: ", tool_names)
         
@@ -1615,6 +1663,7 @@ def run_agent_executor2(connectionId, requestId, query):
         return prompt | chat.bind_tools(tools)
     
     def agent_node(state, agent, name):
+        print("###### agent_node ######")
         result = agent.invoke(state)
         # We convert the agent output into a format that is suitable to append to the global state
         if isinstance(result, ToolMessage):
@@ -1634,6 +1683,7 @@ def run_agent_executor2(connectionId, requestId, query):
     agent_node = functools.partial(agent_node, agent=agent, name="agent")
     
     def should_continue(state: State) -> Literal["continue", "end"]:
+        print("###### should_continue ######")
         messages = state["messages"]    
         # print('(should_continue) messages: ', messages)
         
@@ -1688,6 +1738,7 @@ def run_reflection_agent(connectionId, requestId, query):
         messages: Annotated[list, add_messages]
 
     def generation(state: State):    
+        print("###### generation ######")
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -1708,6 +1759,7 @@ def run_reflection_agent(connectionId, requestId, query):
         return {"messages": [response]}
 
     def reflection(state: State):
+        print("###### reflection ######")
         messages = state["messages"]
         
         reflection_prompt = ChatPromptTemplate.from_messages(
@@ -1737,6 +1789,7 @@ def run_reflection_agent(connectionId, requestId, query):
         return {"messages": [response]}
 
     def should_continue(state: State) -> Literal["continue", "end"]:
+        print("###### should_continue ######")
         messages = state["messages"]
         
         if len(messages) >= 6:   # End after 3 iterations        
@@ -1967,75 +2020,7 @@ def run_self_rag(connectionId, requestId, query):
         retries: int  # number of generation 
         count: int # number of retrieval
         documents : List[str]
-
-    def get_hallucination_grader():
-        class GradeHallucinations(BaseModel):
-            """Binary score for hallucination present in generation answer."""
-
-            binary_score: str = Field(
-                description="Answer is grounded in the facts, 'yes' or 'no'"
-            )
-        
-        system = """You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts. \n 
-            Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."""
-        hallucination_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system),
-                ("human", "Set of facts: \n\n {documents} \n\n LLM generation: {generation}"),
-            ]
-        )
-        
-        chat = get_chat()
-        structured_llm_grade_hallucination = chat.with_structured_output(GradeHallucinations)
-        
-        hallucination_grader = hallucination_prompt | structured_llm_grade_hallucination
-        return hallucination_grader
-
-    def get_answer_grader():
-        class GradeAnswer(BaseModel):
-            """Binary score to assess answer addresses question."""
-
-            binary_score: str = Field(
-                description="Answer addresses the question, 'yes' or 'no'"
-            )
-        
-        chat = get_chat()
-        structured_llm_grade_answer = chat.with_structured_output(GradeAnswer)
-        
-        system = """You are a grader assessing whether an answer addresses / resolves a question \n 
-            Give a binary score 'yes' or 'no'. Yes' means that the answer resolves the question."""
-        answer_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system),
-                ("human", "User question: \n\n {question} \n\n LLM generation: {generation}"),
-            ]
-        )
-        answer_grader = answer_prompt | structured_llm_grade_answer
-        return answer_grader
     
-    def get_hallucination_grader():
-        class GradeHallucinations(BaseModel):
-            """Binary score for hallucination present in generation answer."""
-
-            binary_score: str = Field(
-                description="Answer is grounded in the facts, 'yes' or 'no'"
-            )
-        
-        system = """You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts. \n 
-            Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."""
-        hallucination_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system),
-                ("human", "Set of facts: \n\n {documents} \n\n LLM generation: {generation}"),
-            ]
-        )
-        
-        chat = get_chat()
-        structured_llm_grade_hallucination = chat.with_structured_output(GradeHallucinations)
-        
-        hallucination_grader = hallucination_prompt | structured_llm_grade_hallucination
-        return hallucination_grader
-
     def retrieve(state: State):
         print("###### retrieve ######")
         question = state["question"]
@@ -2267,7 +2252,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         print("better_question: ", better_question.question)
 
         return {"question": better_question.question, "documents": documents}
-
+    
     def grade_generation(state: State, config):
         print("###### grade_generation ######")
         question = state["question"]
@@ -2319,6 +2304,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         return {"question": question, "documents": documents}
 
     def finalize_response(state: State):
+        print("###### finalize_response ######")
         return {"messages": [AIMessage(content=state["candidate_answer"])]}
         
     def buildSelCorrectivefRAG():
@@ -2386,9 +2372,11 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         )
 
     def get_planner():
-        system = """For the given objective, come up with a simple step by step plan. \
-    This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
-    The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."""
+        system = (
+            "For the given objective, come up with a simple step by step plan."
+            "This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps."
+            "The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."
+        )
             
         planner_prompt = ChatPromptTemplate.from_messages(
             [
@@ -2604,7 +2592,7 @@ def run_essay_writer(connectionId, requestId, query):
             description="different steps to follow, should be in sorted order"
         )
         
-    def get_planner():
+    def get_planner():        
         if langMode:
             system = """당신은 에세이의 개요를 작성하고 있는 전문 작가입니다. \
 사용자가 제공한 주제에 대해 다음과 같은 개요를 작성하세요.  \
@@ -2661,6 +2649,7 @@ Make sure that each session has all the information needed."""
         queries: List[str]
     
     def research_plan(state: State):
+        print("###### research_plan ######")
         task = state['task']
         print('task: ', task)
         
@@ -2714,6 +2703,7 @@ any relevant information. Only generate 3 queries max."""
         }
         
     def generation(state: State):    
+        print("###### generation ######")
         print('content: ', state['content'])
         print('task: ', state['task'])
         print('plan: ', state['plan'])
@@ -2767,16 +2757,20 @@ Utilize all the information below as needed:
         }
 
     def reflection(state: State):    
-        
+        print("###### reflection ######")
         if langMode:
-            system = """"당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요.\
-이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다.\
-특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다.\
-각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.,"""
+            system = (
+                "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
+                "이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다."
+                "특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다."
+                "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.,"
+            )
         else: 
-            system = """You are a teacher grading an essay submission. \
-Generate critique and recommendations for the user's submission. \
-Provide detailed recommendations, including requests for length, depth, style, etc."""
+            system = (
+                "You are a teacher grading an essay submission."
+                "Generate critique and recommendations for the user's submission."
+                "Provide detailed recommendations, including requests for length, depth, style, etc."
+            )
 
         reflection_prompt = ChatPromptTemplate.from_messages(
             [
@@ -2797,13 +2791,17 @@ Provide detailed recommendations, including requests for length, depth, style, e
         }
     
     def research_critique(state: State):
+        print("###### research_critique ######")
         if langMode:
-            system = """당신은 요청된 수정 사항을 만들 때 사용할 수 있는 정보를 제공하는 연구원입니다. \
-관련 정보를 수집할 수 있는 검색 쿼리 목록을 생성하세요. 최대 3개의 쿼리만 생성하세요."""
+            system = (
+                "당신은 요청된 수정 사항을 만들 때 사용할 수 있는 정보를 제공하는 연구원입니다."
+                "관련 정보를 수집할 수 있는 검색 쿼리 목록을 생성하세요. 최대 3개의 쿼리만 생성하세요."
+            )
         else:
-            system = """You are a researcher charged with providing information that can \
-be used when making any requested revisions (as outlined below). \
-Generate a list of search queries that will gather any relevant information. Only generate 3 queries max."""
+            system = (
+                "You are a researcher charged with providing information that can be used when making any requested revisions (as outlined below)."
+                "Generate a list of search queries that will gather any relevant information. Only generate 3 queries max."
+            )
         
         critique_prompt = ChatPromptTemplate.from_messages(
             [
@@ -2849,6 +2847,7 @@ Generate a list of search queries that will gather any relevant information. Onl
     config = {"recursion_limit": 50}
     
     def should_continue(state, config):
+        print("###### should_continue ######")
         max_revisions = config.get("configurable", {}).get("max_revisions", MAX_REVISIONS)
         print("max_revisions: ", max_revisions)
             
@@ -2909,7 +2908,6 @@ Generate a list of search queries that will gather any relevant information. Onl
 ####################### LangGraph #######################
 # Knowledge Guru
 #########################################################
-
 def run_knowledge_guru(connectionId, requestId, query):
     class State(TypedDict):
         task: str
@@ -2918,6 +2916,7 @@ def run_knowledge_guru(connectionId, requestId, query):
         search_queries: list
             
     def generate(state: State):    
+        print("###### generate ######")
         draft = enhanced_search(state['task'])  
         print('draft: ', draft)
         
@@ -2940,6 +2939,7 @@ def run_knowledge_guru(connectionId, requestId, query):
         )
     
     def reflect(state: State):
+        print("###### reflect ######")
         print('draft: ', state["messages"][-1].content)
     
         reflection = []
@@ -2969,6 +2969,7 @@ def run_knowledge_guru(connectionId, requestId, query):
         }
 
     def revise_answer(state: State):   
+        print("###### revise_answer ######")
         system = """Revise your previous answer using the new information. 
 You should use the previous critique to add important information to your answer. provide the final answer with <result> tag. 
 <critique>
@@ -3029,6 +3030,7 @@ You should use the previous critique to add important information to your answer
     
     MAX_REVISIONS = 1
     def should_continue(state: State, config):
+        print("###### should_continue ######")
         max_revisions = config.get("configurable", {}).get("max_revisions", MAX_REVISIONS)
         print("max_revisions: ", max_revisions)
             
