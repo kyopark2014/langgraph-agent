@@ -4,7 +4,7 @@
 
 ## Multi agent 방식으로 구현
 
-아래에서는 research와 chart_generator agent들이 tool을 이용하여 순차적인 agent 동작을 수행하는것을 설명합니다. 상세한 코드는 [multi-agent-collaboration.ipynb](./multi-agent-collaboration.ipynb)와 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다.
+아래에서는 research와 chart_generator agent들이 tool을 이용하여 순차적인 agent 동작을 수행하는것을 설명합니다. 상세한 코드는 [multi-agent-collaboration.ipynb](./agent/multi-agent-collaboration.ipynb)와 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다.
 
 1) research agent는 사용자의 질문으로 적절한 정보를 tavily search를 통해 얻어옵니다. 검색한 정보가 충분하지 않다면 결과를 얻을때까지 반복합니다.
 2) 웹검색을 통해 얻언 정보를 기반으로 chart_generator agent가 chart에 필요한 정보를 생성합니다. 생성된 chart정보가 충분치 않을때에는 반복하여 chart_generator agent가 반복하여 동작을 수행합니다.
