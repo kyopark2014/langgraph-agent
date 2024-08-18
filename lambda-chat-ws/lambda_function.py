@@ -1637,20 +1637,11 @@ def run_agent_executor2(connectionId, requestId, query):
 
     tool_node = ToolNode(tools)
             
-    def create_agent(chat, tools, system_message: str):        
-        tool_names = ", ".join([tool.name for tool in tools])
-        print("tool_names: ", tool_names)
-        
-        system = (
-            #"Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
-            "You are a helpful AI assistant, collaborating with other assistants."
-            "Use the provided tools to progress towards answering the question."
-            "If you are unable to fully answer, that's OK, another assistant with different tools "
-            "will help where you left off. Execute what you can to make progress."
-            "If you or any of the other assistants have the final answer or deliverable,"
-            "prefix your response with FINAL ANSWER so the team knows to stop."
-            "You have access to the following tools: {tool_names}."
-            "{system_message}"
+    def create_agent():        
+        system = (            
+            "You are a conversational AI designed to answer in a friendly way to a question."
+            "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+            "You will be acting as a thoughtful advisor."                
         )
 
         prompt = ChatPromptTemplate.from_messages(
@@ -1660,9 +1651,7 @@ def run_agent_executor2(connectionId, requestId, query):
             ]
         )
         
-        prompt = prompt.partial(system_message=system_message)
-        prompt = prompt.partial(tool_names=tool_names)
-        
+        chat = get_chat()
         return prompt | chat.bind_tools(tools)
     
     def agent_node(state, agent, name):
@@ -1683,10 +1672,7 @@ def run_agent_executor2(connectionId, requestId, query):
             "sender": name,
         }
     
-    chat = get_chat()
-    #system_message = "You should provide accurate data for the chart_generator to use."
-    system_message = "You should provide accurate data for the questione."
-    execution_agent = create_agent(chat, tools, system_message)
+    execution_agent = create_agent()
     
     execution_agent_node = functools.partial(agent_node, agent=execution_agent, name="execution_agent")
     
