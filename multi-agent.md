@@ -6,7 +6,7 @@
 
 아래에서는 Function을 가지는 multi agent 구현에 대해 설명합니다. 상세한 코드는 [multi-agent-collaboration.ipynb](./multi-agent-collaboration.ipynb)와 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다.
 
-![image](https://github.com/user-attachments/assets/51fc6a13-56ff-46bc-8718-60706abe6ea5)
+![image](https://github.com/user-attachments/assets/361e4034-6d6a-457f-b376-ce2e4b4f5c74)
 
 
 tool을 정의합니다.
