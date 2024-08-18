@@ -1694,9 +1694,13 @@ def run_agent_executor2(connectionId, requestId, query):
         # print('(should_continue) messages: ', messages)
         
         last_message = messages[-1]
+        print('last_message: ', last_message)
+        
         if not last_message.tool_calls:
+            print("---END---")
             return "end"
-        else:                
+        else:      
+            print("---CONTINUE---")          
             return "continue"
 
     def buildAgentExecutor():
