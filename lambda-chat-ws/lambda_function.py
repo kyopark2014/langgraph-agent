@@ -1671,12 +1671,15 @@ def run_agent_executor2(connectionId, requestId, query):
         result = agent.invoke(state)
         print('result: ', result)
         
+        if result.content:
+            print("result: ", result.content)
+        else:
+            print("tool_calls: ", result.tool_calls)
+        
         # We convert the agent output into a format that is suitable to append to the global state
         if isinstance(result, ToolMessage):
-            print("---Tool---")
             pass
         else:
-            print("---AI---")
             result = AIMessage(**result.dict(exclude={"type", "name"}), name=name)            
             
         return {
@@ -1696,13 +1699,13 @@ def run_agent_executor2(connectionId, requestId, query):
         messages = state["messages"]    
         # print('(should_continue) messages: ', messages)
         
-        last_message = messages[-1]
-        print('last_message: ', last_message)
-        
+        last_message = messages[-1]        
         if not last_message.tool_calls:
+            print("Final: ", last_message.content)
             print("---END---")
             return "end"
         else:      
+            print("tool_calls: ", last_message.tool_calls)
             print("---CONTINUE---")          
             return "continue"
 
