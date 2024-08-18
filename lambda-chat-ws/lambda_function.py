@@ -1649,16 +1649,10 @@ def run_agent_executor2(connectionId, requestId, query):
             "will help where you left off. Execute what you can to make progress."
             "If you or any of the other assistants have the final answer or deliverable,"
             "prefix your response with FINAL ANSWER so the team knows to stop."
-            "You have access to the following tools: {tool_names}."
-            "{system_message}"
+            #"You have access to the following tools: {tool_names}."
+            #"{system_message}"
         )
-        system = (
-                "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
-                "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-                "모르는 질문을 받으면 솔직히 모른다고 말합니다."
-                # "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
-            )
-        
+
         prompt = ChatPromptTemplate.from_messages(
             [
                 ("system",system),
