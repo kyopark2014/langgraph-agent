@@ -3086,7 +3086,7 @@ You should use the previous critique to add important information to your answer
         "max_revisions": MAX_REVISIONS
     }
     
-    for output in app.stream(inputs, config):   
+    for output in app.stream({"messages": inputs}, config):   
         for key, value in output.items():
             print(f"Finished: {key}")
             #print("value: ", value)
