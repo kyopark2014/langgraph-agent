@@ -1642,7 +1642,7 @@ def run_agent_executor2(connectionId, requestId, query):
         print("tool_names: ", tool_names)
         
         system = (
-            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+            #"Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
             "You are a helpful AI assistant, collaborating with other assistants."
             "Use the provided tools to progress towards answering the question."
             "If you are unable to fully answer, that's OK, another assistant with different tools "
