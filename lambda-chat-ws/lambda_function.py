@@ -2461,10 +2461,13 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         chat = get_chat()
         prompt = ChatPromptTemplate.from_messages(
         [
-            ("system",
-                "다음의 Human과 Assistant의 친근한 이전 대화입니다."
-                "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-                "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.",
+            (
+                "system", (
+                    "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
+                    "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+                    "모르는 질문을 받으면 솔직히 모른다고 말합니다."
+                    "최종 답변에는 조사한 내용을 반드시 포함합니다."
+                )
             ),
             MessagesPlaceholder(variable_name="messages"),
         ]
@@ -2613,15 +2616,19 @@ def run_essay_writer(connectionId, requestId, query):
         
     def get_planner():        
         if langMode:
-            system = """당신은 에세이의 개요를 작성하고 있는 전문 작가입니다. \
-사용자가 제공한 주제에 대해 다음과 같은 개요를 작성하세요.  \
-에세이의 개요와 함께 각 섹션에 대한 관련 메모나 지시사항을 제공하세요. \
-각 세션에 필요한 모든 정보가 포함되어 있는지 확인하세요."""
+            system = (
+                "당신은당신은 에세이의 개요를 작성하고 있는 전문 작가입니다. "
+                "사용자가 제공한 주제에 대해 다음과 같은 개요를 작성하세요. "
+                "에세이의 개요와 함께 각 섹션에 대한 관련 메모나 지시사항을 제공하세요."
+                "각 세션에 필요한 모든 정보가 포함되어 있는지 확인하세요."
+            )
         else:
-            system = """You are an expert writer tasked with writing a high level outline of an essay. \
-Write such an outline for the user provided topic. Give an outline of the essay along with any relevant notes \
-or instructions for the sections. \
-Make sure that each session has all the information needed."""
+            system = (
+                "You are an expert writer tasked with writing a high level outline of an essay."
+                "Write such an outline for the user provided topic." 
+                "Give an outline of the essay along with any relevant notes or instructions for the sections."
+                "Make sure that each session has all the information needed."
+            )
                         
         planner_prompt = ChatPromptTemplate.from_messages(
             [
@@ -2673,12 +2680,16 @@ Make sure that each session has all the information needed."""
         print('task: ', task)
         
         if langMode:
-            system = """당신은 다음 에세이를 작성할 때 사용할 수 있는 정보를 제공하는 연구원입니다. \
-관련 정보를 수집할 수 있는 검색 쿼리 목록을 생성하세요. 최대 3개의 쿼리만 생성하세요."""
+            system = (
+                "당신은 다음 에세이를 작성할 때 사용할 수 있는 정보를 제공하는 연구원입니다."
+                "관련 정보를 수집할 수 있는 검색 쿼리 목록을 생성하세요. 최대 3개의 쿼리만 생성하세요."
+            )
         else:
-            system = """You are a researcher charged with providing information that can \
-be used when writing the following essay. Generate a list of search queries that will gather \
-any relevant information. Only generate 3 queries max."""
+            system = (
+                "You are a researcher charged with providing information that can be used when writing the following essay." 
+                "Generate a list of search queries that will gather any relevant information. "
+                "Only generate 3 queries max."
+            )
             
         research_prompt = ChatPromptTemplate.from_messages(
             [
