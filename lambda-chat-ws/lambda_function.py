@@ -1646,14 +1646,14 @@ def run_agent_executor2(connectionId, requestId, query):
             "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
             "모르는 질문을 받으면 솔직히 모른다고 말합니다."
             #"Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
-            #"You are a helpful AI assistant, collaborating with other assistants."
-            #"Use the provided tools to progress towards answering the question."
-            #"If you are unable to fully answer, that's OK, another assistant with different tools "
-            #"will help where you left off. Execute what you can to make progress."
-            #"If you or any of the other assistants have the final answer or deliverable,"
-            #"prefix your response with FINAL ANSWER so the team knows to stop."
-            #"You have access to the following tools: {tool_names}."
-            #"{system_message}"
+            "You are a helpful AI assistant, collaborating with other assistants."
+            "Use the provided tools to progress towards answering the question."
+            "If you are unable to fully answer, that's OK, another assistant with different tools "
+            "will help where you left off. Execute what you can to make progress."
+            "If you or any of the other assistants have the final answer or deliverable,"
+            "prefix your response with FINAL ANSWER so the team knows to stop."
+            "You have access to the following tools: {tool_names}."
+            "{system_message}"
         )
 
         prompt = ChatPromptTemplate.from_messages(
@@ -1663,8 +1663,8 @@ def run_agent_executor2(connectionId, requestId, query):
             ]
         )
         
-        #prompt = prompt.partial(system_message=system_message)
-        #prompt = prompt.partial(tool_names=tool_names)
+        prompt = prompt.partial(system_message=system_message)
+        prompt = prompt.partial(tool_names=tool_names)
         
         return prompt | chat.bind_tools(tools)
     
