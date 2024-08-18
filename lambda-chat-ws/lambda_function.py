@@ -1702,7 +1702,8 @@ def run_agent_executor2(connectionId, requestId, query):
             print("---END---")
             return "end"
         else:      
-            print(f"tool_calls: {last_message.tool_calls["name"]}, {last_message.tool_calls["args"]}")
+            #print(f"tool_calls: {last_message.tool_calls["name"]}, {last_message.tool_calls["args"]}")
+            print(f"tool_calls: ", last_message.tool_calls)
             print("---CONTINUE---")          
             return "continue"
 
