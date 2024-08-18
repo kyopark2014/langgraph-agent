@@ -1669,12 +1669,15 @@ def run_agent_executor2(connectionId, requestId, query):
     def agent_node(state, agent, name):
         print("###### agent_node ######")
         result = agent.invoke(state)
+        print('result: ', result.content)
+        
         # We convert the agent output into a format that is suitable to append to the global state
         if isinstance(result, ToolMessage):
+            print("---Tool---")
             pass
         else:
+            print("---AI---")
             result = AIMessage(**result.dict(exclude={"type", "name"}), name=name)            
-            print('result: ', result.content)
             
         return {
             "messages": [result],
