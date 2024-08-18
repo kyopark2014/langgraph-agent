@@ -1687,9 +1687,9 @@ def run_agent_executor2(connectionId, requestId, query):
     chat = get_chat()
     #system_message = "You should provide accurate data for the chart_generator to use."
     system_message = "You should provide accurate data for the questione."
-    agent = create_agent(chat, tools, system_message)
+    execution_agent = create_agent(chat, tools, system_message)
     
-    agent_node = functools.partial(agent_node, agent=agent, name="agent")
+    execution_agent_node = functools.partial(agent_node, agent=execution_agent, name="agent")
     
     def should_continue(state: State) -> Literal["continue", "end"]:
         print("###### should_continue ######")
@@ -1709,7 +1709,7 @@ def run_agent_executor2(connectionId, requestId, query):
     def buildAgentExecutor():
         workflow = StateGraph(State)
 
-        workflow.add_node("agent", agent_node)
+        workflow.add_node("agent", execution_agent_node)
         workflow.add_node("action", tool_node)
         workflow.add_edge(START, "agent")
         workflow.add_conditional_edges(
