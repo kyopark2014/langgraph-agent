@@ -1624,7 +1624,7 @@ def run_agent_executor(connectionId, requestId, query):
 
     msg = readStreamMsg(connectionId, requestId, message.content)
 
-    return msg.content[msg.content.find('<result>')+8:len(msg.content)-9]
+    return msg[msg.find('<result>')+8:len(msg)-9]
 
 ####################### LangGraph #######################
 # Chat Agent Executor (v2)
@@ -1742,7 +1742,7 @@ def run_agent_executor2(connectionId, requestId, query):
 
     msg = readStreamMsg(connectionId, requestId, message.content)
 
-    return msg.content[msg.content.find('<result>')+8:len(msg.content)-9]
+    return msg[msg.find('<result>')+8:len(msg)-9]
 
 ####################### LangGraph #######################
 # Reflection Agent
