@@ -81,6 +81,8 @@ const titan_embedding_v2 = [
   }
 ];
 
+const LLM_for_chat = claude3_sonnet;  // claude3_5_sonnet
+const LLM_for_multimodal = claude3_sonnet;
 const LLM_embedding = titan_embedding_v2;
 
 export class CdkLanggraphAgentStack extends cdk.Stack {
@@ -575,8 +577,8 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
         s3_prefix: s3_prefix,
         path: 'https://'+distribution.domainName+'/',   
         callLogTableName: callLogTableName,
-        LLM_for_chat: JSON.stringify(claude3_5_sonnet),
-        LLM_for_multimodal:JSON.stringify(claude3_5_sonnet),
+        LLM_for_chat: JSON.stringify(LLM_for_chat),
+        LLM_for_multimodal:JSON.stringify(LLM_for_multimodal),
         LLM_embedding: JSON.stringify(titan_embedding_v2),
         opensearch_account: opensearch_account,
         opensearch_passwd: opensearch_passwd,
@@ -712,8 +714,8 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
           sqsUrl: queueUrl[i],
           max_object_size: String(max_object_size),
           supportedFormat: supportedFormat,
-          LLM_for_chat: JSON.stringify(claude3_5_sonnet),
-          LLM_for_multimodal:JSON.stringify(claude3_5_sonnet),
+          LLM_for_chat: JSON.stringify(LLM_for_chat),
+          LLM_for_multimodal:JSON.stringify(LLM_for_multimodal),
           LLM_embedding: JSON.stringify(titan_embedding_v2),
           enableParallelSummary: enableParallelSummary,
           enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,

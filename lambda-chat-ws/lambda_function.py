@@ -939,8 +939,8 @@ def grade_document_based_on_relevance(conn, question, doc, models, selected):
     conn.close()
     
 def grade_documents_using_parallel_processing(question, documents):
-    models = [        
-        # claude 3.5
+    """    
+    models = [  # claude 3.5
         {
             "bedrock_region": "us-west-2", # Oregon
             "model_type": "claude3.5",
@@ -966,7 +966,10 @@ def grade_documents_using_parallel_processing(question, documents):
             "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
         }
     ]
-    """{   # Claude 3.0
+    """
+    
+    models = [   # claude 3.0
+        {   
             "bedrock_region": "us-west-2", # Oregon
             "model_type": "claude3",
             "max_tokens": 4096,
@@ -995,7 +998,8 @@ def grade_documents_using_parallel_processing(question, documents):
             "model_type": "claude3",
             "max_tokens": 4096,
             "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-        }"""
+        }
+    ]
     
     filtered_docs = []    
 

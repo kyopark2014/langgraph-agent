@@ -41,19 +41,19 @@ Boundary(c1, "router") {
     SystemQueue_Ext(router2, "router2")
 }
 
-Rel(Researcher, router1, "tool")
+Rel(Researcher, router1, "")
 Rel(router1, chart_generator, "continue")
 Rel(router1, call_tool, "tool")
 Rel(router1, END, "end")
 
-Rel(chart_generator, router2, "tool")
+Rel(chart_generator, router2, "")
 Rel(router2, Researcher, "continue")
 Rel(router2, call_tool, "tool")
 Rel(router2, END, "end")
 
 SystemQueue_Ext(router3, "router3")
 
-Rel(call_tool, router3, "tool")
+Rel(call_tool, router3, "sender")
 
 Rel(router3, Researcher, "Researcher")
 
