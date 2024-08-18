@@ -1559,10 +1559,9 @@ def run_agent_executor(connectionId, requestId, query):
 
     def call_model(state: State):
         print("###### call_model ######")
-        question = state["messages"]
-        print('question: ', question)
+        print('state: ', state["messages"])
         
-        if isKorean(question[0].content)==True:
+        if isKorean(state["messages"][0].content)==True:
             system = (
                 "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
                 "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
@@ -1588,7 +1587,7 @@ def run_agent_executor(connectionId, requestId, query):
         )
         chain = prompt | model
             
-        response = chain.invoke(question)
+        response = chain.invoke(state["messages"])
         return {"messages": [response]}
 
     def buildChatAgent():
@@ -1653,6 +1652,12 @@ def run_agent_executor2(connectionId, requestId, query):
             "You have access to the following tools: {tool_names}."
             "{system_message}"
         )
+        system = (
+                "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
+                "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+                "모르는 질문을 받으면 솔직히 모른다고 말합니다."
+                # "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
+            )
         
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -1661,8 +1666,8 @@ def run_agent_executor2(connectionId, requestId, query):
             ]
         )
         
-        prompt = prompt.partial(system_message=system_message)
-        prompt = prompt.partial(tool_names=tool_names)
+        #prompt = prompt.partial(system_message=system_message)
+        #prompt = prompt.partial(tool_names=tool_names)
         
         return prompt | chat.bind_tools(tools)
     
@@ -1702,7 +1707,6 @@ def run_agent_executor2(connectionId, requestId, query):
             print("---END---")
             return "end"
         else:      
-            #print(f"tool_calls: {last_message.tool_calls["name"]}, {last_message.tool_calls["args"]}")
             print(f"tool_calls: ", last_message.tool_calls)
             print("---CONTINUE---")          
             return "continue"
