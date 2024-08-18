@@ -1669,7 +1669,8 @@ def run_agent_executor2(connectionId, requestId, query):
         print("###### agent_node ######")
         print('state: ', state)
         
-        result = agent.invoke(state)
+        # result = agent.invoke(state)
+        result = agent.invoke(state["messages"])
         print('result: ', result)
                 
         # We convert the agent output into a format that is suitable to append to the global state
