@@ -1701,11 +1701,11 @@ def run_agent_executor2(connectionId, requestId, query):
         last_message = messages[-1]        
         if not last_message.tool_calls:
             print("Final: ", last_message.content)
-            print("---END---")
+            print("--- END ---")
             return "end"
         else:      
-            print(f"tool_calls: ", last_message.tool_calls)
-            print("---CONTINUE---")          
+            print(f"tool_calls: ", last_message.tool_calls)            
+            print(f"--- CONTINUE: {last_message.tool_calls[-1]['name']} ---")
             return "continue"
 
     def buildAgentExecutor():
