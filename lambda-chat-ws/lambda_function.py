@@ -1637,9 +1637,13 @@ def run_agent_executor2(connectionId, requestId, query):
 
     tool_node = ToolNode(tools)
             
-    def create_agent(chat, tools, system_message: str):        
+    def agent_node(state, name):
+        print("###### agent_node ######")
+        print('state: ', state)
+        
         tool_names = ", ".join([tool.name for tool in tools])
         print("tool_names: ", tool_names)
+        system_message = "You should provide accurate data for the questione."
         
         system = (
             #"Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
@@ -1659,36 +1663,32 @@ def run_agent_executor2(connectionId, requestId, query):
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )
-        
+                
         prompt = prompt.partial(system_message=system_message)
         prompt = prompt.partial(tool_names=tool_names)
         
-        return prompt | chat.bind_tools(tools)
-    
-    def agent_node(state, agent, name):
-        print("###### agent_node ######")
-        print('state: ', state)
+        chain = prompt | chat.bind_tools(tools)
         
-        result = agent.invoke(state)
-        print('result: ', result)
+        response = chain.invoke(state["messages"])
+        print('response: ', response)
                 
         # We convert the agent output into a format that is suitable to append to the global state
-        if isinstance(result, ToolMessage):
+        if isinstance(response, ToolMessage):
             pass
         else:
-            result = AIMessage(**result.dict(exclude={"type", "name"}), name=name)            
+            response = AIMessage(**response.dict(exclude={"type", "name"}), name=name)       
             
         return {
-            "messages": [result],
+            "messages": [response],
             "sender": name,
         }
     
     chat = get_chat()
     #system_message = "You should provide accurate data for the chart_generator to use."
-    system_message = "You should provide accurate data for the questione."
-    execution_agent = create_agent(chat, tools, system_message)
     
-    execution_agent_node = functools.partial(agent_node, agent=execution_agent, name="execution_agent")
+   
+    
+    execution_agent_node = functools.partial(agent_node, name="execution_agent")
     
     def should_continue(state: State) -> Literal["continue", "end"]:
         print("###### should_continue ######")
