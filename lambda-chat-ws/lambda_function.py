@@ -1668,6 +1668,8 @@ def run_agent_executor2(connectionId, requestId, query):
     
     def agent_node(state, agent, name):
         print("###### agent_node ######")
+        print('state: ', state)
+        
         result = agent.invoke(state)
         print('result: ', result)
                 
