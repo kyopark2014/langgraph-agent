@@ -1669,7 +1669,7 @@ def run_agent_executor2(connectionId, requestId, query):
     def agent_node(state, agent, name):
         print("###### agent_node ######")
         result = agent.invoke(state)
-        print('result: ', result.content)
+        print('result: ', result)
         
         # We convert the agent output into a format that is suitable to append to the global state
         if isinstance(result, ToolMessage):
@@ -1689,7 +1689,7 @@ def run_agent_executor2(connectionId, requestId, query):
     system_message = "You should provide accurate data for the questione."
     execution_agent = create_agent(chat, tools, system_message)
     
-    execution_agent_node = functools.partial(agent_node, agent=execution_agent, name="agent")
+    execution_agent_node = functools.partial(agent_node, agent=execution_agent, name="execution_agent")
     
     def should_continue(state: State) -> Literal["continue", "end"]:
         print("###### should_continue ######")
