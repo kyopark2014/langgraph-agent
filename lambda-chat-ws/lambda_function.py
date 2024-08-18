@@ -1641,38 +1641,35 @@ def run_agent_executor2(connectionId, requestId, query):
         print("###### agent_node ######")
         print('state: ', state)
         
-        tool_names = ", ".join([tool.name for tool in tools])
-        print("tool_names: ", tool_names)
-        system_message = "You should provide accurate data for the questione."
-        
-        system = (
-            #"Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
-            "You are a helpful AI assistant, collaborating with other assistants."
-            "Use the provided tools to progress towards answering the question."
-            "If you are unable to fully answer, that's OK, another assistant with different tools "
-            "will help where you left off. Execute what you can to make progress."
-            "If you or any of the other assistants have the final answer or deliverable,"
-            "prefix your response with FINAL ANSWER so the team knows to stop."
-            "You have access to the following tools: {tool_names}."
-            "{system_message}"
-        )
-
+        if isKorean(state["messages"][0].content)==True:
+            system = (
+                "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
+                "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+                "모르는 질문을 받으면 솔직히 모른다고 말합니다."
+                # "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
+            )
+        else: 
+            system = (            
+                "You are a conversational AI designed to answer in a friendly way to a question."
+                # "Answer friendly for the newest question using the following conversation"
+                "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+                "You will be acting as a thoughtful advisor."                
+                #"You should always answer in jokes."
+                #"You should always answer in rhymes."
+                #"Put it in <result> tags."
+            )
+            
         prompt = ChatPromptTemplate.from_messages(
             [
-                ("system",system),
+                ("system", system),
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )
-                
-        prompt = prompt.partial(system_message=system_message)
-        prompt = prompt.partial(tool_names=tool_names)
         
         chat = get_chat()
-        
         chain = prompt | chat.bind_tools(tools)
-        
+            
         response = chain.invoke(state["messages"])
-        print('response: ', response)
                 
         # We convert the agent output into a format that is suitable to append to the global state
         if isinstance(response, ToolMessage):
