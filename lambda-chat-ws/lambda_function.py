@@ -1566,14 +1566,15 @@ def run_agent_executor(connectionId, requestId, query):
                 "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
                 "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
                 "모르는 질문을 받으면 솔직히 모른다고 말합니다."
-                "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."                
+                "최종 답변에는 조사한 내용을 반드시 포함합니다."                
+                # "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."       
             )
         else: 
             system = (            
                 "You are a conversational AI designed to answer in a friendly way to a question."
                 "If you don't know the answer, just say that you don't know, don't try to make up an answer."
                 "You will be acting as a thoughtful advisor."                                
-                "Put it in <result> tags."
+                #"Put it in <result> tags."
                 # "Answer friendly for the newest question using the following conversation"
                 #"You should always answer in jokes."
                 #"You should always answer in rhymes."
@@ -1624,7 +1625,8 @@ def run_agent_executor(connectionId, requestId, query):
 
     msg = readStreamMsg(connectionId, requestId, message.content)
 
-    return msg[msg.find('<result>')+8:len(msg)-9]
+    #return msg[msg.find('<result>')+8:len(msg)-9]
+    return msg
 
 ####################### LangGraph #######################
 # Chat Agent Executor (v2)
@@ -1645,13 +1647,14 @@ def run_agent_executor2(connectionId, requestId, query):
             "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
             "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
             "모르는 질문을 받으면 솔직히 모른다고 말합니다."
-            "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."         
+            "최종 답변에는 조사한 내용을 반드시 포함합니다."
+            #"최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."         
             "You are a helpful AI assistant, collaborating with other assistants."
             "Use the provided tools to progress towards answering the question."
             "If you are unable to fully answer, that's OK, another assistant with different tools "
             "will help where you left off. Execute what you can to make progress."
-            "If you or any of the other assistants have the final answer or deliverable,"
-            "prefix your response with FINAL ANSWER so the team knows to stop."
+            #"If you or any of the other assistants have the final answer or deliverable,"
+            #"prefix your response with FINAL ANSWER so the team knows to stop."
             "You have access to the following tools: {tool_names}."
             "{system_message}"
         )
@@ -1742,7 +1745,8 @@ def run_agent_executor2(connectionId, requestId, query):
 
     msg = readStreamMsg(connectionId, requestId, message.content)
 
-    return msg[msg.find('<result>')+8:len(msg)-9]
+    #return msg[msg.find('<result>')+8:len(msg)-9]
+    return msg
 
 ####################### LangGraph #######################
 # Reflection Agent
