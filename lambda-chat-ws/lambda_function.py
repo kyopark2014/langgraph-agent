@@ -1673,7 +1673,9 @@ def run_agent_executor2(connectionId, requestId, query):
         if isinstance(result, ToolMessage):
             pass
         else:
-            result = AIMessage(**result.dict(exclude={"type", "name"}), name=name)
+            result = AIMessage(**result.dict(exclude={"type", "name"}), name=name)            
+            print('result: ', result.content)
+            
         return {
             "messages": [result],
             "sender": name,
