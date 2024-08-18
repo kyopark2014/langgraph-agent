@@ -1645,7 +1645,6 @@ def run_agent_executor2(connectionId, requestId, query):
             "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
             "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
             "모르는 질문을 받으면 솔직히 모른다고 말합니다."
-            #"Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
             "You are a helpful AI assistant, collaborating with other assistants."
             "Use the provided tools to progress towards answering the question."
             "If you are unable to fully answer, that's OK, another assistant with different tools "
@@ -2925,18 +2924,19 @@ Utilize all the information below as needed:
 #########################################################
 def run_knowledge_guru(connectionId, requestId, query):
     class State(TypedDict):
-        task: str
         messages: Annotated[list, add_messages]
         reflection: list
         search_queries: list
             
     def generate(state: State):    
         print("###### generate ######")
-        draft = enhanced_search(state['task'])  
+        print('state: ', state["messages"])
+        print('task: ', state['messages'][0].content)
+        
+        draft = enhanced_search(state['messages'][0].content)  
         print('draft: ', draft)
         
         return {
-            "task": state['task'],
             "messages": [AIMessage(content=draft)]
         }
     
@@ -2955,6 +2955,7 @@ def run_knowledge_guru(connectionId, requestId, query):
     
     def reflect(state: State):
         print("###### reflect ######")
+        print('state: ', state["messages"])    
         print('draft: ', state["messages"][-1].content)
     
         reflection = []
@@ -2977,7 +2978,6 @@ def run_knowledge_guru(connectionId, requestId, query):
                 break
         
         return {
-            "task": state["task"],
             "messages": state["messages"],
             "reflection": reflection,
             "search_queries": search_queries
@@ -3002,16 +3002,6 @@ You should use the previous critique to add important information to your answer
             ]
         )
             
-        chat = get_chat()
-        reflect = reflection_prompt | chat
-            
-        messages = [HumanMessage(content=state["task"])] + state["messages"]
-        cls_map = {"ai": HumanMessage, "human": AIMessage}
-        translated = [messages[0]] + [
-            cls_map[msg.type](content=msg.content) for msg in messages[1:]
-        ]
-        print('translated: ', translated)
-        
         content = []        
         if useEnhancedSearch:
             for q in state["search_queries"]:
@@ -3024,7 +3014,17 @@ You should use the previous critique to add important information to your answer
                 response = search.invoke(q)     
                 for r in response:
                     content.append(r['content'])     
-        
+
+        chat = get_chat()
+        reflect = reflection_prompt | chat
+            
+        messages = state["messages"]
+        cls_map = {"ai": HumanMessage, "human": AIMessage}
+        translated = [messages[0]] + [
+            cls_map[msg.type](content=msg.content) for msg in messages[1:]
+        ]
+        print('translated: ', translated)     
+           
         res = reflect.invoke(
             {
                 "messages": translated,
@@ -3038,7 +3038,6 @@ You should use the previous critique to add important information to your answer
                 
         revision_number = state["revision_number"] if state.get("revision_number") is not None else 1
         return {
-            "task": state["task"],
             "messages": [response], 
             "revision_number": revision_number + 1
         }
