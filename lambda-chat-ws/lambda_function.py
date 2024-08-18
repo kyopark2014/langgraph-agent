@@ -1667,6 +1667,8 @@ def run_agent_executor2(connectionId, requestId, query):
         prompt = prompt.partial(system_message=system_message)
         prompt = prompt.partial(tool_names=tool_names)
         
+        chat = get_chat()
+        
         chain = prompt | chat.bind_tools(tools)
         
         response = chain.invoke(state["messages"])
@@ -1683,7 +1685,7 @@ def run_agent_executor2(connectionId, requestId, query):
             "sender": name,
         }
     
-    chat = get_chat()
+    
     #system_message = "You should provide accurate data for the chart_generator to use."
     
    
