@@ -3047,7 +3047,7 @@ You should use the previous critique to add important information to your answer
             "revision_number": revision_number + 1
         }
     
-    MAX_REVISIONS = 1
+    MAX_REVISIONS = 2
     def should_continue(state: State, config):
         print("###### should_continue ######")
         max_revisions = config.get("configurable", {}).get("max_revisions", MAX_REVISIONS)
