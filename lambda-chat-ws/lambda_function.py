@@ -1645,6 +1645,7 @@ def run_agent_executor2(connectionId, requestId, query):
             "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
             "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
             "모르는 질문을 받으면 솔직히 모른다고 말합니다."
+            "최종 답변에는 질문 내용을 빠짐없이 열거합니다."
             "You are a helpful AI assistant, collaborating with other assistants."
             "Use the provided tools to progress towards answering the question."
             "If you are unable to fully answer, that's OK, another assistant with different tools "
@@ -3079,7 +3080,7 @@ You should use the previous critique to add important information to your answer
     app = buildKnowledgeGuru()
         
     isTyping(connectionId, requestId)    
-    inputs = {"task": query}
+    inputs = [HumanMessage(content=query)]
     config = {
         "recursion_limit": 50,
         "max_revisions": MAX_REVISIONS
