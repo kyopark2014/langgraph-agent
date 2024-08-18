@@ -4,7 +4,7 @@
 
 ## Multi agent 방식으로 구현
 
-아래에서는 Function을 가지는 multi agent 구현에 대해 설명합니다. 상세한 코드는 [multi-agent-collaboration.ipynb](./multi-agent-collaboration.ipynb)와 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다.
+아래에서는 research와 chart_generator agent들이 tool을 이용하여 순차적인 agent 동작을 수행하는것을 설명합니다. 상세한 코드는 [multi-agent-collaboration.ipynb](./multi-agent-collaboration.ipynb)와 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다.
 
 ![image](https://github.com/user-attachments/assets/361e4034-6d6a-457f-b376-ce2e4b4f5c74)
 
