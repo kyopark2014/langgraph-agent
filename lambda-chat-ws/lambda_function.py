@@ -1670,12 +1670,7 @@ def run_agent_executor2(connectionId, requestId, query):
         print("###### agent_node ######")
         result = agent.invoke(state)
         print('result: ', result)
-        
-        if result.content:
-            print("result: ", result.content)
-        else:
-            print("tool_calls: ", result.tool_calls)
-        
+                
         # We convert the agent output into a format that is suitable to append to the global state
         if isinstance(result, ToolMessage):
             pass
@@ -1705,7 +1700,7 @@ def run_agent_executor2(connectionId, requestId, query):
             print("---END---")
             return "end"
         else:      
-            print("tool_calls: ", last_message.tool_calls)
+            print(f"tool_calls: {last_message.tool_calls["name"]}, {last_message.tool_calls["args"]}")
             print("---CONTINUE---")          
             return "continue"
 
