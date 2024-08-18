@@ -120,7 +120,7 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 [multi-agent.md](./multi-agent.md)에서는 여러개의 Agent를 이용하는 방법에 대해 설명합니다. 
 
-![image](https://github.com/user-attachments/assets/8a13c1be-74d3-4316-8dbc-8a1c34823f1f)
+![image](https://github.com/user-attachments/assets/7adb21cb-8bd7-4fca-af71-2a8ccc536f49)
 
 
 ## Reference
