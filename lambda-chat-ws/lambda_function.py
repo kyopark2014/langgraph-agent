@@ -1650,7 +1650,7 @@ def run_agent_executor2(connectionId, requestId, query):
             "If you or any of the other assistants have the final answer or deliverable,"
             "prefix your response with FINAL ANSWER so the team knows to stop."
             "You have access to the following tools: {tool_names}."
-            #"{system_message}"
+            "{system_message}"
         )
 
         prompt = ChatPromptTemplate.from_messages(
@@ -1660,7 +1660,7 @@ def run_agent_executor2(connectionId, requestId, query):
             ]
         )
         
-        #prompt = prompt.partial(system_message=system_message)
+        prompt = prompt.partial(system_message=system_message)
         prompt = prompt.partial(tool_names=tool_names)
         
         return prompt | chat.bind_tools(tools)
@@ -1669,8 +1669,7 @@ def run_agent_executor2(connectionId, requestId, query):
         print("###### agent_node ######")
         print('state: ', state)
         
-        # result = agent.invoke(state)
-        result = agent.invoke(state["messages"])
+        result = agent.invoke(state)
         print('result: ', result)
                 
         # We convert the agent output into a format that is suitable to append to the global state
