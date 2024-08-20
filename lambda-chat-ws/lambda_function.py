@@ -1424,7 +1424,7 @@ def grade_answer_for_tool(question: str, answer: str):
     """
     Grade whether the answer is useful or not
     keyword: question and generated answer which could be useful
-    return: binary score of "yes" or "no" for appropriate check on the generated answer by LLM
+    return: binary score represented by of "yes" or "no"
     """    
     print("###### grade_answer ######")
                 
