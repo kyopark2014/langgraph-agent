@@ -3226,7 +3226,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
         return "continue"
     
     def router3(state):
-        # print("state: ', state)
+        print("state: ", state)
         sender = state["sender"]
             
         return sender
