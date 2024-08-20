@@ -3214,7 +3214,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
     #    system_message="You should verify the generated data is useful for the question.",
     #)
     #verification_node = functools.partial(agent_node, agent=verification_agent, name="verify")
-    def retrieval_node(state: State):
+    def verification_node(state: State):
         tool_names = ", ".join([tool.name for tool in tools])
         print("tool_names: ", tool_names)
                             
