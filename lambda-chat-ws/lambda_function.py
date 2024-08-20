@@ -3207,13 +3207,57 @@ def run_multi_agent_tool(connectionId, requestId, query):
     )
     retrieval_node = functools.partial(agent_node, agent=retrieve_agent, name="retrieve")
     
-    chat = get_chat()
-    verification_agent = create_agent(
-        chat,
-        [grade_answer_for_tool],
-        system_message="You should verify the generated data is useful for the question.",
-    )
-    verification_node = functools.partial(agent_node, agent=verification_agent, name="verify")
+    #chat = get_chat()
+    #verification_agent = create_agent(
+    #    chat,
+    #    [grade_answer_for_tool],
+    #    system_message="You should verify the generated data is useful for the question.",
+    #)
+    #verification_node = functools.partial(agent_node, agent=verification_agent, name="verify")
+    def retrieval_node(state: State):
+        tool_names = ", ".join([tool.name for tool in tools])
+        print("tool_names: ", tool_names)
+                            
+        system = (
+            "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
+            "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+            "모르는 질문을 받으면 솔직히 모른다고 말합니다."
+            "최종 답변에는 조사한 내용을 반드시 포함합니다."
+            "You are a helpful AI assistant, collaborating with other assistants."
+            "Use the provided tools to progress towards answering the question."
+            "If you are unable to fully answer, that's OK, another assistant with different tools "
+            "will help where you left off. Execute what you can to make progress."
+            #"If you or any of the other assistants have the final answer or deliverable,"
+            #"prefix your response with FINAL ANSWER so the team knows to stop."
+            "You have access to the following tools: {tool_names}."
+            "{system_message}"
+        )
+    
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system",system),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+                
+        system_message="You should verify the generated data is useful for the question."
+        prompt = prompt.partial(system_message=system_message)
+        prompt = prompt.partial(tool_names=tool_names)
+        
+        chain = prompt | chat.bind_tools(tools)
+        
+        messages = state["messages"]
+        cls_map = {"ai": HumanMessage, "human": AIMessage}
+        translated = [messages[0]] + [
+            cls_map[msg.type](content=msg.content) for msg in messages[1:]
+        ]
+        print('translated: ', translated)
+        
+        res = chain.invoke({"messages": translated})    
+        response = HumanMessage(content=res.content)    
+        print('response: ', response)
+        
+        return {"messages": [response]}
     
     def router(state) -> Literal["call_tool", "end", "continue"]:
         messages = state["messages"]
