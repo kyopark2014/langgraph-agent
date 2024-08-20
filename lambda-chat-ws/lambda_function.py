@@ -669,14 +669,11 @@ def search_by_tavily(keyword: str) -> str:
     keyword: search keyword
     return: the information of keyword
     """    
-    global reference_docs
-    
+    global reference_docs    
     answer = ""
-    print('keyword: ', keyword)
     
     if tavily_api_key:
         keyword = keyword.replace('\'','')
-        print('keyword2: ', keyword)
         
         search = TavilySearchResults(k=3)
                     
@@ -3177,8 +3174,8 @@ def run_multi_agent_tool(connectionId, requestId, query):
             "Use the provided tools to progress towards answering the question."
             "If you are unable to fully answer, that's OK, another assistant with different tools "
             "will help where you left off. Execute what you can to make progress."
-            "If you or any of the other assistants have the final answer or deliverable,"
-            "prefix your response with FINAL ANSWER so the team knows to stop."
+            #"If you or any of the other assistants have the final answer or deliverable,"
+            #"prefix your response with FINAL ANSWER so the team knows to stop."
             "You have access to the following tools: {tool_names}."
             "{system_message}"
         )
