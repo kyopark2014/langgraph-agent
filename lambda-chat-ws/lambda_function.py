@@ -672,9 +672,11 @@ def search_by_tavily(keyword: str) -> str:
     global reference_docs
     
     answer = ""
+    print('keyword: ', keyword)
     
     if tavily_api_key:
         keyword = keyword.replace('\'','')
+        print('keyword2: ', keyword)
         
         search = TavilySearchResults(k=3)
                     
@@ -1699,7 +1701,7 @@ def run_agent_executor2(connectionId, requestId, query):
         return prompt | chat.bind_tools(tools)
     
     def agent_node(state, agent, name):
-        print("###### agent_node ######")
+        print(f"###### agent_node:{name} ######")        
         print('state: ', state["messages"])
         
         response = agent.invoke(state["messages"])
