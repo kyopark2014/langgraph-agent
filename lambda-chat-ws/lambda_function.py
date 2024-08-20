@@ -3249,7 +3249,11 @@ def run_multi_agent_tool(connectionId, requestId, query):
         
         message = state["messages"][-1]
         
-        res = chain.invoke({"messages": [state["messages"][0]] + [AIMessage(content=message.content)]})    
+        # [state["messages"][0]] + [AIMessage(content=message.content)]
+        question_answer = f"question: {state["messages"][0].content}, answer:{message.content}"
+        print('question_answer: ', question_answer)
+        
+        res = chain.invoke({"messages": [HumanMessage(content=question_answer)]})    
         response = HumanMessage(content=res.content)    
         print('response: ', response)
         
