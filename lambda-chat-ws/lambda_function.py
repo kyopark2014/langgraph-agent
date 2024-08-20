@@ -1427,6 +1427,8 @@ def grade_answer_for_tool(question: str, answer: str):
     return: binary score represented by "yes" or "no"
     """    
     print("###### grade_answer ######")
+    print('question: ', question)
+    print('answer: ', answer)
                 
     answer_grader = get_answer_grader()    
     score = answer_grader.invoke({"question": question, "generation": answer})
@@ -3254,11 +3256,10 @@ def run_multi_agent_tool(connectionId, requestId, query):
         question_answer = f"question: {question}, answer:{message.content}"
         print('question_answer: ', question_answer)
         
-        res = chain.invoke({"messages": [HumanMessage(content=question_answer)]})    
-        response = HumanMessage(content=res.content)    
-        print('response: ', response)
+        res = chain.invoke({"messages": [HumanMessage(content=question_answer)]})              
+        print('res: ', res)
         
-        return {"messages": [response]}
+        return {"messages": [res]}
     
     def router(state) -> Literal["call_tool", "end", "continue"]:
         print(f"###### router ######")   
