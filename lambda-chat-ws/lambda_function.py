@@ -3154,7 +3154,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
         print(f"###### agent_node:{name} ######")        
         print('state: ', state)
     
-        response = agent.invoke(state)
+        response = agent.invoke(state["messages"])
         print('response: ', response)
         if isinstance(response, ToolMessage):
             pass
@@ -3170,6 +3170,10 @@ def run_multi_agent_tool(connectionId, requestId, query):
         print("tool_names: ", tool_names)
                             
         system = (
+            "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
+            "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+            "모르는 질문을 받으면 솔직히 모른다고 말합니다."
+            "최종 답변에는 조사한 내용을 반드시 포함합니다."
             "You are a helpful AI assistant, collaborating with other assistants."
             "Use the provided tools to progress towards answering the question."
             "If you are unable to fully answer, that's OK, another assistant with different tools "
