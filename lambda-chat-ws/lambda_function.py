@@ -3268,6 +3268,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
         "recursion_limit": 50
     }
     
+    value = ""
     for output in app.stream({"messages": inputs}, config):   
         for key, value in output.items():
             print(f"Finished: {key}")
