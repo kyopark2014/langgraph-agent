@@ -3271,8 +3271,22 @@ def run_multi_agent_tool(connectionId, requestId, query):
         }        
         # return {"messages": [res]}
     
-    def router(state) -> Literal["call_tool", "end", "continue"]:
-        print(f"###### router ######")   
+    def router1(state) -> Literal["call_tool", "end", "continue"]:
+        print(f"###### router1 ######")   
+        print('state: ', state["messages"])
+        
+        last_message = state["messages"][-1]
+        print("last_message: ", last_message)
+        
+        if not last_message.tool_calls:            
+            if "FINAL ANSWER" or "This answer was varified" in last_message.content:
+                return "end"
+            return "continue"
+        else: 
+            return "call_tool"        
+    
+    def router2(state) -> Literal["call_tool", "end", "continue"]:
+        print(f"###### router2 ######")   
         print('state: ', state["messages"])
         
         last_message = state["messages"][-1]
@@ -3303,7 +3317,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
 
         workflow.add_conditional_edges(
             "retrieve",
-            router,
+            router1,
             {
                 "continue": "verify", 
                 "call_tool": "call_tool", 
@@ -3313,7 +3327,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
 
         workflow.add_conditional_edges(
             "verify",
-            router,
+            router2,
             {
                 "continue": "retrieve", 
                 "call_tool": "call_tool", 
