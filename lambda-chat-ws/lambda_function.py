@@ -1424,7 +1424,7 @@ def grade_answer_for_tool(question: str, answer: str):
     """
     Grade whether the answer is useful or not
     keyword: question and generated answer which could be useful
-    return: binary score represented by of "yes" or "no"
+    return: binary score represented by "yes" or "no"
     """    
     print("###### grade_answer ######")
                 
@@ -1435,10 +1435,13 @@ def grade_answer_for_tool(question: str, answer: str):
 
     if answer_grade == "yes":
         print("---DECISION: GENERATION ADDRESSES QUESTION---")
-        return True
+        result_str = f"This answer was varified: {answer}"
+        return (
+            result_str + "\n\nIf you have completed all tasks, respond with FINAL ANSWER."
+        )
     else:
         print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
-        return False
+        return f"This answer is invalid. Try again from retrieval_node"
     
 def get_hallucination_grader():    
     class GradeHallucinations(BaseModel):
@@ -3150,7 +3153,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
     tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch, grade_answer_for_tool]  
     tool_node = ToolNode(tools)
     
-    def agent_node(state, agent, name):
+    def agent_node(state: State, agent, name):
         print(f"###### agent_node:{name} ######")        
         print('state: ', state)
     
