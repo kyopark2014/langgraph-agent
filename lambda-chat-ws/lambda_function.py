@@ -915,7 +915,7 @@ def lexical_search_for_tool(query, top_k):
         print(f"--> lexical search doc[{i}]: {text}, metadata:{doc.metadata}")   
         
     return docs
-
+    
 def grade_document_based_on_relevance(conn, question, doc, models, selected):     
     chat = get_multi_region_chat(models, selected)
     retrieval_grader = get_retrieval_grader(chat)       
@@ -1380,8 +1380,10 @@ def get_rewrite():
     if langMode:
         system = """당신은 질문 re-writer입니다. 사용자의 의도와 의미을 잘 표현할 수 있도록 질문을 한국어로 re-write하세요."""
     else:
-        system = """You a question re-writer that converts an input question to a better version that is optimized \n 
-        for web search. Look at the input and try to reason about the underlying semantic intent / meaning."""
+        system = (
+            "You a question re-writer that converts an input question to a better version that is optimized"
+            "for web search. Look at the input and try to reason about the underlying semantic intent / meaning."
+        )
         
     print('system: ', system)
         
@@ -1405,8 +1407,10 @@ def get_answer_grader():
     chat = get_chat()
     structured_llm_grade_answer = chat.with_structured_output(GradeAnswer)
         
-    system = """You are a grader assessing whether an answer addresses / resolves a question \n 
-        Give a binary score 'yes' or 'no'. Yes' means that the answer resolves the question."""
+    system = (
+        "You are a grader assessing whether an answer addresses / resolves a question."
+        "Give a binary score 'yes' or 'no'. Yes' means that the answer resolves the question."
+    )
     answer_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
@@ -1416,6 +1420,27 @@ def get_answer_grader():
     answer_grader = answer_prompt | structured_llm_grade_answer
     return answer_grader
 
+@tool
+def grade_answer_for_tool(question: str, answer: str):
+    """
+    Grade whether the answer is useful or not
+    keyword: question and generated answer which could be useful
+    return: binary score for appropriate check on the generated answer by LLM
+    """    
+    print("###### grade_answer ######")
+                
+    answer_grader = get_answer_grader()    
+    score = answer_grader.invoke({"question": question, "generation": answer})
+    answer_grade = score.binary_score        
+    print("answer_grade: ", answer_grade)
+
+    if answer_grade == "yes":
+        print("---DECISION: GENERATION ADDRESSES QUESTION---")
+        return True
+    else:
+        print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
+        return False
+    
 def get_hallucination_grader():    
     class GradeHallucinations(BaseModel):
         """Binary score for hallucination present in generation answer."""
@@ -1424,8 +1449,10 @@ def get_hallucination_grader():
             description="Answer is grounded in the facts, 'yes' or 'no'"
         )
         
-    system = """You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts. \n 
-        Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."""
+    system = (
+        "You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts."
+        "Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."
+    )    
     hallucination_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system),
@@ -3112,6 +3139,146 @@ You should use the previous critique to add important information to your answer
     
     # return value["messages"][-1].content[value["messages"][-1].content.find('<result>')+8:len(value["messages"][-1].content)-9]
     return value["messages"][-1].content
+
+####################### LangGraph #######################
+# Multi Agent
+#########################################################
+def run_multi_agent_tool(connectionId, requestId, query):
+    class State(TypedDict):
+        messages: Annotated[list, add_messages]
+        sender: str
+    
+    tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch, grade_answer_for_tool]  
+    tool_node = ToolNode(tools)
+    
+    def agent_node(state, agent, name):
+        response = agent.invoke(state)
+        if isinstance(response, ToolMessage):
+            pass
+        else:
+            response = AIMessage(**response.dict(exclude={"type", "name"}), name=name)
+        return {
+            "messages": [response],
+            "sender": name
+        }
+    
+    def create_agent(chat, tools, system_message: str):
+        tool_names = ", ".join([tool.name for tool in tools])
+        print("tool_names: ", tool_names)
+                            
+        system = (
+            "You are a helpful AI assistant, collaborating with other assistants."
+            "Use the provided tools to progress towards answering the question."
+            "If you are unable to fully answer, that's OK, another assistant with different tools "
+            "will help where you left off. Execute what you can to make progress."
+            "If you or any of the other assistants have the final answer or deliverable,"
+            "prefix your response with FINAL ANSWER so the team knows to stop."
+            "You have access to the following tools: {tool_names}."
+            "{system_message}"
+        )
+    
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system",system),
+                MessagesPlaceholder(variable_name="messages"),
+            ]
+        )
+        
+        prompt = prompt.partial(system_message=system_message)
+        prompt = prompt.partial(tool_names=tool_names)
+        
+        return prompt | chat.bind_tools(tools)
+        
+    chat = get_chat()
+    retrieve_agent = create_agent(
+        chat,
+        [search_by_tavily, search_by_opensearch],
+        system_message="You should provide accurate data for the chart_generator to use.",
+    )
+    retrieval_node = functools.partial(agent_node, agent=retrieve_agent, name="retrieve")
+    
+    chat = get_chat()
+    verification_agent = create_agent(
+        chat,
+        [grade_answer_for_tool],
+        system_message="You should verify the generated data is useful for the question.",
+    )
+    verification_node = functools.partial(agent_node, agent=verification_agent, name="verify")
+    
+    def router(state) -> Literal["call_tool", "end", "continue"]:
+        messages = state["messages"]
+        last_message = messages[-1]
+        
+        if last_message.tool_calls:
+            return "call_tool"
+        if "FINAL ANSWER" in last_message.content:
+            return "end"
+        return "continue"
+    
+    def router3(state):
+        # print("state: ', state)
+        sender = state["sender"]
+            
+        return sender
+        
+    def buildMultiAgent():    
+        workflow = StateGraph(State)
+
+        workflow.add_node("retrieve", retrieval_node)
+        workflow.add_node("verify", verification_node)
+        workflow.add_node("call_tool", tool_node)
+
+        workflow.add_conditional_edges(
+            "retrieve",
+            router,
+            {
+                "continue": "verify", 
+                "call_tool": "call_tool", 
+                "end": END
+            },
+        )
+
+        workflow.add_conditional_edges(
+            "verify",
+            router,
+            {
+                "continue": "retrieve", 
+                "call_tool": "call_tool", 
+                "end": END
+            },
+        )        
+        
+        workflow.add_conditional_edges(
+            "call_tool",
+            router3,
+            {
+                "retrieve": "retrieve",
+                "retrieve": "retrieve",
+            },
+        )
+        app = workflow.compile()
+        
+        return app
+    
+    app = buildMultiAgent()
+        
+    isTyping(connectionId, requestId)    
+    inputs = [HumanMessage(content=query)]
+    config = {
+        "recursion_limit": 50
+    }
+    
+    for output in app.stream({"messages": inputs}, config):   
+        for key, value in output.items():
+            print(f"Finished: {key}")
+            #print("value: ", value)
+            
+    print('value: ', value)
+        
+    readStreamMsg(connectionId, requestId, value["messages"][-1].content)
+    
+    # return value["messages"][-1].content[value["messages"][-1].content.find('<result>')+8:len(value["messages"][-1].content)-9]
+    return value["messages"][-1].content
     
 #########################################################
 def traslation(chat, text, input_language, output_language):
@@ -3650,6 +3817,9 @@ def getResponse(connectionId, jsonBody):
                     
                 elif convType == 'agent-knowledge-guru':  # knowledge guru
                     msg = run_knowledge_guru(connectionId, requestId, text)      
+                
+                elif convType == 'multi-agent-tool':  # multi-agent
+                    msg = run_multi_agent_tool(connectionId, requestId, text)      
                 
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
