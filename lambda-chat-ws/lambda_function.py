@@ -3256,10 +3256,20 @@ def run_multi_agent_tool(connectionId, requestId, query):
         question_answer = f"question: {question}, answer:{message.content}"
         print('question_answer: ', question_answer)
         
-        res = chain.invoke({"messages": [HumanMessage(content=question_answer)]})              
-        print('res: ', res)
+        resonse = chain.invoke({"messages": [HumanMessage(content=question_answer)]})              
+        print('response: ', response)
         
-        return {"messages": [res]}
+        name = "verify"
+        if isinstance(response, ToolMessage):
+            pass
+        else:
+            response = AIMessage(**response.dict(exclude={"type", "name"}), name=name)
+        
+        return {
+            "messages": [response],
+            "sender": name
+        }        
+        # return {"messages": [res]}
     
     def router(state) -> Literal["call_tool", "end", "continue"]:
         print(f"###### router ######")   
