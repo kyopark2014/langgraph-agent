@@ -3261,15 +3261,19 @@ def run_multi_agent_tool(connectionId, requestId, query):
         return {"messages": [response]}
     
     def router(state) -> Literal["call_tool", "end", "continue"]:
-        messages = state["messages"]
-        last_message = messages[-1]
+        print(f"###### router ######")   
+        print('state: ', state["messages"])
         
-        if last_message.tool_calls:
-            return "call_tool"
-        if "FINAL ANSWER" in last_message.content:
-            return "end"
-        return "continue"
-    
+        last_message = state["messages"][-1]
+        print("last_message: ", last_message)
+        
+        if not last_message.tool_calls:            
+            if "FINAL ANSWER" in last_message.content:
+                return "end"
+            return "continue"
+        else: 
+            return "call_tool"        
+        
     def router3(state):
         print("state: ", state)
         sender = state["sender"]
