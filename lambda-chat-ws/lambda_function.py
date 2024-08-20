@@ -1454,8 +1454,8 @@ def get_hallucination_grader():
         )
         
     system = (
-        "You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts."
-        "Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."
+        "You are a grader assessing whether an LLM generation is grounded in supported by a set of retrieved facts."
+        "Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in supported by the set of facts."
     )    
     hallucination_prompt = ChatPromptTemplate.from_messages(
         [
