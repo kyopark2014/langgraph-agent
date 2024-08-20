@@ -3215,6 +3215,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
     #)
     #verification_node = functools.partial(agent_node, agent=verification_agent, name="verify")
     def verification_node(state: State):
+        tools = [grade_answer_for_tool]
         tool_names = ", ".join([tool.name for tool in tools])
         print("tool_names: ", tool_names)
                             
