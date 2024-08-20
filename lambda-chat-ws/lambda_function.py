@@ -3227,6 +3227,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
         workflow.add_node("retrieve", retrieval_node)
         workflow.add_node("verify", verification_node)
         workflow.add_node("call_tool", tool_node)
+        workflow.set_entry_point("retrieve")
 
         workflow.add_conditional_edges(
             "retrieve",
@@ -3253,7 +3254,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
             router3,
             {
                 "retrieve": "retrieve",
-                "retrieve": "retrieve",
+                "verify": "verify",
             },
         )
         app = workflow.compile()
