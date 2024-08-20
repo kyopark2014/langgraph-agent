@@ -3256,7 +3256,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
         question_answer = f"question: {question}, answer:{message.content}"
         print('question_answer: ', question_answer)
         
-        resonse = chain.invoke({"messages": [HumanMessage(content=question_answer)]})              
+        response = chain.invoke({"messages": [HumanMessage(content=question_answer)]})              
         print('response: ', response)
         
         name = "verify"
