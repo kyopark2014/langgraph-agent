@@ -3279,15 +3279,17 @@ def run_multi_agent_tool(connectionId, requestId, query):
         print("last_message: ", last_message)
         
         if not last_message.tool_calls:            
-            if "FINAL ANSWER" in last_message.content:
+            if "FINAL ANSWER" or "This answer was varified" in last_message.content:
                 return "end"
             return "continue"
         else: 
             return "call_tool"        
         
     def router3(state):
-        print("state: ", state)
+        print(f"###### router3 ######")   
+        print("state: ", state["messages"])
         sender = state["sender"]
+        print("sender: ", sender)
             
         return sender
         
