@@ -3152,7 +3152,11 @@ def run_multi_agent_tool(connectionId, requestId, query):
     tool_node = ToolNode(tools)
     
     def agent_node(state, agent, name):
+        print(f"###### agent_node:{name} ######")        
+        print('state: ', state)
+    
         response = agent.invoke(state)
+        print('response: ', response)
         if isinstance(response, ToolMessage):
             pass
         else:
