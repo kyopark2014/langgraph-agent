@@ -3247,14 +3247,9 @@ def run_multi_agent_tool(connectionId, requestId, query):
         
         chain = prompt | chat.bind_tools(tools)
         
-        messages = state["messages"]
-        cls_map = {"ai": HumanMessage, "human": AIMessage}
-        translated = [messages[0]] + [
-            cls_map[msg.type](content=msg.content) for msg in messages[1:]
-        ]
-        print('translated: ', translated)
+        message = state["messages"][-1]
         
-        res = chain.invoke({"messages": translated})    
+        res = chain.invoke({"messages": [message]})    
         response = HumanMessage(content=res.content)    
         print('response: ', response)
         
