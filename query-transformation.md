@@ -44,3 +44,11 @@ template = (
 )
 rewrite_prompt = ChatPromptTemplate.from_template(template)
 ```
+
+[langchain-ai/rewrite](https://smith.langchain.com/hub/langchain-ai/rewrite?tab=0)를 참조합니다.
+
+```python
+Provide a better search query for web search engine to answer the given question, end the queries with ’**’.  Question {x} Answer:
+```
+
+
