@@ -39,7 +39,8 @@ class StepBackQuery(BaseModel):
 
 ```python
 template = (
-  "Provide a better search query for web search engine to answer the given question, end the queries with ’**’."
+  "Provide a better search query for web search engine to answer the given question,"
+  "end the queries with ’**’."
   "Question: {x} Answer:"
 )
 rewrite_prompt = ChatPromptTemplate.from_template(template)
