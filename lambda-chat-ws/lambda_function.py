@@ -2268,7 +2268,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         retries: int
         web_fallback: bool
 
-    def retrieve(state: State):
+    def retrieve_node(state: State):
         print("###### retrieve ######")
         question = state["question"]
         
@@ -2276,7 +2276,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         
         return {"documents": docs, "question": question, "web_fallback": True}
 
-    def generate(state: State):
+    def generate_node(state: State):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
@@ -2293,7 +2293,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         
         return {"retries": retries + 1, "candidate_answer": generation.content}
 
-    def rewrite(state: State):
+    def rewrite_node(state: State):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
@@ -2347,7 +2347,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
             print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION (Not Answer)---")
             return "rewrite" if retries < max_retries else "websearch"
 
-    def web_search(state: State):
+    def web_search_node(state: State):
         print("###### web_search ######")
         question = state["question"]
         documents = state["documents"]
@@ -2356,7 +2356,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
             
         return {"question": question, "documents": documents}
 
-    def finalize_response(state: State):
+    def finalize_response_node(state: State):
         print("###### finalize_response ######")
         return {"messages": [AIMessage(content=state["candidate_answer"])]}
         
@@ -2364,11 +2364,11 @@ def run_self_corrective_rag(connectionId, requestId, query):
         workflow = StateGraph(State)
             
         # Define the nodes
-        workflow.add_node("retrieve", retrieve)  
-        workflow.add_node("generate", generate) 
-        workflow.add_node("rewrite", rewrite)
-        workflow.add_node("websearch", web_search)
-        workflow.add_node("finalize_response", finalize_response)
+        workflow.add_node("retrieve", retrieve_node)  
+        workflow.add_node("generate", generate_node) 
+        workflow.add_node("rewrite", rewrite_node)
+        workflow.add_node("websearch", web_search_node)
+        workflow.add_node("finalize_response", finalize_response_node)
 
         # Build graph
         workflow.set_entry_point("retrieve")
