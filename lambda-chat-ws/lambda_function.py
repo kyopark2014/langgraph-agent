@@ -1790,7 +1790,7 @@ def run_reflection_agent(connectionId, requestId, query):
         # messages: Annotated[Sequence[BaseMessage], operator.add]
         messages: Annotated[list, add_messages]
 
-    def generation(state: State):    
+    def generation_node(state: State):    
         print("###### generation ######")
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -1811,7 +1811,7 @@ def run_reflection_agent(connectionId, requestId, query):
         response = chain.invoke(state["messages"])
         return {"messages": [response]}
 
-    def reflection(state: State):
+    def reflection_node(state: State):
         print("###### reflection ######")
         messages = state["messages"]
         
@@ -1852,8 +1852,8 @@ def run_reflection_agent(connectionId, requestId, query):
 
     def buildReflectionAgent():
         workflow = StateGraph(State)
-        workflow.add_node("generate", generation)
-        workflow.add_node("reflect", reflection)
+        workflow.add_node("generate", generation_node)
+        workflow.add_node("reflect", reflection_node)
         workflow.set_entry_point("generate")
         workflow.add_conditional_edges(
             "generate",
@@ -1910,7 +1910,7 @@ def run_corrective_rag(connectionId, requestId, query):
         web_search : str
         documents : List[str]
 
-    def retrieve(state: State):
+    def retrieve_node(state: State):
         print("###### retrieve ######")
         question = state["question"]
         
@@ -1918,7 +1918,7 @@ def run_corrective_rag(connectionId, requestId, query):
         
         return {"documents": docs, "question": question}
 
-    def grade_documents(state: State):
+    def grade_documents_node(state: State):
         print("###### grade_documents ######")
         question = state["question"]
         documents = state["documents"]
@@ -1973,7 +1973,7 @@ def run_corrective_rag(connectionId, requestId, query):
             print("---DECISION: GENERATE---")
             return "generate"
 
-    def generate(state: State):
+    def generate_node(state: State):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
@@ -1986,7 +1986,7 @@ def run_corrective_rag(connectionId, requestId, query):
             
         return {"documents": documents, "question": question, "generation": generation}
 
-    def rewrite_for_crag(state: State):
+    def rewrite_node(state: State):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
@@ -1999,7 +1999,7 @@ def run_corrective_rag(connectionId, requestId, query):
 
         return {"question": better_question.question, "documents": documents}
 
-    def web_search(state: State):
+    def web_search_node(state: State):
         print("###### web_search ######")
         question = state["question"]
         documents = state["documents"]
@@ -2012,11 +2012,11 @@ def run_corrective_rag(connectionId, requestId, query):
         workflow = StateGraph(State)
             
         # Define the nodes
-        workflow.add_node("retrieve", retrieve)  
-        workflow.add_node("grade_documents", grade_documents)
-        workflow.add_node("generate", generate)
-        workflow.add_node("rewrite", rewrite_for_crag)
-        workflow.add_node("websearch", web_search)
+        workflow.add_node("retrieve", retrieve_node)  
+        workflow.add_node("grade_documents", grade_documents_node)
+        workflow.add_node("generate", generate_node)
+        workflow.add_node("rewrite", rewrite_node)
+        workflow.add_node("websearch", web_search_node)
 
         # Build graph
         workflow.set_entry_point("retrieve")
@@ -2073,7 +2073,7 @@ def run_self_rag(connectionId, requestId, query):
         count: int # number of retrieval
         documents : List[str]
     
-    def retrieve(state: State):
+    def retrieve_node(state: State):
         print('state: ', state)
         print("###### retrieve ######")
         question = state["question"]
@@ -2082,7 +2082,7 @@ def run_self_rag(connectionId, requestId, query):
         
         return {"documents": docs, "question": question}
     
-    def generate(state: State):
+    def generate_node(state: State):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
@@ -2096,7 +2096,7 @@ def run_self_rag(connectionId, requestId, query):
         
         return {"documents": documents, "question": question, "generation": generation, "retries": retries + 1}
             
-    def grade_documents(state: State):
+    def grade_documents_node(state: State):
         print("###### grade_documents ######")
         question = state["question"]
         documents = state["documents"]
@@ -2149,7 +2149,7 @@ def run_self_rag(connectionId, requestId, query):
             print("---DECISION: GENERATE---")
             return "document"
 
-    def rewrite(state: State):
+    def rewrite_node(state: State):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
@@ -2204,10 +2204,10 @@ def run_self_rag(connectionId, requestId, query):
         workflow = StateGraph(State)
             
         # Define the nodes
-        workflow.add_node("retrieve", retrieve)  
-        workflow.add_node("grade_documents", grade_documents)
-        workflow.add_node("generate", generate)
-        workflow.add_node("rewrite", rewrite)
+        workflow.add_node("retrieve", retrieve_node)  
+        workflow.add_node("grade_documents", grade_documents_node)
+        workflow.add_node("generate", generate_node)
+        workflow.add_node("rewrite", rewrite_node)
 
         # Build graph
         workflow.set_entry_point("retrieve")
