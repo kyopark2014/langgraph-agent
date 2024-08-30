@@ -1034,7 +1034,7 @@ def grade_documents_using_parallel_processing(question, documents):
     return filtered_docs
 
 def tavily_search(conn, q, k):     
-    search = TavilySearchResults(k=k)
+    search = TavilySearchResults(k=k) 
     response = search.invoke(q)     
     print('response: ', response)
     
@@ -2887,13 +2887,13 @@ Utilize all the information below as needed:
         response = critique.invoke({"critique": state['critique']})
         print('response.content: ', response.content)
         
+        content = ""
         for attempt in range(5):
             chat = get_chat()
             structured_llm = chat.with_structured_output(Queries, include_raw=True)
             info = structured_llm.invoke(response.content)
             print(f'attempt: {attempt}, info: {info}')
             
-            content = ""
             if not info['parsed'] == None:
                 queries = info['parsed']
                 print('queries: ', queries.queries)
