@@ -2065,7 +2065,6 @@ class GraphConfig(TypedDict):
     max_retries: int    
     max_count: int
 
-
 def run_self_rag(connectionId, requestId, query):
     class State(TypedDict):
         question : str
