@@ -42,6 +42,8 @@ from langgraph.prebuilt import tools_condition
 from langchain_core.pydantic_v1 import BaseModel, Field
 from typing import Annotated, List, Tuple, TypedDict, Literal, Sequence, Union
 import functools
+from typing import Optional
+from typing import Optional
     
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
@@ -2706,10 +2708,15 @@ def run_essay_writer(connectionId, requestId, query):
         print('parsing_error: ', info['parsing_error'])                
         return {"plan": []}  
     
+    #class Queries(BaseModel):
+    #    """List of queries"""
+    #    queries: List[str] = Field(
+    #        description="Suggested queries for web search"
+    #    )
     class Queries(BaseModel):
-        """List of queries"""
+        """List of queries as a json format"""
         queries: List[str] = Field(
-            description="Suggested queries for web search"
+            description="queries for retrieve"
         )
     
     def research_plan(state: State):
