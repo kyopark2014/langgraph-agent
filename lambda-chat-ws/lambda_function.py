@@ -2739,13 +2739,13 @@ def run_essay_writer(connectionId, requestId, query):
         response = research.invoke({"task": task})
         print('response.content: ', response.content)
         
+        queries = None 
         for attempt in range(5):
             chat = get_chat()
             structured_llm = chat.with_structured_output(Queries, include_raw=True)
             info = structured_llm.invoke(response.content)
             print(f'attempt: {attempt}, info: {info}')
 
-            queries = None        
             if not info['parsed'] == None:
                 queries = info['parsed']
                 print('queries: ', queries.queries)
@@ -2753,16 +2753,18 @@ def run_essay_writer(connectionId, requestId, query):
             
         content = state["content"] if state.get("content") is not None else []
         
-        if useParrelWebSearch:
-            content += tavily_search_using_parallel_processing(queries.queries)
-            
-        else:        
-            search = TavilySearchResults(k=2)
-            for q in queries.queries:
-                response = search.invoke(q)     
-                # print('response: ', response)        
-                for r in response:
-                    content.append(r['content'])
+        if not queries == None:
+            if useParrelWebSearch:
+                content += tavily_search_using_parallel_processing(queries.queries)
+                
+            else:        
+                search = TavilySearchResults(k=2)
+                for q in queries.queries:
+                    response = search.invoke(q)     
+                    # print('response: ', response)        
+                    for r in response:
+                        content.append(r['content'])
+                        
         return {        
             "task": state['task'],
             "plan": state['plan'],
