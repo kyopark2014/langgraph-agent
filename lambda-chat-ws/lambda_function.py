@@ -2708,11 +2708,6 @@ def run_essay_writer(connectionId, requestId, query):
         print('parsing_error: ', info['parsing_error'])                
         return {"plan": []}  
     
-    #class Queries(BaseModel):
-    #    """List of queries"""
-    #    queries: List[str] = Field(
-    #        description="Suggested queries for web search"
-    #    )
     class Queries(BaseModel):
         """List of queries as a json format"""
         queries: List[str] = Field(
