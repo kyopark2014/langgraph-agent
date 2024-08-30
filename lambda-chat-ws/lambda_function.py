@@ -2739,11 +2739,14 @@ def run_essay_writer(connectionId, requestId, query):
         chat = get_chat()
         structured_llm = chat.with_structured_output(Queries, include_raw=True)
         info = structured_llm.invoke(response.content)
-        # print('info: ', info)
-        
+        print('info: ', info)
+
+        queries = None        
         if not info['parsed'] == None:
             queries = info['parsed']
             print('queries: ', queries.queries)
+        else:
+            print('parsing_error: ', info['parsing_error'])
             
         content = state["content"] if state.get("content") is not None else []
         
