@@ -1040,7 +1040,7 @@ def tavily_search(conn, q, k):
     
     content = []
     for r in response:
-        if content in r:
+        if 'content' in r:
             content.append(r['content'])
         
     conn.send(content)    
@@ -2767,7 +2767,7 @@ def run_essay_writer(connectionId, requestId, query):
                     response = search.invoke(q)     
                     # print('response: ', response)        
                     for r in response:
-                        if content in r:
+                        if 'content' in r:
                             content.append(r['content'])
                         
         return {        
@@ -2912,7 +2912,7 @@ Utilize all the information below as needed:
                         response = search.invoke(q)     
                         # print('response: ', response)        
                         for r in response:
-                            if content in r:
+                            if 'content' in r:
                                 content.append(r['content'])
                 break
             
@@ -3077,7 +3077,7 @@ You should use the previous critique to add important information to your answer
             for q in state["search_queries"]:
                 response = search.invoke(q)     
                 for r in response:
-                    if content in r:
+                    if 'content' in r:
                         content.append(r['content'])     
 
         chat = get_chat()
