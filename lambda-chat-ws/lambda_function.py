@@ -2706,7 +2706,10 @@ def run_essay_writer(connectionId, requestId, query):
         return {"plan": []}  
     
     class Queries(BaseModel):
-        queries: List[str]
+        """List of queries"""
+        queries: List[str] = Field(
+            description="Suggested search queries for web search"
+        )
     
     def research_plan(state: State):
         print("###### research_plan ######")
