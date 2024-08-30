@@ -2075,6 +2075,7 @@ def run_self_rag(connectionId, requestId, query):
         documents : List[str]
     
     def retrieve(state: State):
+        print('state: ', state)
         print("###### retrieve ######")
         question = state["question"]
         
