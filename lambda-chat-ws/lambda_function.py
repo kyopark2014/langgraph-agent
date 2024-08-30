@@ -2456,24 +2456,23 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         response = planner.invoke({"messages": inputs})
         print('response.content: ', response.content)
         
-        chat = get_chat()
-        structured_llm = chat.with_structured_output(Plan, include_raw=True)
-        info = structured_llm.invoke(response.content)
-        print('info: ', info)
+        for attempt in range(5):
+            chat = get_chat()
+            structured_llm = chat.with_structured_output(Plan, include_raw=True)
+            info = structured_llm.invoke(response.content)
+            print(f'attempt: {attempt}, info: {info}')
+            
+            if not info['parsed'] == None:
+                parsed_info = info['parsed']
+                # print('parsed_info: ', parsed_info)        
+                print('steps: ', parsed_info.steps)                
+                return {
+                    "input": state["input"],
+                    "plan": parsed_info.steps
+                }
         
-        if not info['parsed'] == None:
-            parsed_info = info['parsed']
-            # print('parsed_info: ', parsed_info)        
-            print('steps: ', parsed_info.steps)
-            
-            return {
-                "input": state["input"],
-                "plan": parsed_info.steps
-            }
-        else:
-            print('parsing_error: ', info['parsing_error'])
-            
-            return {"plan": []}  
+        print('parsing_error: ', info['parsing_error'])
+        return {"plan": []}          
 
     def execute(state: State):
         print("###### execute ######")
@@ -2561,14 +2560,18 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         output = replanner.invoke(state)
         print('replanner output: ', output.content)
         
-        chat = get_chat()
-        structured_llm = chat.with_structured_output(Act, include_raw=True)    
-        info = structured_llm.invoke(output.content)
-        # print('info: ', info)
-        
-        result = info['parsed']
-        print('act output: ', result)
-        
+        result = None
+        for attempt in range(5):
+            chat = get_chat()
+            structured_llm = chat.with_structured_output(Act, include_raw=True)    
+            info = structured_llm.invoke(output.content)
+            print(f'attempt: {attempt}, info: {info}')
+            
+            if not info['parsed'] == None:
+                result = info['parsed']
+                print('act output: ', result)            
+                break
+                    
         if result == None:
             return {"response": "답을 찾지 못하였습니다. 다시 해주세요."}
         else:
@@ -2683,24 +2686,24 @@ def run_essay_writer(connectionId, requestId, query):
         response = planner.invoke({"messages": task})
         print('response.content: ', response.content)
             
-        chat = get_chat()
-        structured_llm = chat.with_structured_output(Plan, include_raw=True)
-        info = structured_llm.invoke(response.content)
-        print('info: ', info)
-            
-        if not info['parsed'] == None:
-            parsed_info = info['parsed']
-            # print('parsed_info: ', parsed_info)        
-            print('steps: ', parsed_info.steps)
+        for attempt in range(5):
+            chat = get_chat()
+            structured_llm = chat.with_structured_output(Plan, include_raw=True)
+            info = structured_llm.invoke(response.content)
+            print(f'attempt: {attempt}, info: {info}')
                 
-            return {
-                "task": state["task"],
-                "plan": parsed_info.steps
-            }
-        else:
-            print('parsing_error: ', info['parsing_error'])
-                
-            return {"plan": []}  
+            if not info['parsed'] == None:
+                parsed_info = info['parsed']
+                # print('parsed_info: ', parsed_info)        
+                print('steps: ', parsed_info.steps)
+                    
+                return {
+                    "task": state["task"],
+                    "plan": parsed_info.steps
+                }
+        
+        print('parsing_error: ', info['parsing_error'])                
+        return {"plan": []}  
     
     class Queries(BaseModel):
         queries: List[str]
@@ -2879,29 +2882,32 @@ Utilize all the information below as needed:
         response = critique.invoke({"critique": state['critique']})
         print('response.content: ', response.content)
         
-        chat = get_chat()
-        structured_llm = chat.with_structured_output(Queries, include_raw=True)
-        info = structured_llm.invoke(response.content)
-        # print('info: ', info)
-        
-        content = ""
-        if not info['parsed'] == None:
-            queries = info['parsed']
-            print('queries: ', queries.queries)
+        for attempt in range(5):
+            chat = get_chat()
+            structured_llm = chat.with_structured_output(Queries, include_raw=True)
+            info = structured_llm.invoke(response.content)
+            print(f'attempt: {attempt}, info: {info}')
             
-            content = state["content"] if state.get("content") is not None else []
+            content = ""
+            if not info['parsed'] == None:
+                queries = info['parsed']
+                print('queries: ', queries.queries)
+                
+                content = state["content"] if state.get("content") is not None else []
+                
+                if useParrelWebSearch:
+                    c = tavily_search_using_parallel_processing(queries.queries)
+                    print('content: ', c)            
+                    content.extend(c)
+                else:
+                    search = TavilySearchResults(k=2)
+                    for q in queries.queries:
+                        response = search.invoke(q)     
+                        # print('response: ', response)        
+                        for r in response:
+                            content.append(r['content'])
+                break
             
-            if useParrelWebSearch:
-                c = tavily_search_using_parallel_processing(queries.queries)
-                print('content: ', c)            
-                content.extend(c)
-            else:
-                search = TavilySearchResults(k=2)
-                for q in queries.queries:
-                    response = search.invoke(q)     
-                    # print('response: ', response)        
-                    for r in response:
-                        content.append(r['content'])
         return {
             "content": content,
             "revision_number": int(state['revision_number'])
