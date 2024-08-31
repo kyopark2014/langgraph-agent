@@ -3608,12 +3608,13 @@ def run_prompt_flow(text, connectionId, requestId):
     return msg
 
 rag_flow_arn = None
+rag_flow_alias_identifier = None
 def run_RAG_prompt_flow(text, connectionId, requestId):
     print('rag_prompt_flow_name: ', rag_prompt_flow_name)
     
     client = boto3.client(service_name='bedrock-agent')   
     
-    global rag_flow_arn
+    global rag_flow_arn, rag_flow_alias_identifier
     if not rag_flow_arn:
         response = client.list_flows(
             maxResults=10
@@ -3625,25 +3626,28 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
                 print('rag_flow_arn: ', rag_flow_arn)
                 break
     
-    # get flow alias arn
-    response_flow_aliases = client.list_flow_aliases(
-        flowIdentifier=rag_flow_arn
-    )
-    print('response_flow_aliases: ', response_flow_aliases)
-    flowAliasIdentifier = ""
-    flowAlias = response_flow_aliases["flowAliasSummaries"]
-    for alias in flowAlias:
-        print('alias: ', alias)
-        if alias['name'] == "latest_verison":  # the name of prompt flow alias
-            flowAliasIdentifier = alias['arn']
-            print('flowAliasIdentifier: ', flowAliasIdentifier)
-            break
+    if not rag_flow_alias_identifier:
+        # get flow alias arn
+        response_flow_aliases = client.list_flow_aliases(
+            flowIdentifier=rag_flow_arn
+        )
+        print('response_flow_aliases: ', response_flow_aliases)
+        rag_flow_alias_identifier = ""
+        flowAlias = response_flow_aliases["flowAliasSummaries"]
+        for alias in flowAlias:
+            print('alias: ', alias)
+            if alias['name'] == "latest_verison":  # the name of prompt flow alias
+                rag_flow_alias_identifier = alias['arn']
+                print('flowAliasIdentifier: ', rag_flow_alias_identifier)
+                break
     
     # invoke_flow
+    isTyping(connectionId, requestId)  
+    
     client_runtime = boto3.client('bedrock-agent-runtime')
     response = client_runtime.invoke_flow(
         flowIdentifier=rag_flow_arn,
-        flowAliasIdentifier=flowAliasIdentifier,
+        flowAliasIdentifier=rag_flow_alias_identifier,
         inputs=[
             {
                 "content": {
