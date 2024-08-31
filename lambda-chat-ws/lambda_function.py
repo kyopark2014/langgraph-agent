@@ -3454,22 +3454,22 @@ def get_reference_of_knoweledge_base(docs, path, doc_prefix):
         score = document.metadata["score"]
         print('score:', score)
         
-        uri = ""
+        link = ""
         if "s3Location" in document.metadata["location"]:
-            uri = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
+            link = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
         elif "webLocation" in document.metadata["location"]:
-            uri = document.metadata["location"]["webLocation"]["uri"] if document.metadata["location"]["webLocation"]["uri"] is not None else ""                
-        print('uri:', uri)
+            link = document.metadata["location"]["webLocation"]["url"] if document.metadata["location"]["webLocation"]["url"] is not None else ""                
+        print('uri:', link)
                     
-        pos = uri.find(f"/{doc_prefix}")
-        name = uri[pos+len(doc_prefix)+1:]
+        pos = link.find(f"/{doc_prefix}")
+        name = link[pos+len(doc_prefix)+1:]
         encoded_name = parse.quote(name)
         #print('name:', name)
         
-        uri = f"{path}{doc_prefix}{encoded_name}"
-        #print('uri:', uri)
+        link = f"{path}{doc_prefix}{encoded_name}"
+        #print('link:', link)
         
-        reference = reference + f"{i+1}. <a href={uri} target=_blank>{name}</a>, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
+        reference = reference + f"{i+1}. <a href={link} target=_blank>{name}</a>, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
                     
     return reference
 
