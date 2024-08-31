@@ -3473,6 +3473,7 @@ knowledge_base_id = None
 def get_answer_using_knowledge_base(chat, text, connectionId, requestId):    
     revised_question = text # use original question for test
  
+    global knowledge_base_id
     if not knowledge_base_id:        
         client = boto3.client('bedrock-agent')         
         response = client.list_knowledge_bases(
@@ -3489,7 +3490,7 @@ def get_answer_using_knowledge_base(chat, text, connectionId, requestId):
     
     if knowledge_base_id:    
         retriever = AmazonKnowledgeBasesRetriever(
-            knowledge_base_id="CFVYNN0NQN", 
+            knowledge_base_id=knowledge_base_id, 
             retrieval_config={"vectorSearchConfiguration": {"numberOfResults": 4}},
         )
         
@@ -3533,6 +3534,7 @@ def run_prompt_flow(text, connectionId, requestId):
     
     client = boto3.client(service_name='bedrock-agent')   
     
+    global flow_arn
     if not flow_arn:
         response = client.list_flows(
             MaxResults=10
@@ -3576,7 +3578,7 @@ def run_prompt_flow(text, connectionId, requestId):
         flowAlias = response_flow_aliases["flowAliasSummaries"]
         for alias in flowAlias:
             print('alias: ', alias)
-            if alias['name'] == flow_alias:
+            if alias['name'] == "latest_verison":  # the name of prompt flow alias
                 flowAliasIdentifier = alias['arn']
                 print('flowAliasIdentifier: ', flowAliasIdentifier)
                 break
@@ -3625,6 +3627,7 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
     
     client = boto3.client(service_name='bedrock-agent')   
     
+    global rag_flow_arn
     if not rag_flow_arn:
         response = client.list_flows(
             MaxResults=10
@@ -3635,7 +3638,7 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
                 rag_flow_arn = flow["FlowArn"]
                 print('rag_flow_arn: ', rag_flow_arn)
                 break
-        
+    
     # get flow alias arn
     response_flow_aliases = client.list_flow_aliases(
         flowIdentifier=rag_flow_arn
@@ -3645,7 +3648,7 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
     flowAlias = response_flow_aliases["flowAliasSummaries"]
     for alias in flowAlias:
         print('alias: ', alias)
-        if alias['name'] == rag_flow_alias:
+        if alias['name'] == "latest_verison":  # the name of prompt flow alias
             flowAliasIdentifier = alias['arn']
             print('flowAliasIdentifier: ', flowAliasIdentifier)
             break
