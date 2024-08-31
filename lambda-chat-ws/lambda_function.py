@@ -3538,7 +3538,7 @@ def run_prompt_flow(text, connectionId, requestId):
     global flow_arn
     if not flow_arn:
         response = client.list_flows(
-            MaxResults=10
+            maxResults=10
         )
         
         for flow in response["Flows"]:
@@ -3631,7 +3631,7 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
     global rag_flow_arn
     if not rag_flow_arn:
         response = client.list_flows(
-            MaxResults=10
+            maxResults=10
         )
         
         for flow in response["Flows"]:
