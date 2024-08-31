@@ -3529,12 +3529,14 @@ def get_answer_using_knowledge_base(chat, text, connectionId, requestId):
 ###########################################################  
     
 flow_arn = None
+flow_alias_identifier = None
 def run_prompt_flow(text, connectionId, requestId):    
     print('prompt_flow_name: ', prompt_flow_name)
     
     client = boto3.client(service_name='bedrock-agent')   
     
-    global flow_arn
+    global flow_arn, flow_alias_identifier
+    
     if not flow_arn:
         response = client.list_flows(
             maxResults=10
@@ -3547,49 +3549,29 @@ def run_prompt_flow(text, connectionId, requestId):
                 flow_arn = flow["arn"]
                 print('flow_arn: ', flow_arn)
                 break
-        
-        'arn:aws:bedrock:us-west-2:677146750822:flow/HCFRD6999O'
-        
-        """
-        response_flow = client.get_flow(
-            flowIdentifier=flow_id
-        )
-        print('response_flow: ', response_flow)
-        
-        definition = response_flow['definition']
-        print('definition: ', definition)
-        connections = definition['connections']
-        print('connections: ', connections)
-        for c in connections:
-            print('connection: ', c)
-            
-            #if c['name'] == flow_alias:
-            #    flow_id = c['flowIdentifier']
-            #    print('flow_id: ', flow_id)
-            #    break'
-        """
-        
+
     msg = ""
     if flow_arn:
-        # get flow alias arn
-        response_flow_aliases = client.list_flow_aliases(
-            flowIdentifier=flow_arn
-        )
-        print('response_flow_aliases: ', response_flow_aliases)
-        flowAliasIdentifier = ""
-        flowAlias = response_flow_aliases["flowAliasSummaries"]
-        for alias in flowAlias:
-            print('alias: ', alias)
-            if alias['name'] == "latest_verison":  # the name of prompt flow alias
-                flowAliasIdentifier = alias['arn']
-                print('flowAliasIdentifier: ', flowAliasIdentifier)
-                break
+        if not flow_alias_identifier:
+            # get flow alias arn
+            response_flow_aliases = client.list_flow_aliases(
+                flowIdentifier=flow_arn
+            )
+            print('response_flow_aliases: ', response_flow_aliases)
+            
+            flowAlias = response_flow_aliases["flowAliasSummaries"]
+            for alias in flowAlias:
+                print('alias: ', alias)
+                if alias['name'] == "latest_verison":  # the name of prompt flow alias
+                    flow_alias_identifier = alias['arn']
+                    print('flowAliasIdentifier: ', flow_alias_identifier)
+                    break
         
         # invoke_flow
         client_runtime = boto3.client('bedrock-agent-runtime')
         response = client_runtime.invoke_flow(
             flowIdentifier=flow_arn,
-            flowAliasIdentifier=flowAliasIdentifier,
+            flowAliasIdentifier=flow_alias_identifier,
             inputs=[
                 {
                     "content": {
