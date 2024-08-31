@@ -3465,7 +3465,8 @@ def get_reference_of_knoweledge_base(docs, path, doc_prefix):
             link = f"{path}{doc_prefix}{encoded_name}"
             
         elif "webLocation" in document.metadata["location"]:
-            link = document.metadata["location"]["webLocation"]["url"] if document.metadata["location"]["webLocation"]["url"] is not None else ""                
+            link = document.metadata["location"]["webLocation"]["url"] if document.metadata["location"]["webLocation"]["url"] is not None else ""
+            name = "WWW"
 
         print('link:', link)
                     
