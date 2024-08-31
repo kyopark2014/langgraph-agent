@@ -106,7 +106,7 @@ if langsmith_api_key:
     os.environ["LANGCHAIN_API_KEY"] = langsmith_api_key
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_PROJECT"] = langchain_project
-
+    
 # api key to use Tavily Search
 tavily_api_key = ""
 try:
@@ -122,7 +122,7 @@ except Exception as e:
 
 if tavily_api_key:
     os.environ["TAVILY_API_KEY"] = tavily_api_key
-   
+    
 # websocket
 connection_url = os.environ.get('connection_url')
 client = boto3.client('apigatewaymanagementapi', endpoint_url=connection_url)
@@ -133,16 +133,14 @@ AI_PROMPT = "\n\nAssistant:"
 
 map_chain = dict() 
 MSG_LENGTH = 100
-
 # Multi-LLM
 def get_chat():
     global selected_chat
-    
     profile = LLM_for_chat[selected_chat]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
-    maxOutputTokens = profile['max_tokens']
-    print(f'selected_chat: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+    maxOutputTokens = 4096
+    print(f'LLM: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
                           
     # bedrock   
     boto3_bedrock = boto3.client(
@@ -179,7 +177,7 @@ def get_multi_region_chat(models, selected):
     profile = models[selected]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
-    maxOutputTokens = profile['max_tokens']
+    maxOutputTokens = 4096
     print(f'selected_chat: {selected}, bedrock_region: {bedrock_region}, modelId: {modelId}')
                           
     # bedrock   
@@ -213,12 +211,12 @@ def get_multimodal():
     global selected_multimodal
     print('LLM_for_chat: ', LLM_for_chat)
     print('selected_multimodal: ', selected_multimodal)
-    
+        
     profile = LLM_for_multimodal[selected_multimodal]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
-    maxOutputTokens = profile['max_tokens']
-    print(f'selected_multimodal: {selected_multimodal}, bedrock_region: {bedrock_region}, modelId: {modelId}')
+    maxOutputTokens = 4096
+    print(f'LLM: {selected_multimodal}, bedrock_region: {bedrock_region}, modelId: {modelId}')
                           
     # bedrock   
     boto3_bedrock = boto3.client(
@@ -250,13 +248,13 @@ def get_multimodal():
         selected_multimodal = 0
     
     return multimodal
-
+    
 def get_embedding():
     global selected_embedding
     profile = LLM_embedding[selected_embedding]
     bedrock_region =  profile['bedrock_region']
     model_id = profile['model_id']
-    print(f'selected_embedding: {selected_embedding}, bedrock_region: {bedrock_region}, model_id:{model_id}')
+    print(f'selected_embedding: {selected_embedding}, bedrock_region: {bedrock_region}, model_id: {model_id}')
     
     # bedrock   
     boto3_bedrock = boto3.client(
@@ -395,19 +393,20 @@ def load_chatHistory(userId, allowTime, chat_memory):
             ':allowTime': {'S': allowTime}
         }
     )
-    print('query result: ', response['Items'])
+    # print('query result: ', response['Items'])
 
     for item in response['Items']:
         text = item['body']['S']
         msg = item['msg']['S']
         type = item['type']['S']
 
-        if type == 'text':
-            print('text: ', text)
-            print('msg: ', msg)        
-
-            chat_memory.save_context({"input": text}, {"output": msg})             
-
+        if type == 'text' and text and msg:
+            memory_chain.chat_memory.add_user_message(text)
+            if len(msg) > MSG_LENGTH:
+                memory_chain.chat_memory.add_ai_message(msg[:MSG_LENGTH])                          
+            else:
+                memory_chain.chat_memory.add_ai_message(msg) 
+                
 def getAllowTime():
     d = datetime.datetime.now() - datetime.timedelta(days = 2)
     timeStr = str(d)[0:19]
@@ -553,10 +552,9 @@ def get_book_list(keyword: str) -> str:
             answer = "추천 도서는 아래와 같습니다.\n"
             
         for prod in prod_info[:5]:
-            # \n문자를 replace합니다.
             title = prod.text.strip().replace("\n", "")       
             link = prod.get("href")
-            answer = answer + f"{title}, URL: {link}\n"
+            answer = answer + f"{title}, URL: {link}\n\n"
     
     return answer
     
@@ -564,6 +562,7 @@ def get_book_list(keyword: str) -> str:
 def get_current_time(format: str=f"%Y-%m-%d %H:%M:%S")->str:
     """Returns the current date and time in the specified format"""
     # f"%Y-%m-%d %H:%M:%S"
+    
     format = format.replace('\'','')
     timestr = datetime.datetime.now(timezone('Asia/Seoul')).strftime(format)
     # print('timestr:', timestr)
@@ -697,7 +696,6 @@ def search_by_tavily(keyword: str) -> str:
                         metadata={
                             'name': 'WWW',
                             'uri': url,
-                            'content': content,
                             'from': 'tavily'
                         },
                     )
@@ -713,7 +711,7 @@ def search_by_opensearch(keyword: str) -> str:
     keyword: search keyword
     return: the technical information of keyword
     """    
-
+    
     print('keyword: ', keyword)
     keyword = keyword.replace('\'','')
     keyword = keyword.replace('|','')
@@ -799,7 +797,7 @@ def search_by_opensearch(keyword: str) -> str:
             text = doc.page_content
             
         print(f"filtered doc[{i}]: {text}, metadata:{doc.metadata}")
-    
+       
     answer = "" 
     for doc in filtered_docs:
         excerpt = doc.page_content
@@ -919,21 +917,36 @@ def lexical_search_for_tool(query, top_k):
         print(f"--> lexical search doc[{i}]: {text}, metadata:{doc.metadata}")   
         
     return docs
+
+class GradeDocuments(BaseModel):
+    """Binary score for relevance check on retrieved documents."""
+
+    binary_score: str = Field(description="Documents are relevant to the question, 'yes' or 'no'")
+
+def get_retrieval_grader(chat):
+    system = """You are a grader assessing relevance of a retrieved document to a user question. \n 
+    If the document contains keyword(s) or semantic meaning related to the question, grade it as relevant. \n
+    Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."""
+
+    grade_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("human", "Retrieved document: \n\n {document} \n\n User question: {question}"),
+        ]
+    )
     
+    structured_llm_grader = chat.with_structured_output(GradeDocuments)
+    retrieval_grader = grade_prompt | structured_llm_grader
+    return retrieval_grader
+
 def grade_document_based_on_relevance(conn, question, doc, models, selected):     
     chat = get_multi_region_chat(models, selected)
     retrieval_grader = get_retrieval_grader(chat)       
     score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
-    #print("question: ", question)
-    #print("doc: ", doc)    
-    print_doc(doc)
-    
-    #print("score: ", score)
+    # print(f"score: {score}")
     
     grade = score.binary_score    
-    print("grade: ", grade)
-    
-    if grade.lower() == "yes":
+    if grade == 'yes':
         print("---GRADE: DOCUMENT RELEVANT---")
         conn.send(doc)
     else:  # no
@@ -941,7 +954,7 @@ def grade_document_based_on_relevance(conn, question, doc, models, selected):
         conn.send(None)
     
     conn.close()
-    
+                                
 def grade_documents_using_parallel_processing(question, documents):
     """    
     models = [  # claude 3.5
@@ -1015,14 +1028,13 @@ def grade_documents_using_parallel_processing(question, documents):
         #print(f"grading doc[{i}]: {doc.page_content}")        
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
-                    
+            
         process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, models, selected))
         processes.append(process)
-        
+
         selected = selected + 1
         if selected == len(models):
             selected = 0
-
     for process in processes:
         process.start()
             
@@ -1116,8 +1128,9 @@ def grade_documents(question, documents):
                 # We set a flag to indicate that we want to run web search
                 continue
     
-    global reference_docs
-    reference_docs += filtered_docs
+    global reference_docs 
+    reference_docs += filtered_docs    
+    # print('langth of reference_docs: ', len(reference_docs))
     
     # print('len(docments): ', len(filtered_docs))    
     return filtered_docs
@@ -1603,18 +1616,18 @@ def run_agent_executor(connectionId, requestId, query):
                 "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
                 "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
                 "모르는 질문을 받으면 솔직히 모른다고 말합니다."
-                "최종 답변에는 조사한 내용을 반드시 포함합니다."                
-                # "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."       
+                "최종 답변에는 조사한 내용을 반드시 포함합니다."
+                # "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요." 
             )
         else: 
             system = (            
                 "You are a conversational AI designed to answer in a friendly way to a question."
                 "If you don't know the answer, just say that you don't know, don't try to make up an answer."
-                "You will be acting as a thoughtful advisor."                                
+                "You will be acting as a thoughtful advisor."    
                 #"Put it in <result> tags."
                 # "Answer friendly for the newest question using the following conversation"
                 #"You should always answer in jokes."
-                #"You should always answer in rhymes."
+                #"You should always answer in rhymes."            
             )
             
         prompt = ChatPromptTemplate.from_messages(
@@ -1794,7 +1807,7 @@ def run_reflection_agent(connectionId, requestId, query):
         messages: Annotated[list, add_messages]
 
     def generation_node(state: State):    
-        print("###### generation ######")
+        print("###### generation ######")        
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -3164,7 +3177,6 @@ You should use the previous critique to add important information to your answer
         
     readStreamMsg(connectionId, requestId, value["messages"][-1].content)
     
-    # return value["messages"][-1].content[value["messages"][-1].content.find('<result>')+8:len(value["messages"][-1].content)-9]
     return value["messages"][-1].content
 
 ####################### LangGraph #######################
@@ -4311,7 +4323,7 @@ def getResponse(connectionId, jsonBody):
                 print('contexts: ', contexts)
 
                 msg = get_summary(chat, contexts)
-                        
+            
             elif file_type == 'pdf' or file_type == 'txt' or file_type == 'md' or file_type == 'pptx' or file_type == 'docx':
                 texts = load_document(file_type, object)
 
@@ -4374,7 +4386,7 @@ def getResponse(connectionId, jsonBody):
                 buffer = BytesIO()
                 img.save(buffer, format="PNG")
                 img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-                        
+                
                 command = ""        
                 if 'command' in jsonBody:
                     command  = jsonBody['command']
@@ -4412,20 +4424,20 @@ def getResponse(connectionId, jsonBody):
             'body': {'S':body},
             'msg': {'S':msg+reference}
         }
-
         client = boto3.client('dynamodb')
         try:
             resp =  client.put_item(TableName=callLogTableName, Item=item)
         except Exception:
             err_msg = traceback.format_exc()
             print('error message: ', err_msg)
-            # raise Exception ("Not able to write into dynamodb")               
+            # raise Exception ("Not able to write into dynamodb")         
         #print('resp, ', resp)
 
     return msg, reference
 
 def lambda_handler(event, context):
-    # print('event: ', event)    
+    # print('event: ', event)
+    
     msg = ""
     if event['requestContext']: 
         connectionId = event['requestContext']['connectionId']        
