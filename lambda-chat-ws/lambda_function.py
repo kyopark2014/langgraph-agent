@@ -4322,10 +4322,6 @@ def getResponse(connectionId, jsonBody):
                 
                 elif convType == "bedrock-agent":
                     msg = run_bedrock_agent(text, connectionId, requestId, userId)
-                elif convType == "bedrock-agent-chat":
-                    revised_question = revise_question(connectionId, requestId, chat, text)     
-                    print('revised_question: ', revised_question)    
-                    msg = run_bedrock_agent(revised_question, connectionId, requestId, userId)
                     
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
