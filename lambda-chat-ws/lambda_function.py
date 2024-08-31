@@ -3493,6 +3493,7 @@ def get_answer_using_knowledge_base(chat, text, connectionId, requestId):
                     print('knowledge_base_id: ', knowledge_base_id)
                     break
     
+    msg = reference = ""
     if knowledge_base_id:    
         retriever = AmazonKnowledgeBasesRetriever(
             knowledge_base_id=knowledge_base_id, 
@@ -3521,9 +3522,7 @@ def get_answer_using_knowledge_base(chat, text, connectionId, requestId):
         msg = query_using_RAG_context(connectionId, requestId, chat, relevant_context, revised_question)
         reference = get_reference_of_knoweledge_base(relevant_docs, path, doc_prefix)  
         
-        return msg, reference
-    else:
-        return "", ""
+    return msg, reference
     
 ####################### Prompt Flow #######################
 # Prompt Flow
@@ -3540,8 +3539,10 @@ def run_prompt_flow(text, connectionId, requestId):
         response = client.list_flows(
             maxResults=10
         )
+        print('response: ', response)
         
         for flow in response["Flows"]:
+            print('flow: ', flow)
             if flow["Name"] == prompt_flow_name:
                 flow_arn = flow["FlowArn"]
                 print('flow_arn: ', flow_arn)
