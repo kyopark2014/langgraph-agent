@@ -3452,11 +3452,15 @@ def get_reference_of_knoweledge_base(docs, path, doc_prefix):
             excerpt = document.page_content
         
         score = document.metadata["score"]
-        #print('score:', score)
-            
-        uri = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
-        #print('uri:', uri)
+        print('score:', score)
         
+        uri = ""
+        if "s3Location" in document.metadata["location"]:
+            uri = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
+        elif "webLocation" in document.metadata["location"]:
+            uri = document.metadata["location"]["webLocation"]["uri"] if document.metadata["location"]["webLocation"]["uri"] is not None else ""                
+        print('uri:', uri)
+                    
         pos = uri.find(f"/{doc_prefix}")
         name = uri[pos+len(doc_prefix)+1:]
         encoded_name = parse.quote(name)
@@ -3508,15 +3512,6 @@ def get_answer_using_knowledge_base(chat, text, connectionId, requestId):
             print(f"{i}: {document}")
             if document.page_content:
                 content = document.page_content
-            print('score:', document.metadata["score"])
-            
-            print('document.metadata: ', document.metadata)            
-            
-            uri = ""
-            if "s3Location" in document.metadata["location"]:
-                uri = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
-                
-            print('uri:', uri)
             
             relevant_context = relevant_context + content + "\n\n"
         
