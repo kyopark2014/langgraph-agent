@@ -3568,6 +3568,8 @@ def run_prompt_flow(text, connectionId, requestId):
                     break
         
         # invoke_flow
+        isTyping(connectionId, requestId)  
+        
         client_runtime = boto3.client('bedrock-agent-runtime')
         response = client_runtime.invoke_flow(
             flowIdentifier=flow_arn,
