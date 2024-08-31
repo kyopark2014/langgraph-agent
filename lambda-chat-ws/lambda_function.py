@@ -3534,7 +3534,9 @@ def get_answer_using_knowledge_base(chat, text, connectionId, requestId):
     print('relevant_context: ', relevant_context)
 
     msg = query_using_RAG_context(connectionId, requestId, chat, relevant_context, revised_question)
-    reference = get_reference_of_knoweledge_base(relevant_docs, path, doc_prefix)  
+    
+    if len(relevant_docs):
+        reference = get_reference_of_knoweledge_base(relevant_docs, path, doc_prefix)  
         
     return msg, reference
     
