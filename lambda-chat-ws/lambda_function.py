@@ -3574,7 +3574,7 @@ def run_prompt_flow(text, connectionId, requestId):
             flowAlias = response_flow_aliases["flowAliasSummaries"]
             for alias in flowAlias:
                 print('alias: ', alias)
-                if alias['name'] == "latest_verison":  # the name of prompt flow alias
+                if alias['name'] == "latest_version":  # the name of prompt flow alias
                     flow_alias_identifier = alias['arn']
                     print('flowAliasIdentifier: ', flow_alias_identifier)
                     break
@@ -3648,7 +3648,7 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
         flowAlias = response_flow_aliases["flowAliasSummaries"]
         for alias in flowAlias:
             print('alias: ', alias)
-            if alias['name'] == "latest_verison":  # the name of prompt flow alias
+            if alias['name'] == "latest_version":  # the name of prompt flow alias
                 rag_flow_alias_identifier = alias['arn']
                 print('flowAliasIdentifier: ', rag_flow_alias_identifier)
                 break
