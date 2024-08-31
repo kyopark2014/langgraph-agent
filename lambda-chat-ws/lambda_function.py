@@ -69,10 +69,9 @@ useParallelRAG = os.environ.get('useParallelRAG', 'true')
 useParrelWebSearch = True
 useEnhancedSearch = True
 
-flow_id = os.environ.get('flow_id')
-flow_alias = os.environ.get('flow_alias')
-rag_flow_id = os.environ.get('rag_flow_id')
-rag_flow_alias = os.environ.get('rag_flow_alias')
+prompt_flow_name = os.environ.get('prompt_flow_name')
+rag_prompt_flow_name = os.environ.get('rag_prompt_flow_name')
+knowledge_base_name = os.environ.get('knowledge_base_name')
 
 reference_docs = []
 # api key to get weather information in agent
@@ -3470,130 +3469,176 @@ def get_reference_of_knoweledge_base(docs, path, doc_prefix):
                     
     return reference
 
+knowledge_base_id = None
 def get_answer_using_knowledge_base(chat, text, connectionId, requestId):    
     revised_question = text # use original question for test
+ 
+    if not knowledge_base_id:        
+        client = boto3.client('bedrock-agent')         
+        response = client.list_knowledge_bases(
+            maxResults=10
+        )
+                
+        if "knowledgeBaseSummaries" in response:
+            summaries = response["knowledgeBaseSummaries"]
+            for summary in summaries:
+                if summary["name"] == knowledge_base_name:
+                    knowledge_base_id = summary["knowledgeBaseId"]
+                    print('knowledge_base_id: ', knowledge_base_id)
+                    break
     
-    retriever = AmazonKnowledgeBasesRetriever(
-        knowledge_base_id="CFVYNN0NQN", 
-        retrieval_config={"vectorSearchConfiguration": {"numberOfResults": 4}},
-    )
-    
-    relevant_docs = retriever.invoke(revised_question)
-    print(relevant_docs)
-    
-    #selected_relevant_docs = []
-    #if len(relevant_docs)>=1:
-    #    print('start priority search')
-    #    selected_relevant_docs = priority_search(revised_question, relevant_docs, minDocSimilarity)
-    #    print('selected_relevant_docs: ', json.dumps(selected_relevant_docs))
-    
-    relevant_context = ""
-    for i, document in enumerate(relevant_docs):
-        print(f"{i}: {document}")
-        if document.page_content:
-            content = document.page_content
-        print('score:', document.metadata["score"])
+    if knowledge_base_id:    
+        retriever = AmazonKnowledgeBasesRetriever(
+            knowledge_base_id="CFVYNN0NQN", 
+            retrieval_config={"vectorSearchConfiguration": {"numberOfResults": 4}},
+        )
         
-        uri = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
-        print('uri:', uri)
+        relevant_docs = retriever.invoke(revised_question)
+        print(relevant_docs)
         
-        relevant_context = relevant_context + content + "\n\n"
-    
-    print('relevant_context: ', relevant_context)
+        #selected_relevant_docs = []
+        #if len(relevant_docs)>=1:
+        #    print('start priority search')
+        #    selected_relevant_docs = priority_search(revised_question, relevant_docs, minDocSimilarity)
+        #    print('selected_relevant_docs: ', json.dumps(selected_relevant_docs))
+        
+        relevant_context = ""
+        for i, document in enumerate(relevant_docs):
+            print(f"{i}: {document}")
+            if document.page_content:
+                content = document.page_content
+            print('score:', document.metadata["score"])
+            
+            uri = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
+            print('uri:', uri)
+            
+            relevant_context = relevant_context + content + "\n\n"
+        
+        print('relevant_context: ', relevant_context)
 
-    msg = query_using_RAG_context(connectionId, requestId, chat, relevant_context, revised_question)
-
-    reference = get_reference_of_knoweledge_base(relevant_docs, path, doc_prefix)  
-    
-    return msg, reference
-    
+        msg = query_using_RAG_context(connectionId, requestId, chat, relevant_context, revised_question)
+        reference = get_reference_of_knoweledge_base(relevant_docs, path, doc_prefix)  
+        
+        return msg, reference
+    else:
+        return "", ""
     
 ####################### Prompt Flow #######################
 # Prompt Flow
 ###########################################################  
     
+flow_arn = None
 def run_prompt_flow(text, connectionId, requestId):    
-    print('flow_id: ', flow_id)
-    print('flow_alias: ', flow_alias)
+    print('prompt_flow_name: ', prompt_flow_name)
     
     client = boto3.client(service_name='bedrock-agent')   
     
-    """
-    # flow (debug)      
-    response_flow = client.get_flow(
-        flowIdentifier=flow_id
-    )
-    print('response_flow: ', response_flow)
-    
-    definition = response_flow['definition']
-    print('definition: ', definition)
-    connections = definition['connections']
-    print('connections: ', connections)
-    for c in connections:
-        print('connection: ', c)
-    """
-    
-    # get flow alias arn
-    response_flow_aliases = client.list_flow_aliases(
-        flowIdentifier=flow_id
-    )
-    print('response_flow_aliases: ', response_flow_aliases)
-    flowAliasIdentifier = ""
-    flowAlias = response_flow_aliases["flowAliasSummaries"]
-    for alias in flowAlias:
-        print('alias: ', alias)
-        if alias['name'] == flow_alias:
-            flowAliasIdentifier = alias['arn']
-            print('flowAliasIdentifier: ', flowAliasIdentifier)
-            break
-    
-    # invoke_flow
-    client_runtime = boto3.client('bedrock-agent-runtime')
-    response = client_runtime.invoke_flow(
-        flowIdentifier=flow_id,
-        flowAliasIdentifier=flowAliasIdentifier,
-        inputs=[
-            {
-                "content": {
-                    "document": text,
-                },
-                "nodeName": "FlowInputNode",
-                "nodeOutputName": "document"
-            }
-        ]
-    )
-    print('response of invoke_flow(): ', response)
-    
-    response_stream = response['responseStream']
-    try:
-        result = {}
-        for event in response_stream:
-            print('event: ', event)
-            result.update(event)
-        print('result: ', result)
-
-        if result['flowCompletionEvent']['completionReason'] == 'SUCCESS':
-            print("Prompt flow invocation was successful! The output of the prompt flow is as follows:\n")
-            # msg = result['flowOutputEvent']['content']['document']
+    if not flow_arn:
+        response = client.list_flows(
+            MaxResults=10
+        )
+        
+        for flow in response["Flows"]:
+            if flow["Name"] == prompt_flow_name:
+                flow_arn = flow["FlowArn"]
+                print('flow_arn: ', flow_arn)
+                break
+        
+        'arn:aws:bedrock:us-west-2:677146750822:flow/HCFRD6999O'
+        
+        """
+        response_flow = client.get_flow(
+            flowIdentifier=flow_id
+        )
+        print('response_flow: ', response_flow)
+        
+        definition = response_flow['definition']
+        print('definition: ', definition)
+        connections = definition['connections']
+        print('connections: ', connections)
+        for c in connections:
+            print('connection: ', c)
             
-            msg = readStreamMsg(connectionId, requestId, result['flowOutputEvent']['content']['document'])
-            print('msg: ', msg)
-        else:
-            print("The prompt flow invocation completed because of the following reason:", result['flowCompletionEvent']['completionReason'])
-    except Exception as e:
-        raise Exception("unexpected event.",e)
+            #if c['name'] == flow_alias:
+            #    flow_id = c['flowIdentifier']
+            #    print('flow_id: ', flow_id)
+            #    break'
+        """
+        
+    msg = ""
+    if flow_arn:
+        # get flow alias arn
+        response_flow_aliases = client.list_flow_aliases(
+            flowIdentifier=flow_arn
+        )
+        print('response_flow_aliases: ', response_flow_aliases)
+        flowAliasIdentifier = ""
+        flowAlias = response_flow_aliases["flowAliasSummaries"]
+        for alias in flowAlias:
+            print('alias: ', alias)
+            if alias['name'] == flow_alias:
+                flowAliasIdentifier = alias['arn']
+                print('flowAliasIdentifier: ', flowAliasIdentifier)
+                break
+        
+        # invoke_flow
+        client_runtime = boto3.client('bedrock-agent-runtime')
+        response = client_runtime.invoke_flow(
+            flowIdentifier=flow_id,
+            flowAliasIdentifier=flowAliasIdentifier,
+            inputs=[
+                {
+                    "content": {
+                        "document": text,
+                    },
+                    "nodeName": "FlowInputNode",
+                    "nodeOutputName": "document"
+                }
+            ]
+        )
+        print('response of invoke_flow(): ', response)
+        
+        response_stream = response['responseStream']
+        try:
+            result = {}
+            for event in response_stream:
+                print('event: ', event)
+                result.update(event)
+            print('result: ', result)
+
+            if result['flowCompletionEvent']['completionReason'] == 'SUCCESS':
+                print("Prompt flow invocation was successful! The output of the prompt flow is as follows:\n")
+                # msg = result['flowOutputEvent']['content']['document']
+                
+                msg = readStreamMsg(connectionId, requestId, result['flowOutputEvent']['content']['document'])
+                print('msg: ', msg)
+            else:
+                print("The prompt flow invocation completed because of the following reason:", result['flowCompletionEvent']['completionReason'])
+        except Exception as e:
+            raise Exception("unexpected event.",e)
 
     return msg
 
+rag_flow_arn = None
 def run_RAG_prompt_flow(text, connectionId, requestId):
-    print('rag_flow_id: ', rag_flow_id)
-    print('rag_flow_alias: ', rag_flow_alias)
+    print('rag_prompt_flow_name: ', rag_prompt_flow_name)
     
     client = boto3.client(service_name='bedrock-agent')   
     
+    if not rag_flow_arn:
+        response = client.list_flows(
+            MaxResults=10
+        )
+        
+        for flow in response["Flows"]:
+            if flow["Name"] == rag_prompt_flow_name:
+                rag_flow_arn = flow["FlowArn"]
+                print('rag_flow_arn: ', rag_flow_arn)
+                break
+        
     # get flow alias arn
     response_flow_aliases = client.list_flow_aliases(
-        flowIdentifier=rag_flow_id
+        flowIdentifier=rag_flow_arn
     )
     print('response_flow_aliases: ', response_flow_aliases)
     flowAliasIdentifier = ""
