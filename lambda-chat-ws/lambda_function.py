@@ -3698,40 +3698,70 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
 # Bedrock Agent
 #############################################################
 
-def run_bedrock_agent(text, connectionId, requestId):
-    client_runtime = boto3.client('bedrock-agent-runtime')
-    response =  client_runtime.invoke_agent(
-        agentAliasId='CEXQFZT1EL',
-        agentId='2SI1ONTVMW',
-        inputText=text,
-        sessionId='session-01',
-        # memoryId='memory-01'
-    )
-    print('response of invoke_agent(): ', response)
+agent_alias_id = None
+agent_id = None
+def run_bedrock_agent(text, connectionId, requestId, userId):
+    global agent_id, agent_alias_id
     
-    response_stream = response['completion']
+    client = boto3.client(service_name='bedrock-agent')  
+    if not agent_id:
+        response_agent = client.list_agents(
+            maxResults=10
+        )
+        print('response of list_agents(): ', response_agent)
+        
+        for summary in response_agent["agentSummaries"]:
+            if summary["agentName"] == "tool-executor":
+                agent_id = summary["agentId"]
+                print('agent_id: ', agent_id)
+                break
     
-    msg = ""
-    try:
-        for event in response_stream:
-            chunk = event.get('chunk')
-            if chunk:
-                msg += chunk.get('bytes').decode()
-                print('event: ', chunk.get('bytes').decode())
-                
-                result = {
-                    'request_id': requestId,
-                    'msg': msg,
-                    'status': 'proceeding'
-                }
-                #print('result: ', json.dumps(result))
-                sendMessage(connectionId, result)
-                                
-    except Exception as e:
-        raise Exception("unexpected event.",e)
+    if not agent_alias_id and agent_id:
+        response_agent_alias = client.list_agent_aliases(
+            agentId = agent_id,
+            maxResults=10
+        )
+        print('response of list_agent_aliases(): ', response_agent_alias)   
+        
+        for summary in response_agent_alias["agentAliasSummaries"]:
+            if summary["agentAliasName"] == "latest_version":
+                agent_alias_id = summary["agentAliasId"]
+                print('agent_alias_id: ', agent_alias_id)
+                break
+    
+    msg = ""    
+    if agent_alias_id and agent_id:
+        client_runtime = boto3.client('bedrock-agent-runtime')
+        try:
+            response =  client_runtime.invoke_agent(
+                agentAliasId=agent_alias_id,
+                agentId=agent_id,
+                inputText=text,
+                sessionId='session-'+userId,
+                # memoryId='memory-01'
+            )
+            print('response of invoke_agent(): ', response)
+            
+            response_stream = response['completion']
+            
+            for event in response_stream:
+                chunk = event.get('chunk')
+                if chunk:
+                    msg += chunk.get('bytes').decode()
+                    print('event: ', chunk.get('bytes').decode())
+                        
+                    result = {
+                        'request_id': requestId,
+                        'msg': msg,
+                        'status': 'proceeding'
+                    }
+                    #print('result: ', json.dumps(result))
+                    sendMessage(connectionId, result)
+                                    
+        except Exception as e:
+            raise Exception("unexpected event.",e)
         
     return msg
-
     
 #########################################################
 def traslation(chat, text, input_language, output_language):
@@ -4291,7 +4321,7 @@ def getResponse(connectionId, jsonBody):
                     msg = run_RAG_prompt_flow(text, connectionId, requestId)
                 
                 elif convType == "bedrock-agent":
-                    msg = run_bedrock_agent(text, connectionId, requestId)
+                    msg = run_bedrock_agent(text, connectionId, requestId, userId)
                 
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
