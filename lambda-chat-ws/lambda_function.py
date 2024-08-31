@@ -3541,10 +3541,10 @@ def run_prompt_flow(text, connectionId, requestId):
         )
         print('response: ', response)
         
-        for flow in response["Flows"]:
+        for flow in response["flowSummaries"]:
             print('flow: ', flow)
-            if flow["Name"] == prompt_flow_name:
-                flow_arn = flow["FlowArn"]
+            if flow["name"] == prompt_flow_name:
+                flow_arn = flow["arn"]
                 print('flow_arn: ', flow_arn)
                 break
         
@@ -3588,7 +3588,7 @@ def run_prompt_flow(text, connectionId, requestId):
         # invoke_flow
         client_runtime = boto3.client('bedrock-agent-runtime')
         response = client_runtime.invoke_flow(
-            flowIdentifier=flow_id,
+            flowIdentifier=flow_arn,
             flowAliasIdentifier=flowAliasIdentifier,
             inputs=[
                 {
@@ -3635,9 +3635,9 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
             maxResults=10
         )
         
-        for flow in response["Flows"]:
-            if flow["Name"] == rag_prompt_flow_name:
-                rag_flow_arn = flow["FlowArn"]
+        for flow in response["flowSummaries"]:
+            if flow["name"] == rag_prompt_flow_name:
+                rag_flow_arn = flow["arn"]
                 print('rag_flow_arn: ', rag_flow_arn)
                 break
     
