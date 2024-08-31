@@ -42,8 +42,7 @@ from langgraph.prebuilt import tools_condition
 from langchain_core.pydantic_v1 import BaseModel, Field
 from typing import Annotated, List, Tuple, TypedDict, Literal, Sequence, Union
 import functools
-from typing import Optional
-from typing import Optional
+from langchain_aws import AmazonKnowledgeBasesRetriever
     
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
@@ -69,6 +68,11 @@ enableHybridSearch = os.environ.get('enableHybridSearch')
 useParallelRAG = os.environ.get('useParallelRAG', 'true')
 useParrelWebSearch = True
 useEnhancedSearch = True
+
+flow_id = os.environ.get('flow_id')
+flow_alias = os.environ.get('flow_alias')
+rag_flow_id = os.environ.get('rag_flow_id')
+rag_flow_alias = os.environ.get('rag_flow_alias')
 
 reference_docs = []
 # api key to get weather information in agent
@@ -3388,6 +3392,297 @@ def run_multi_agent_tool(connectionId, requestId, query):
     # return value["messages"][-1].content[value["messages"][-1].content.find('<result>')+8:len(value["messages"][-1].content)-9]
     return value["messages"][-1].content
     
+
+####################### Knowledge Base #######################
+# Knowledge Base
+##############################################################
+
+def query_using_RAG_context(connectionId, requestId, chat, context, revised_question):    
+    if isKorean(revised_question)==True:
+        system = (
+            """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    else: 
+        system = (
+            """Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    
+    human = "{input}"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+                   
+    chain = prompt | chat
+    
+    try: 
+        isTyping(connectionId, requestId)  
+        stream = chain.invoke(
+            {
+                "context": context,
+                "input": revised_question,
+            }
+        )
+        msg = readStreamMsg(connectionId, requestId, stream.content)    
+        print('msg: ', msg)
+        
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)        
+            
+        sendErrorMessage(connectionId, requestId, err_msg)    
+        raise Exception ("Not able to request to LLM")
+
+    return msg
+
+def get_reference_of_knoweledge_base(docs, path, doc_prefix):
+    reference = "\n\nFrom\n"
+    #print('path: ', path)
+    #print('doc_prefix: ', doc_prefix)
+    #print('prefix: ', f"/{doc_prefix}")
+    
+    for i, document in enumerate(docs):
+        if document.page_content:
+            excerpt = document.page_content
+        
+        score = document.metadata["score"]
+        #print('score:', score)
+            
+        uri = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
+        #print('uri:', uri)
+        
+        pos = uri.find(f"/{doc_prefix}")
+        name = uri[pos+len(doc_prefix)+1:]
+        encoded_name = parse.quote(name)
+        #print('name:', name)
+        
+        uri = f"{path}{doc_prefix}{encoded_name}"
+        #print('uri:', uri)
+        
+        reference = reference + f"{i+1}. <a href={uri} target=_blank>{name}</a>, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
+                    
+    return reference
+
+def get_answer_using_knowledge_base(chat, text, connectionId, requestId):    
+    revised_question = text # use original question for test
+    
+    retriever = AmazonKnowledgeBasesRetriever(
+        knowledge_base_id="CFVYNN0NQN", 
+        retrieval_config={"vectorSearchConfiguration": {"numberOfResults": 4}},
+    )
+    
+    relevant_docs = retriever.invoke(revised_question)
+    print(relevant_docs)
+    
+    #selected_relevant_docs = []
+    #if len(relevant_docs)>=1:
+    #    print('start priority search')
+    #    selected_relevant_docs = priority_search(revised_question, relevant_docs, minDocSimilarity)
+    #    print('selected_relevant_docs: ', json.dumps(selected_relevant_docs))
+    
+    relevant_context = ""
+    for i, document in enumerate(relevant_docs):
+        print(f"{i}: {document}")
+        if document.page_content:
+            content = document.page_content
+        print('score:', document.metadata["score"])
+        
+        uri = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
+        print('uri:', uri)
+        
+        relevant_context = relevant_context + content + "\n\n"
+    
+    print('relevant_context: ', relevant_context)
+
+    msg = query_using_RAG_context(connectionId, requestId, chat, relevant_context, revised_question)
+
+    reference = get_reference_of_knoweledge_base(relevant_docs, path, doc_prefix)  
+    
+    return msg, reference
+    
+    
+####################### Prompt Flow #######################
+# Prompt Flow
+###########################################################  
+    
+def run_prompt_flow(text, connectionId, requestId):    
+    print('flow_id: ', flow_id)
+    print('flow_alias: ', flow_alias)
+    
+    client = boto3.client(service_name='bedrock-agent')   
+    
+    """
+    # flow (debug)      
+    response_flow = client.get_flow(
+        flowIdentifier=flow_id
+    )
+    print('response_flow: ', response_flow)
+    
+    definition = response_flow['definition']
+    print('definition: ', definition)
+    connections = definition['connections']
+    print('connections: ', connections)
+    for c in connections:
+        print('connection: ', c)
+    """
+    
+    # get flow alias arn
+    response_flow_aliases = client.list_flow_aliases(
+        flowIdentifier=flow_id
+    )
+    print('response_flow_aliases: ', response_flow_aliases)
+    flowAliasIdentifier = ""
+    flowAlias = response_flow_aliases["flowAliasSummaries"]
+    for alias in flowAlias:
+        print('alias: ', alias)
+        if alias['name'] == flow_alias:
+            flowAliasIdentifier = alias['arn']
+            print('flowAliasIdentifier: ', flowAliasIdentifier)
+            break
+    
+    # invoke_flow
+    client_runtime = boto3.client('bedrock-agent-runtime')
+    response = client_runtime.invoke_flow(
+        flowIdentifier=flow_id,
+        flowAliasIdentifier=flowAliasIdentifier,
+        inputs=[
+            {
+                "content": {
+                    "document": text,
+                },
+                "nodeName": "FlowInputNode",
+                "nodeOutputName": "document"
+            }
+        ]
+    )
+    print('response of invoke_flow(): ', response)
+    
+    response_stream = response['responseStream']
+    try:
+        result = {}
+        for event in response_stream:
+            print('event: ', event)
+            result.update(event)
+        print('result: ', result)
+
+        if result['flowCompletionEvent']['completionReason'] == 'SUCCESS':
+            print("Prompt flow invocation was successful! The output of the prompt flow is as follows:\n")
+            # msg = result['flowOutputEvent']['content']['document']
+            
+            msg = readStreamMsg(connectionId, requestId, result['flowOutputEvent']['content']['document'])
+            print('msg: ', msg)
+        else:
+            print("The prompt flow invocation completed because of the following reason:", result['flowCompletionEvent']['completionReason'])
+    except Exception as e:
+        raise Exception("unexpected event.",e)
+
+    return msg
+
+def run_RAG_prompt_flow(text, connectionId, requestId):
+    print('rag_flow_id: ', rag_flow_id)
+    print('rag_flow_alias: ', rag_flow_alias)
+    
+    client = boto3.client(service_name='bedrock-agent')   
+    
+    # get flow alias arn
+    response_flow_aliases = client.list_flow_aliases(
+        flowIdentifier=rag_flow_id
+    )
+    print('response_flow_aliases: ', response_flow_aliases)
+    flowAliasIdentifier = ""
+    flowAlias = response_flow_aliases["flowAliasSummaries"]
+    for alias in flowAlias:
+        print('alias: ', alias)
+        if alias['name'] == rag_flow_alias:
+            flowAliasIdentifier = alias['arn']
+            print('flowAliasIdentifier: ', flowAliasIdentifier)
+            break
+    
+    # invoke_flow
+    client_runtime = boto3.client('bedrock-agent-runtime')
+    response = client_runtime.invoke_flow(
+        flowIdentifier=rag_flow_id,
+        flowAliasIdentifier=flowAliasIdentifier,
+        inputs=[
+            {
+                "content": {
+                    "document": text,
+                },
+                "nodeName": "FlowInputNode",
+                "nodeOutputName": "document"
+            }
+        ]
+    )
+    print('response of invoke_flow(): ', response)
+    
+    response_stream = response['responseStream']
+    try:
+        result = {}
+        for event in response_stream:
+            print('event: ', event)
+            result.update(event)
+        print('result: ', result)
+
+        if result['flowCompletionEvent']['completionReason'] == 'SUCCESS':
+            print("Prompt flow invocation was successful! The output of the prompt flow is as follows:\n")
+            # msg = result['flowOutputEvent']['content']['document']
+            
+            msg = readStreamMsg(connectionId, requestId, result['flowOutputEvent']['content']['document'])
+            print('msg: ', msg)
+        else:
+            print("The prompt flow invocation completed because of the following reason:", result['flowCompletionEvent']['completionReason'])
+    except Exception as e:
+        raise Exception("unexpected event.",e)
+
+    return msg
+
+
+####################### Bedrock Agent #######################
+# Bedrock Agent
+#############################################################
+
+def run_bedrock_agent(text, connectionId, requestId):
+    client_runtime = boto3.client('bedrock-agent-runtime')
+    response =  client_runtime.invoke_agent(
+        agentAliasId='CEXQFZT1EL',
+        agentId='2SI1ONTVMW',
+        inputText=text,
+        sessionId='session-01',
+        # memoryId='memory-01'
+    )
+    print('response of invoke_agent(): ', response)
+    
+    response_stream = response['completion']
+    
+    msg = ""
+    try:
+        for event in response_stream:
+            chunk = event.get('chunk')
+            if chunk:
+                msg += chunk.get('bytes').decode()
+                print('event: ', chunk.get('bytes').decode())
+                
+                result = {
+                    'request_id': requestId,
+                    'msg': msg,
+                    'status': 'proceeding'
+                }
+                #print('result: ', json.dumps(result))
+                sendMessage(connectionId, result)
+                                
+    except Exception as e:
+        raise Exception("unexpected event.",e)
+        
+    return msg
+
+    
 #########################################################
 def traslation(chat, text, input_language, output_language):
     system = (
@@ -3928,6 +4223,25 @@ def getResponse(connectionId, jsonBody):
                 
                 elif convType == 'multi-agent-tool':  # multi-agent
                     msg = run_multi_agent_tool(connectionId, requestId, text)      
+                    
+                elif convType == "rag-knowledge-base":
+                    msg, reference = get_answer_using_knowledge_base(chat, text, connectionId, requestId)                
+                elif convType == "rag-knowledge-base":
+                    revised_question = revise_question(connectionId, requestId, chat, text)     
+                    print('revised_question: ', revised_question)      
+                    msg, reference = get_answer_using_knowledge_base(chat, revised_question, connectionId, requestId)
+                elif convType == "prompt-flow":
+                    msg = run_prompt_flow(text, connectionId, requestId)
+                elif convType == "prompt-flow-chat":
+                    revised_question = revise_question(connectionId, requestId, chat, text)     
+                    print('revised_question: ', revised_question)                    
+                    msg = run_prompt_flow(revised_question, connectionId, requestId)
+                
+                elif convType == "rag-prompt-flow":
+                    msg = run_RAG_prompt_flow(text, connectionId, requestId)
+                
+                elif convType == "bedrock-agent":
+                    msg = run_bedrock_agent(text, connectionId, requestId)
                 
                 elif convType == "translation":
                     msg = translate_text(chat, text) 

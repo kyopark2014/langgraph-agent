@@ -38,6 +38,11 @@ const supportedFormat = JSON.stringify(["pdf", "txt", "csv", "pptx", "ppt", "doc
 const separated_chat_history = 'true';
 const enalbeParentDocumentRetrival = 'true';
 
+const flow_id = 'arn:aws:bedrock:us-west-2:677146750822:flow/72JCN8U0J4'
+const flow_alias = 'aws'
+const rag_flow_id = 'arn:aws:bedrock:us-west-2:677146750822:flow/HCFRD6999O'
+const rag_flow_alias = 'rag_kb'
+
 const claude3_sonnet = [
   {
     "bedrock_region": "us-west-2", // Oregon
@@ -589,7 +594,11 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
         projectName: projectName,
         separated_chat_history: separated_chat_history,
         enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
-        enableHybridSearch: enableHybridSearch
+        enableHybridSearch: enableHybridSearch,
+        flow_id: flow_id,
+        flow_alias: flow_alias,
+        rag_flow_id: rag_flow_id,
+        rag_flow_alias: rag_flow_alias
       }
     });     
     lambdaChatWebsocket.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));  
