@@ -38,7 +38,7 @@ const supportedFormat = JSON.stringify(["pdf", "txt", "csv", "pptx", "ppt", "doc
 const separated_chat_history = 'true';
 const enalbeParentDocumentRetrival = 'true';
 
-const prompt_flow_name = 'aws_bot'
+const prompt_flow_name = 'aws-bot'
 const rag_prompt_flow_name = 'rag-prompt-flow'
 const knowledge_base_name = 'aws-rag'
 

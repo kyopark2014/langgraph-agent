@@ -3510,7 +3510,12 @@ def get_answer_using_knowledge_base(chat, text, connectionId, requestId):
                 content = document.page_content
             print('score:', document.metadata["score"])
             
-            uri = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
+            print('document.metadata: ', document.metadata)            
+            
+            uri = ""
+            if "s3Location" in document.metadata["location"]:
+                uri = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
+                
             print('uri:', uri)
             
             relevant_context = relevant_context + content + "\n\n"
@@ -3656,7 +3661,7 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
     # invoke_flow
     client_runtime = boto3.client('bedrock-agent-runtime')
     response = client_runtime.invoke_flow(
-        flowIdentifier=rag_flow_id,
+        flowIdentifier=rag_flow_arn,
         flowAliasIdentifier=flowAliasIdentifier,
         inputs=[
             {
