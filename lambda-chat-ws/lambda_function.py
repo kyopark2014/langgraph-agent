@@ -3635,6 +3635,7 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
         response = client.list_flows(
             maxResults=10
         )
+        print('response: ', response)
         
         for flow in response["flowSummaries"]:
             if flow["name"] == rag_prompt_flow_name:
@@ -3642,7 +3643,7 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
                 print('rag_flow_arn: ', rag_flow_arn)
                 break
     
-    if not rag_flow_alias_identifier:
+    if not rag_flow_alias_identifier and rag_flow_arn:
         # get flow alias arn
         response_flow_aliases = client.list_flow_aliases(
             flowIdentifier=rag_flow_arn
