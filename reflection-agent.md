@@ -16,8 +16,9 @@ Reflection은 Agent을 포함한 AI 시스템의 품질과 성공률을 높이�
 4) 이 동작을 3회 반복 수행한 후에 "END"에 최종 답변을 전달합니다. 
 
 <img src="https://github.com/user-attachments/assets/8ca02018-56b8-4272-a8d1-f71aa6b6f0ca" width="350">
-   
-상세한 코도는 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다. 동작은 [agent-reflection-kor.ipynb](./agent/agent-reflection-kor.ipynb)에서 확인할 수 있습니다. 그밖에 참고할 만한 자료는 아래와 같습니다. 
+
+
+상세한 코드는 [lambda_function.py](./lambda-chat-ws/lambda_function.py)을 참조합니다. 동작은 [agent-reflection-kor.ipynb](./agent/agent-reflection-kor.ipynb)에서 확인할 수 있습니다. 그밖에 참고할 만한 자료는 아래와 같습니다. 
 
 - [Youtube: Reflection Agents](https://www.youtube.com/watch?v=v5ymBTXNqtk)에서는 Reflection Agent에 대해 설명하고 있습니다.
   
