@@ -3740,7 +3740,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                 print('agent_alias_id: ', agent_alias_id)
                 break
     
-    msg = ""    
+    msg = msg_url = ""
     if agent_alias_id and agent_id:
         client_runtime = boto3.client('bedrock-agent-runtime')
         try:
@@ -3773,8 +3773,8 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                 if 'files' in event:
                     files = event['files']['files']
                     for file in files:
-                        name = file['name']
-                        print('name: ', name)
+                        objectName = file['name']
+                        print('objectName: ', objectName)
                         contentType = file['type']
                         print('contentType: ', contentType)
                         bytes_data = file['bytes']
@@ -3782,12 +3782,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                         pixels = BytesIO(bytes_data)
                         pixels.seek(0, 0)
                                     
-                        # get path from key
-                        objectName = name
-                        folder = 'agent/images/'
-                        # print('folder: ', folder)
-                                    
-                        img_key = folder+objectName
+                        img_key = 'agent/images/'+objectName
                         
                         s3_client = boto3.client('s3')  
                         response = s3_client.put_object(
@@ -3797,6 +3792,12 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                             Body=pixels
                         )
                         print('response: ', response)
+                        
+                        url = path+'agent/images/'+parse.quote(objectName)
+                        print('url: ', url)
+                        
+                        msg_url = f'\n\n<img src=\"{url}\" alt=\"{objectName}\">'
+                        print('msg_url: ', msg_url)
                         
                         # It the file is a PNG image then we can display it...
                         if type == 'image/png':
@@ -3816,14 +3817,11 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                             #plt.title(name)
                             #plt.show()
                             #plt.close()
-                            print('image is delivered')                        
-                        else:
-                            print(f"File '{name}' is not saved.")
                                     
         except Exception as e:
             raise Exception("unexpected event.",e)
         
-    return msg
+    return msg+msg_url
     
 #########################################################
 def traslation(chat, text, input_language, output_language):
