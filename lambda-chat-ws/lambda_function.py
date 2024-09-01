@@ -3626,12 +3626,13 @@ def run_prompt_flow(text, connectionId, requestId):
 rag_flow_arn = None
 rag_flow_alias_identifier = None
 def run_RAG_prompt_flow(text, connectionId, requestId):
-    client = boto3.client(service_name='bedrock-agent')   
+    global rag_flow_arn, rag_flow_alias_identifier
+    
     print('rag_prompt_flow_name: ', rag_prompt_flow_name)
     print('rag_flow_arn: ', rag_flow_arn)
     print('rag_flow_alias_identifier: ', rag_flow_alias_identifier)
     
-    global rag_flow_arn, rag_flow_alias_identifier
+    client = boto3.client(service_name='bedrock-agent')       
     if not rag_flow_arn:
         response = client.list_flows(
             maxResults=10
