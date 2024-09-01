@@ -64,7 +64,7 @@ cdk bootstrap aws://[account-id]/us-west-2
 8) 아래 명령어로 인프라를 설치합니다.
 
 ```java
-cdk deploy --all
+cdk deploy --require-approval never --all
 ```
 
 인프라가 설치가 되면 아래와 같은 Output을 확인할 수 있습니다. 
