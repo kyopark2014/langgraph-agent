@@ -3465,7 +3465,7 @@ def get_reference_of_knoweledge_base(docs, path, doc_prefix):
         
         score = document.metadata["score"]
         print('score:', score)
-        doc_prefix = "knowledge_base"
+        doc_prefix = "knowledge-base"
         
         link = ""
         if "s3Location" in document.metadata["location"]:
