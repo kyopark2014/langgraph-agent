@@ -3797,7 +3797,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                         print('url: ', url)
                         
                         width = 600            
-                        msg_url = f'\n\n<img src=\"{url}\" alt=\"{objectName}\" width=\"{width}\">'
+                        msg_url = f'\n\n<img src=\"{url}\" alt=\"{objectName}\" width=\"{width}\">, <a href=\"#\" onClick=\"alert(`{url}`)\">원본</a>\n'
                         print('msg_url: ', msg_url)
                                                             
         except Exception as e:
