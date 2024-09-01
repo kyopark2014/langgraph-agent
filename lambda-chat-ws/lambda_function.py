@@ -3796,8 +3796,10 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                         url = path+'agent/images/'+parse.quote(objectName)
                         print('url: ', url)
                         
-                        msg_url = f'\n\n<img src=\"{url}\" alt=\"{objectName}\">'
+                        msg_url = f'\n\n<img src=\"{url}\" alt=\"{objectName}\" width=\"50\">'
                         print('msg_url: ', msg_url)
+                        
+                        #<img src="https://example.com/image.jpg" alt="예시 이미지" width="300" height="200">
                         
                         # It the file is a PNG image then we can display it...
                         if type == 'image/png':
