@@ -3774,8 +3774,29 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                     files = event['files']['files']
                     for file in files:
                         name = file['name']
-                        type = file['type']
+                        print('name: ', name)
+                        contentType = file['type']
+                        print('contentType: ', contentType)
                         bytes_data = file['bytes']
+                                                
+                        pixels = BytesIO(bytes_data)
+                        pixels.seek(0, 0)
+                                    
+                        # get path from key
+                        objectName = name
+                        folder = 'agent/images/'
+                        # print('folder: ', folder)
+                                    
+                        img_key = folder+objectName
+                        
+                        s3_client = boto3.client('s3')  
+                        response = s3_client.put_object(
+                            Bucket=s3_bucket,
+                            Key=img_key,
+                            ContentType=contentType,
+                            Body=pixels
+                        )
+                        print('response: ', response)
                         
                         # It the file is a PNG image then we can display it...
                         if type == 'image/png':
@@ -3786,7 +3807,6 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                             #buffer = BytesIO()
                             #img.save(buffer, format="PNG")
                             #img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-                            
                             
                             # Display PNG image using Matplotlib
                             #img = plt.imread(io.BytesIO(bytes_data))
