@@ -3741,6 +3741,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                 break
     
     msg = msg_url = ""
+    isTyping(connectionId, requestId)  
     if agent_alias_id and agent_id:
         client_runtime = boto3.client('bedrock-agent-runtime')
         try:
