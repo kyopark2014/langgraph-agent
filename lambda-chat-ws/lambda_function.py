@@ -3796,9 +3796,16 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                         url = path+'agent/images/'+parse.quote(objectName)
                         print('url: ', url)
                         
-                        msg_url = f'\n\n<img src=\"{url}\" alt=\"{objectName}\" width=\"400\">'
+                        img = Image.open(bytes_data)
+                        width, height = img.size 
+                        print(f"width: {width}, height: {height}, size: {width*height}")
+                        while width > 600:
+                            width = width/2
+                        if width < 300:
+                            width = 500                        
+                        msg_url = f'\n\n<img src=\"{url}\" alt=\"{objectName}\" width=\"{width}\">'
                         print('msg_url: ', msg_url)
-                        
+                                                            
         except Exception as e:
             raise Exception("unexpected event.",e)
         
