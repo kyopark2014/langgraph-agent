@@ -3470,10 +3470,11 @@ def get_reference_of_knoweledge_base(docs, path, doc_prefix):
         if "s3Location" in document.metadata["location"]:
             link = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
             
+            print('link:', link)    
             pos = link.find(f"/{doc_prefix}")
             name = link[pos+len(doc_prefix)+1:]
             encoded_name = parse.quote(name)
-            #print('name:', name)        
+            print('name:', name)
             link = f"{path}{doc_prefix}{encoded_name}"
             
         elif "webLocation" in document.metadata["location"]:
