@@ -3711,6 +3711,8 @@ agent_alias_id = None
 agent_id = None
 def run_bedrock_agent(text, connectionId, requestId, userId):
     global agent_id, agent_alias_id
+    print('agent_id: ', agent_id)
+    print('agent_alias_id: ', agent_alias_id)
     
     client = boto3.client(service_name='bedrock-agent')  
     if not agent_id:
