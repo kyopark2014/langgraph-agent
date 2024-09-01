@@ -3779,6 +3779,15 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                         
                         # It the file is a PNG image then we can display it...
                         if type == 'image/png':
+                            img = Image.open(bytes_data)
+                            width, height = img.size 
+                            print(f"width: {width}, height: {height}, size: {width*height}")
+                            
+                            #buffer = BytesIO()
+                            #img.save(buffer, format="PNG")
+                            #img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+                            
+                            
                             # Display PNG image using Matplotlib
                             #img = plt.imread(io.BytesIO(bytes_data))
                             #plt.figure(figsize=(10, 10))
