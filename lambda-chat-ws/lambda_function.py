@@ -3796,30 +3796,9 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                         url = path+'agent/images/'+parse.quote(objectName)
                         print('url: ', url)
                         
-                        msg_url = f'\n\n<img src=\"{url}\" alt=\"{objectName}\" width=\"50\">'
+                        msg_url = f'\n\n<img src=\"{url}\" alt=\"{objectName}\" width=\"400\">'
                         print('msg_url: ', msg_url)
                         
-                        #<img src="https://example.com/image.jpg" alt="예시 이미지" width="300" height="200">
-                        
-                        # It the file is a PNG image then we can display it...
-                        if type == 'image/png':
-                            img = Image.open(bytes_data)
-                            width, height = img.size 
-                            print(f"width: {width}, height: {height}, size: {width*height}")
-                            
-                            #buffer = BytesIO()
-                            #img.save(buffer, format="PNG")
-                            #img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-                            
-                            # Display PNG image using Matplotlib
-                            #img = plt.imread(io.BytesIO(bytes_data))
-                            #plt.figure(figsize=(10, 10))
-                            #plt.imshow(img)
-                            #plt.axis('off')
-                            #plt.title(name)
-                            #plt.show()
-                            #plt.close()
-                                    
         except Exception as e:
             raise Exception("unexpected event.",e)
         
