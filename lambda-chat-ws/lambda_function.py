@@ -3708,8 +3708,8 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
 # Bedrock Agent
 #############################################################
 
-agent_alias_id = None
-agent_id = None
+agent_id = agent_alias_id = None
+sessionId = []
 def run_bedrock_agent(text, connectionId, requestId, userId):
     global agent_id, agent_alias_id
     print('agent_id: ', agent_id)
@@ -3741,17 +3741,19 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                 print('agent_alias_id: ', agent_alias_id)
                 break
     
+    if not sessionId[userId]:
+        sessionId[userId] = str(uuid.uuid4())
+    
     msg = msg_contents = ""
     isTyping(connectionId, requestId)  
     if agent_alias_id and agent_id:
         client_runtime = boto3.client('bedrock-agent-runtime')
-        try:
-            sessionId = str(uuid.uuid4())
+        try:            
             response =  client_runtime.invoke_agent(
                 agentAliasId=agent_alias_id,
                 agentId=agent_id,
                 inputText=text,
-                sessionId=sessionId,
+                sessionId=sessionId[userId],
                 memoryId='memory-'+userId
             )
             print('response of invoke_agent(): ', response)
