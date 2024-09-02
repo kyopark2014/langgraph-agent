@@ -3738,7 +3738,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
         for summary in response_agent_alias["agentAliasSummaries"]:
             if summary["agentAliasName"] == "latest_version":
                 agent_alias_id = summary["agentAliasId"]
-                print('agent_alias_id: ', agent_alias_id)
+                print('agent_alias_id: ', agent_alias_id) 
                 break
     
     global sessionId
