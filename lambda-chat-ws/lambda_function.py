@@ -3742,7 +3742,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                 break
     
     global sessionId
-    if not sessionId[userId]:
+    if not userId in sessionId:
         sessionId[userId] = str(uuid.uuid4())
     
     msg = msg_contents = ""
