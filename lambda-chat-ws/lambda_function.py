@@ -3750,7 +3750,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
     if agent_alias_id and agent_id:
         client_runtime = boto3.client('bedrock-agent-runtime')
         try:            
-            response =  client_runtime.invoke_agent(
+            response =  client_runtime.invoke_agent( 
                 agentAliasId=agent_alias_id,
                 agentId=agent_id,
                 inputText=text, 
