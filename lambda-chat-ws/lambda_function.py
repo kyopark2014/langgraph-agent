@@ -3709,7 +3709,7 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
 #############################################################
 
 agent_id = agent_alias_id = None
-sessionId = []
+sessionId = dict() 
 def run_bedrock_agent(text, connectionId, requestId, userId):
     global agent_id, agent_alias_id
     print('agent_id: ', agent_id)
