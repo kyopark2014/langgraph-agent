@@ -3786,7 +3786,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                         pixels = BytesIO(bytes_data)
                         pixels.seek(0, 0)
                                     
-                        img_key = 'agent/images/'+objectName
+                        img_key = 'agent/contents/'+objectName
                         
                         s3_client = boto3.client('s3')  
                         response = s3_client.put_object(
