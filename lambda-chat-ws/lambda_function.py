@@ -3754,7 +3754,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                 agentAliasId=agent_alias_id,
                 agentId=agent_id,
                 inputText=text,
-                sessionId=sessionId[userId],
+                sessionId=sessionId[userId], 
                 memoryId='memory-'+userId
             )
             print('response of invoke_agent(): ', response)
