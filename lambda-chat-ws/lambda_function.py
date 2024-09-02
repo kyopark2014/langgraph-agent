@@ -3741,7 +3741,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                 print('agent_alias_id: ', agent_alias_id)
                 break
     
-    msg = msg_url = ""
+    msg = msg_contents = ""
     isTyping(connectionId, requestId)  
     if agent_alias_id and agent_id:
         client_runtime = boto3.client('bedrock-agent-runtime')
@@ -3797,17 +3797,22 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                         )
                         print('response: ', response)
                         
-                        url = path+'agent/images/'+parse.quote(objectName)
+                        url = path+'agent/contents/'+parse.quote(objectName)
                         print('url: ', url)
                         
-                        width = 600            
-                        msg_url = f'\n\n<img src=\"{url}\" alt=\"{objectName}\" width=\"{width}\">'
-                        print('msg_url: ', msg_url)
+                        if contentType == 'application/json':
+                            msg_contents = f"<a href={url} target=_blank>{objectName}</a>, <a href=\"#\" onClick=\"alert(`{url}`)\">JSON</a>\n"
+                        elif contentType == 'application/csv':
+                            msg_contents = f"<a href={url} target=_blank>{objectName}</a>, <a href=\"#\" onClick=\"alert(`{url}`)\">CSV</a>\n"
+                        else:
+                            width = 600            
+                            msg_contents = f'\n\n<img src=\"{url}\" alt=\"{objectName}\" width=\"{width}\">'
+                            print('msg_contents: ', msg_contents)
                                                             
         except Exception as e:
             raise Exception("unexpected event.",e)
         
-    return msg+msg_url
+    return msg+msg_contents
     
 #########################################################
 def traslation(chat, text, input_language, output_language):
