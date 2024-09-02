@@ -3741,6 +3741,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                 print('agent_alias_id: ', agent_alias_id)
                 break
     
+    global sessionId
     if not sessionId[userId]:
         sessionId[userId] = str(uuid.uuid4())
     
