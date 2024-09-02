@@ -3747,13 +3747,12 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
         client_runtime = boto3.client('bedrock-agent-runtime')
         try:
             sessionId = str(uuid.uuid4())
-            # sessionId = 'session-'+userId
             response =  client_runtime.invoke_agent(
                 agentAliasId=agent_alias_id,
                 agentId=agent_id,
                 inputText=text,
                 sessionId=sessionId,
-                # memoryId='memory-01'
+                memoryId='memory-'+userId
             )
             print('response of invoke_agent(): ', response)
             
