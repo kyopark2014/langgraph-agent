@@ -10,6 +10,7 @@ import traceback
 import requests
 import base64
 import operator
+import uuid
 
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -3745,11 +3746,13 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
     if agent_alias_id and agent_id:
         client_runtime = boto3.client('bedrock-agent-runtime')
         try:
+            sessionId = str(uuid.uuid4())
+            # sessionId = 'session-'+userId
             response =  client_runtime.invoke_agent(
                 agentAliasId=agent_alias_id,
                 agentId=agent_id,
                 inputText=text,
-                sessionId='session-'+userId,
+                sessionId=sessionId,
                 # memoryId='memory-01'
             )
             print('response of invoke_agent(): ', response)
