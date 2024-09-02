@@ -3753,7 +3753,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
             response =  client_runtime.invoke_agent(
                 agentAliasId=agent_alias_id,
                 agentId=agent_id,
-                inputText=text,
+                inputText=text, 
                 sessionId=sessionId[userId], 
                 memoryId='memory-'+userId
             )
