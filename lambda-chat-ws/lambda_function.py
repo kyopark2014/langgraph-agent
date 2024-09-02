@@ -3801,9 +3801,9 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                         print('url: ', url)
                         
                         if contentType == 'application/json':
-                            msg_contents = f"<a href={url} target=_blank>{objectName}</a>, <a href=\"#\" onClick=\"alert(`{url}`)\">JSON</a>\n"
+                            msg_contents = f"\n\n<a href={url} target=_blank>{objectName}</a>"
                         elif contentType == 'application/csv':
-                            msg_contents = f"<a href={url} target=_blank>{objectName}</a>, <a href=\"#\" onClick=\"alert(`{url}`)\">CSV</a>\n"
+                            msg_contents = f"\n\n<a href={url} target=_blank>{objectName}</a>"
                         else:
                             width = 600            
                             msg_contents = f'\n\n<img src=\"{url}\" alt=\"{objectName}\" width=\"{width}\">'
