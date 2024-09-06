@@ -4419,6 +4419,7 @@ def getResponse(connectionId, jsonBody):
                     for line in lines:
                         text += (line+'\n')
                         if len(text)>=180000: # shold be less than 200k
+                            print('the size of text:', len(text))
                             break
                         
                     text += f"\n\nEnsure that the graph is clearly labeled and easy to read. \
