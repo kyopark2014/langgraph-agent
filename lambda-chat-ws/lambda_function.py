@@ -4405,8 +4405,20 @@ def getResponse(connectionId, jsonBody):
                     contexts.append(doc.page_content)
                 print('contexts: ', contexts)
 
-                msg = get_summary(chat, contexts)
-            
+                if not convType == "bedrock-agent":
+                    msg = get_summary(chat, contexts)
+                else:
+                    print('text (given): ', text)
+                    text = f"{text}\n\nData:\n"
+                    for context in contexts:
+                        text += (context+'\n')
+                    text += f"Ensure that the graph is clearly labeled and easy to read. \
+After generating the graph, provide a brief interpretation of the results, highlighting \
+which category has the highest total spend and any other notable observations."
+                    print('text (with doc): ', text)
+
+                    msg = run_bedrock_agent(text, connectionId, requestId, userId)
+
             elif file_type == 'pdf' or file_type == 'txt' or file_type == 'md' or file_type == 'pptx' or file_type == 'docx':
                 texts = load_document(file_type, object)
 
