@@ -4399,7 +4399,7 @@ def getResponse(connectionId, jsonBody):
             print('file_type: ', file_type)
             
             if file_type == 'csv':
-                docs = load_csv_document(path, doc_prefix, object)
+                docs = load_csv_document(object)
                 contexts = []
                 for doc in docs:
                     contexts.append(doc.page_content)
