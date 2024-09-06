@@ -4399,19 +4399,25 @@ def getResponse(connectionId, jsonBody):
             print('file_type: ', file_type)
             
             if file_type == 'csv':
-                docs = load_csv_document(object)
-                contexts = []
-                for doc in docs:
-                    contexts.append(doc.page_content)
-                print('contexts: ', contexts)
-
                 if not convType == "bedrock-agent":
+                    docs = load_csv_document(object)
+                    contexts = []
+                    for doc in docs:
+                        contexts.append(doc.page_content)
+                    print('contexts: ', contexts)
+                
                     msg = get_summary(chat, contexts)
-                else:
+                else: # agent
+                    text = body                    
+                    s3r = boto3.resource("s3")
+                    doc = s3r.Object(s3_bucket, s3_prefix+'/'+object)
+                    lines = doc.get()['Body'].read().decode('utf-8').split('\n')   # read csv per line
+                    print('lins: ', len(lines))
+                    
                     print('text (given): ', text)
                     text = f"{text}\n\nData:\n"
-                    for context in contexts:
-                        text += (context+'\n')
+                    for line in lines:
+                        text += (line+'\n')
                     text += f"\n\nEnsure that the graph is clearly labeled and easy to read. \
 After generating the graph, provide a brief interpretation of the results, highlighting \
 which category has the highest total spend and any other notable observations."
