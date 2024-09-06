@@ -4412,7 +4412,7 @@ def getResponse(connectionId, jsonBody):
                     text = f"{text}\n\nData:\n"
                     for context in contexts:
                         text += (context+'\n')
-                    text += f"Ensure that the graph is clearly labeled and easy to read. \
+                    text += f"\n\nEnsure that the graph is clearly labeled and easy to read. \
 After generating the graph, provide a brief interpretation of the results, highlighting \
 which category has the highest total spend and any other notable observations."
                     print('text (with doc): ', text)
