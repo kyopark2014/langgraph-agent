@@ -151,13 +151,6 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 
 
-### Contents
-
-[stock_prices.csv](agents-for-bedrock/use-case-examples/ai-powered-assistant-for-investment-research/files/stock_prices.csv)
-
-
-![monthly_mean_stock_prices](https://github.com/user-attachments/assets/5e8f286d-69f8-4fb7-b263-25f03f808dcd)
-
 
 ## 직접 실습 해보기
 
