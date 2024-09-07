@@ -4415,11 +4415,12 @@ def getResponse(connectionId, jsonBody):
                     print('lins: ', len(lines))
                     
                     print('text (given): ', text)
-                    text = f"{text}\n\nData:\n"
+                    
+                    text = f'{text}\n\nPlot a graph using this data.\n\nData:'
                     for line in lines:
                         text += (line+'\n')
                         if len(text)>=180000: # shold be less than 200k
-                            print('the size of text:', len(text))
+                            print('the size of text: ', len(text))
                             break
                         
                     text += f"\n\nEnsure that the graph is clearly labeled and easy to read. \
