@@ -3710,7 +3710,7 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
 
 agent_id = agent_alias_id = None
 sessionId = dict() 
-def run_bedrock_agent(text, connectionId, requestId, userId):
+def run_bedrock_agent(text, connectionId, requestId, userId, sessionState):
     global agent_id, agent_alias_id
     print('agent_id: ', agent_id)
     print('agent_alias_id: ', agent_alias_id)
@@ -3744,7 +3744,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
     global sessionId
     if not userId in sessionId:
         sessionId[userId] = str(uuid.uuid4())
-    
+        
     msg = msg_contents = ""
     isTyping(connectionId, requestId)  
     if agent_alias_id and agent_id:
@@ -3755,7 +3755,8 @@ def run_bedrock_agent(text, connectionId, requestId, userId):
                 agentId=agent_id,
                 inputText=text, 
                 sessionId=sessionId[userId], 
-                memoryId='memory-'+userId
+                memoryId='memory-'+userId,
+                sessionState=sessionState
             )
             print('response of invoke_agent(): ', response)
             
@@ -4374,7 +4375,7 @@ def getResponse(connectionId, jsonBody):
                     msg = run_RAG_prompt_flow(text, connectionId, requestId)
                 
                 elif convType == "bedrock-agent":
-                    msg = run_bedrock_agent(text, connectionId, requestId, userId)
+                    msg = run_bedrock_agent(text, connectionId, requestId, userId, "")
                     
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
@@ -4409,26 +4410,29 @@ def getResponse(connectionId, jsonBody):
                     msg = get_summary(chat, contexts)
                 else: # agent
                     text = body                    
-                    s3r = boto3.resource("s3")
-                    doc = s3r.Object(s3_bucket, s3_prefix+'/'+object)
-                    lines = doc.get()['Body'].read().decode('utf-8').split('\n')   # read csv per line
-                    print('lins: ', len(lines))
-                    
-                    print('text (given): ', text)
-                    
-                    text = f'{text}\n\nPlot a graph using this data.\n\nData:'
-                    for line in lines:
-                        text += (line+'\n')
-                        if len(text)>=180000: # shold be less than 200k
-                            print('the size of text: ', len(text))
-                            break
-                        
                     text += f"\n\nEnsure that the graph is clearly labeled and easy to read. \
 After generating the graph, provide a brief interpretation of the results, highlighting \
 which category has the highest total spend and any other notable observations."
-                    print('text (with doc): ', text)
-
-                    msg = run_bedrock_agent(text, connectionId, requestId, userId)
+                    print('text: ', text)
+                    
+                    s3Location = f"s3:{s3_bucket}/{s3_prefix}/{object}"
+                    print('s3Location: ', s3Location)
+                    
+                    sessionState = {
+                        "files": [
+                            {
+                                "name": s3Location,
+                                "source": {
+                                    "s3Location": {
+                                        "uri": s3Location
+                                    },
+                                    "sourceType": 'S3'
+                                },
+                                "useCase": "CODE_INTERPRETER"
+                            }
+                        ]
+                    }
+                    msg = run_bedrock_agent(text, connectionId, requestId, userId, sessionState)
 
             elif file_type == 'pdf' or file_type == 'txt' or file_type == 'md' or file_type == 'pptx' or file_type == 'docx':
                 texts = load_document(file_type, object)
