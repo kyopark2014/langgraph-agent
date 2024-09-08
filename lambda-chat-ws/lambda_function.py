@@ -4415,7 +4415,7 @@ After generating the graph, provide a brief interpretation of the results, highl
 which category has the highest total spend and any other notable observations."
                     print('text: ', text)
                     
-                    s3Location = f"s3:{s3_bucket}/{s3_prefix}/{object}"
+                    s3Location = f"s3://{s3_bucket}/{s3_prefix}/{object}"
                     print('s3Location: ', s3Location)
                     
                     sessionState = {
