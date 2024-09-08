@@ -4421,7 +4421,7 @@ which category has the highest total spend and any other notable observations."
                     sessionState = {
                         "files": [
                             {
-                                "name": s3Location,
+                                "name": object,
                                 "source": {
                                     "s3Location": {
                                         "uri": s3Location
