@@ -3749,7 +3749,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId, sessionState):
     isTyping(connectionId, requestId)  
     if agent_alias_id and agent_id:
         client_runtime = boto3.client('bedrock-agent-runtime')
-        try:            
+        try:
             if sessionState:
                 response =  client_runtime.invoke_agent( 
                     agentAliasId=agent_alias_id,
