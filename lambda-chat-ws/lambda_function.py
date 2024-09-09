@@ -4420,12 +4420,12 @@ def getResponse(connectionId, jsonBody):
                 else: # agent
                     text = body                    
                     
-                    if text and isKorean(text)==False:
-                        text += f"\n\nEnsure that the graph is clearly labeled and easy to read. \
+                    #if text and isKorean(text)==False:
+                    #    text += f"\n\nEnsure that the graph is clearly labeled and easy to read. \
 #After generating the graph, provide a brief interpretation of the results, highlighting \
 #which category has the highest total spend and any other notable observations."
-                    else:
-                        text += f"그래프에 명확한 레이블을 지정하고 읽기 쉽도록 하세요. \
+                    #else:
+                    text += f"그래프에 명확한 레이블을 지정하고 읽기 쉽도록 하세요. \
 그래프를 생성한 후에는 결과를 간략하게 해석하여 값이 가장 높거나 낮은 범주와 다른 주목할 만한 관찰 사항을 강조하세요."
                     
                     print('text: ', text)
