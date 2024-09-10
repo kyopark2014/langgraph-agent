@@ -3417,10 +3417,10 @@ def run_long_writing(connectionId, requestId, query):
         word_count : int
     
     class Plan(BaseModel):
-        """List of steps as a json format"""
+        """List of paragraphs as a json format"""
 
         steps: List[str] = Field(
-            description="different steps to follow, should be in sorted order"
+            description="different paragraphs to follow, should be in sorted order"
         )
         
     def planning_node(state: State):
