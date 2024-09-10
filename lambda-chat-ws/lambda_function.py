@@ -3470,6 +3470,28 @@ Do not output any other content. As this is an ongoing work, omit open-ended con
         num_steps = int(state['num_steps'])
         num_steps += 1
         
+        # plan = plan.strip().replace('\n\n', '\n')
+        # planning_steps = plan.split('\n')
+        print('plan: ', plan)
+        
+        for attempt in range(5):
+            chat = get_chat()
+            structured_llm = chat.with_structured_output(Plan, include_raw=True)
+            info = structured_llm.invoke(plan)
+            print(f'attempt: {attempt}, info: {info}')
+            
+            if not info['parsed'] == None:
+                parsed_info = info['parsed']
+                print('parsed_info: ', parsed_info)    
+                
+                planning_steps = parsed_info.paragraphs                    
+                print('planning_steps: ', planning_steps)
+                break
+        
+        if 'parsing_error' in info:
+            print('parsing_error: ', info['parsing_error'])
+            planning_steps = []
+            
         human = """You are an excellent writing assistant. I will give you an original writing instruction and my planned writing steps. \
 I will also provide you with the text I have already written. \
 Please help me continue writing the next paragraph based on the writing instruction, writing steps, and the already written text.
@@ -3496,29 +3518,7 @@ Remember to only output the paragraph you write, without repeating the already w
         write_prompt = ChatPromptTemplate.from_messages([("human", human)])
                 
         chat = get_chat()
-        write_chain = write_prompt | chat
-
-        # plan = plan.strip().replace('\n\n', '\n')
-        # planning_steps = plan.split('\n')
-        print('plan: ', plan)
-        
-        for attempt in range(5):
-            chat = get_chat()
-            structured_llm = chat.with_structured_output(Plan, include_raw=True)
-            info = structured_llm.invoke(plan)
-            print(f'attempt: {attempt}, info: {info}')
-            
-            if not info['parsed'] == None:
-                parsed_info = info['parsed']
-                print('parsed_info: ', parsed_info)    
-                
-                planning_steps = parsed_info.paragraphs                    
-                print('planning_steps: ', planning_steps)
-                break
-        
-        if 'parsing_error' in info:
-            print('parsing_error: ', info['parsing_error'])            
-            planning_steps = []
+        write_chain = write_prompt | chat            
         
         text = ""
         responses = []
