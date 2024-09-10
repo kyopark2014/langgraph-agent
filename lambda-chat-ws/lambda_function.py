@@ -3419,7 +3419,7 @@ def run_long_writing(connectionId, requestId, query):
     class Plan(BaseModel):
         """List of paragraphs as a json format"""
 
-        steps: List[str] = Field(
+        paragraphs: List[str] = Field(
             description="different paragraphs to follow, should be in sorted order"
         )
         
@@ -3512,7 +3512,7 @@ Remember to only output the paragraph you write, without repeating the already w
                 parsed_info = info['parsed']
                 print('parsed_info: ', parsed_info)    
                 
-                planning_steps = parsed_info.steps                    
+                planning_steps = parsed_info.paragraphs                    
                 print('planning_steps: ', planning_steps)
                 break
         
