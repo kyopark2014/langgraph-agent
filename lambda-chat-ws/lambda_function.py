@@ -3505,6 +3505,7 @@ Remember to only output the paragraph you write, without repeating the already w
             print("plan is too long")
             # print(plan)
             return
+        
         for idx, step in enumerate(planning_steps):
             # Invoke the write_chain
             chat = get_chat()
@@ -3516,13 +3517,13 @@ Remember to only output the paragraph you write, without repeating the already w
                 "text": text,
                 "STEP": step
             })
-            print('result: ', result)
+            print('result: ', result.content)
             
             print(f"----------------------------{idx}----------------------------")
             print(step)
             print("----------------------------\n\n")
-            responses.append(result)
-            text += result + '\n\n'
+            responses.append(result.content)
+            text += result.content + '\n\n'
 
         final_doc = '\n\n'.join(responses)
 
