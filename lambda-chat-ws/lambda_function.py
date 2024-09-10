@@ -2466,7 +2466,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         past_steps: Annotated[List[Tuple], operator.add]
         response: str
 
-    def plan(state: State):
+    def plan_node(state: State):
         print("###### plan ######")
         print('input: ', state["input"])
         
@@ -2494,7 +2494,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         print('parsing_error: ', info['parsing_error'])
         return {"plan": []}          
 
-    def execute(state: State):
+    def execute_node(state: State):
         print("###### execute ######")
         print('input: ', state["input"])
         plan = state["plan"]
@@ -2573,7 +2573,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         
         return replanner
 
-    def replan(state: State):
+    def replan_node(state: State):
         print('#### replan ####')
         
         replanner = get_replanner()
@@ -2610,9 +2610,9 @@ def run_plan_and_exeucute(connectionId, requestId, query):
 
     def buildPlanAndExecute():
         workflow = StateGraph(State)
-        workflow.add_node("planner", plan)
-        workflow.add_node("executor", execute)
-        workflow.add_node("replaner", replan)
+        workflow.add_node("planner", plan_node)
+        workflow.add_node("executor", execute_node)
+        workflow.add_node("replaner", replan_node)
         
         workflow.set_entry_point("planner")
         workflow.add_edge("planner", "executor")
@@ -3405,7 +3405,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
     return value["messages"][-1].content
     
 ####################### LangGraph #######################
-# Write Agent
+# Long Writing Agent
 #########################################################
 def run_long_writing(connectionId, requestId, query):
     class State(TypedDict):
@@ -3416,6 +3416,13 @@ def run_long_writing(connectionId, requestId, query):
         write_steps : List[str]
         word_count : int
     
+    class Plan(BaseModel):
+        """List of steps as a json format"""
+
+        steps: List[str] = Field(
+            description="different steps to follow, should be in sorted order"
+        )
+        
     def planning_node(state: State):
         """take the initial prompt and write a plan to make a long doc"""
         print("---PLANNING THE WRITING---")
@@ -3447,7 +3454,7 @@ Do not output any other content. As this is an ongoing work, omit open-ended con
         plan_chain = plan_prompt | chat
 
         plan = plan_chain.invoke({"intructions": initial_prompt})
-        print('plan: ', plan)
+        print('plan: ', plan.content)
 
         return {"plan": plan, "num_steps":num_steps}
     
@@ -3491,8 +3498,27 @@ Remember to only output the paragraph you write, without repeating the already w
         chat = get_chat()
         write_chain = write_prompt | chat
 
-        plan = plan.strip().replace('\n\n', '\n')
-        planning_steps = plan.split('\n')
+        # plan = plan.strip().replace('\n\n', '\n')
+        # planning_steps = plan.split('\n')
+        print('plan: ', plan)
+        
+        for attempt in range(5):
+            chat = get_chat()
+            structured_llm = chat.with_structured_output(Plan, include_raw=True)
+            info = structured_llm.invoke(plan)
+            print(f'attempt: {attempt}, info: {info}')
+            
+            if not info['parsed'] == None:
+                parsed_info = info['parsed']
+                print('parsed_info: ', parsed_info)    
+                
+                planning_steps = parsed_info.steps                    
+                print('planning_steps: ', planning_steps)
+                break
+        
+        if 'parsing_error' in info:
+            print('parsing_error: ', info['parsing_error'])            
+            planning_steps = []
         
         text = ""
         responses = []
@@ -3508,10 +3534,9 @@ Remember to only output the paragraph you write, without repeating the already w
                 "text": text,
                 "STEP": step
             })
-            # result = step
-            # print(f"----------------------------{idx}----------------------------")
-            # print(step)
-            # print("----------------------------\n\n")
+            print(f"----------------------------{idx}----------------------------")
+            print(step)
+            print("----------------------------\n\n")
             responses.append(result)
             text += result + '\n\n'
 
