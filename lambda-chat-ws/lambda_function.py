@@ -3404,6 +3404,202 @@ def run_multi_agent_tool(connectionId, requestId, query):
     # return value["messages"][-1].content[value["messages"][-1].content.find('<result>')+8:len(value["messages"][-1].content)-9]
     return value["messages"][-1].content
     
+####################### LangGraph #######################
+# Write Agent
+#########################################################
+def run_long_writing(connectionId, requestId, query):
+    class State(TypedDict):
+        initial_prompt : str
+        plan : str
+        num_steps : int
+        final_doc : str
+        write_steps : List[str]
+        word_count : int
+    
+    def planning_node(state: State):
+        """take the initial prompt and write a plan to make a long doc"""
+        print("---PLANNING THE WRITING---")
+        
+        initial_prompt = state['initial_prompt']
+        num_steps = int(state['num_steps'])
+        num_steps += 1
+        
+        human = """I need you to help me break down the following long-form writing instruction into multiple subtasks. \
+Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph.
+The writing instruction is as follows:
+
+<instruction>
+{intructions}
+</instruction>
+
+Please break it down in the following format, with each subtask taking up one line:
+Paragraph 1 - Main Point: [Describe the main point of the paragraph, in detail] - Word Count: [Word count requirement, e.g., 400 words]
+Paragraph 2 - Main Point: [Describe the main point of the paragraph, in detail] - Word Count: [word count requirement, e.g. 1000 words].
+...
+
+Make sure that each subtask is clear and specific, and that all subtasks cover the entire content of the writing instruction. \
+Do not split the subtasks too finely; each subtask's paragraph should be no less than 200 words and no more than 1000 words. \
+Do not output any other content. As this is an ongoing work, omit open-ended conclusions or other rhetorical hooks."""
+                    
+        plan_prompt = ChatPromptTemplate.from_messages([("human", human)])
+                
+        chat = get_chat()
+        plan_chain = plan_prompt | chat
+
+        plan = plan_chain.invoke({"intructions": initial_prompt})
+        print('plan: ', plan)
+
+        return {"plan": plan, "num_steps":num_steps}
+    
+    def count_words(text):
+        words = text.split()
+        return len(words)
+    
+    def writing_node(state: State):
+        """take the initial prompt and write a plan to make a long doc"""
+        print("---WRITING THE DOC---")
+        initial_instruction = state['initial_prompt']
+        plan = state['plan']
+        num_steps = int(state['num_steps'])
+        num_steps += 1
+        
+        human = """You are an excellent writing assistant. I will give you an original writing instruction and my planned writing steps. \
+I will also provide you with the text I have already written. \
+Please help me continue writing the next paragraph based on the writing instruction, writing steps, and the already written text.
+
+Writing instruction:
+<instruction>
+{intructions}
+</instruction>
+
+Writing steps:
+<plan>
+{plan}
+</plan>
+
+Already written text:
+<text>
+{text}
+</text>
+
+Please integrate the original writing instruction, writing steps, and the already written text, and now continue writing {STEP}. \
+If needed, you can add a small subtitle at the beginning. \
+Remember to only output the paragraph you write, without repeating the already written text.
+"""
+        write_prompt = ChatPromptTemplate.from_messages([("human", human)])
+                
+        chat = get_chat()
+        write_chain = write_prompt | chat
+
+        plan = plan.strip().replace('\n\n', '\n')
+        planning_steps = plan.split('\n')
+        
+        text = ""
+        responses = []
+        if len(planning_steps) > 50:
+            print("plan is too long")
+            # print(plan)
+            return
+        for idx, step in enumerate(planning_steps):
+            # Invoke the write_chain
+            result = write_chain.invoke({
+                "intructions": initial_instruction,
+                "plan": plan,
+                "text": text,
+                "STEP": step
+            })
+            # result = step
+            # print(f"----------------------------{idx}----------------------------")
+            # print(step)
+            # print("----------------------------\n\n")
+            responses.append(result)
+            text += result + '\n\n'
+
+        final_doc = '\n\n'.join(responses)
+
+        # Count words in the final document
+        word_count = count_words(final_doc)
+        print(f"Total word count: {word_count}")
+
+        return {"final_doc": final_doc, "word_count": word_count, "num_steps":num_steps}
+
+    def write_markdown_file(content, filename):
+        """Writes the given content as a markdown file to the local directory.
+
+        Args:
+            content: The string content to write to the file.
+            filename: The filename to save the file as.
+        """
+        with open(f"{filename}.md", "w") as f:
+            f.write(content)
+            
+    def saving_node(state: State):
+        """take the finished long doc and save it to local disk as a .md file   """
+        print("---SAVING THE DOC---")
+
+        plan = state['plan']
+        final_doc = state['final_doc']
+        word_count = state['word_count']
+        num_steps = int(state['num_steps'])
+        num_steps += 1
+
+        final_doc += f"\n\nTotal word count: {word_count}"
+
+        #write_markdown_file(final_doc, f"final_doc")
+        #write_markdown_file(plan, f"plan")
+        print('plan: ', plan)
+        print('final_doc: ', final_doc)
+        print('word_count: ', word_count)
+        
+        return {"num_steps":num_steps}    
+    
+    def buildWriteAgent():
+        workflow = StateGraph(State)
+
+        # Add nodes
+        workflow.add_node("planning_node", planning_node)
+        workflow.add_node("writing_node", writing_node)
+        workflow.add_node("saving_node", saving_node)
+
+        # Set entry point
+        workflow.set_entry_point("planning_node")
+
+        # Add edges
+        workflow.add_edge("planning_node", "writing_node")
+        workflow.add_edge("writing_node", "saving_node")
+        workflow.add_edge("saving_node", END)
+
+        return workflow.compile()
+    
+    app = buildWriteAgent()
+    
+    instruction = "Write a 5000 word piece on the HBO TV show WestWorld and its plot, characters, and themes. \
+    Make sure to cover the tropes that relate to AI, robots, and consciousness. \
+    Finally tackle where you think the show was going in future seasons had it not been cancelled."
+
+    # Run the workflow
+    isTyping(connectionId, requestId)    
+    
+    inputs = {
+        "initial_prompt": instruction,
+        "num_steps": 0
+    }    
+    config = {
+        "recursion_limit": 50
+    }
+    
+    output = app.invoke(inputs, config)
+    print('output: ', output)
+    
+    #value = ""
+    #for output in app.stream(inputs, config):   
+    #    for key, value in output.items():
+    #        print(f"Finished: {key}")
+            #print("value: ", value)
+            
+    #print('value: ', value)        
+    #readStreamMsg(connectionId, requestId, value["messages"][-1].content)
+    return output
 
 ####################### Knowledge Base #######################
 # Knowledge Base
@@ -4366,6 +4562,9 @@ def getResponse(connectionId, jsonBody):
                 
                 elif convType == 'multi-agent-tool':  # multi-agent
                     msg = run_multi_agent_tool(connectionId, requestId, text)      
+                    
+                elif convType == 'long-writing':  # long writing
+                    msg = run_long_writing(connectionId, requestId, text)
                     
                 elif convType == "rag-knowledge-base":
                     msg, reference = get_answer_using_knowledge_base(chat, text, connectionId, requestId)                
