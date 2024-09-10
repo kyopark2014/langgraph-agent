@@ -3420,7 +3420,7 @@ def run_long_writing(connectionId, requestId, query):
         """List of paragraphs as a json format"""
 
         paragraphs: List[str] = Field(
-            description="different paragraphs to follow, should be in sorted order"
+            description="different paragraphs to write, should be in sorted order"
         )
         
     def planning_node(state: State):
