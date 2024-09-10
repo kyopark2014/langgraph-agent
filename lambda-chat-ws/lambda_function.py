@@ -3583,9 +3583,11 @@ Remember to only output the paragraph you write, without repeating the already w
     
     app = buildWriteAgent()
     
-    instruction = "Write a 5000 word piece on the HBO TV show WestWorld and its plot, characters, and themes. \
-    Make sure to cover the tropes that relate to AI, robots, and consciousness. \
-    Finally tackle where you think the show was going in future seasons had it not been cancelled."
+    #instruction = "Write a 5000 word piece on the HBO TV show WestWorld and its plot, characters, and themes. \
+    #Make sure to cover the tropes that relate to AI, robots, and consciousness. \
+    #Finally tackle where you think the show was going in future seasons had it not been cancelled."
+
+    instruction = f"다음의 주제를 5000자로 된 에세이를 작성하세요.\n\n주제: {query}"
 
     # Run the workflow
     isTyping(connectionId, requestId)    
@@ -3599,7 +3601,7 @@ Remember to only output the paragraph you write, without repeating the already w
     }
     
     output = app.invoke(inputs, config)
-    print('output: ', output['final_doc'])
+    print('output: ', output)
     
     #value = ""
     #for output in app.stream(inputs, config):   
