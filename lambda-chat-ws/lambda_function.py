@@ -3495,8 +3495,7 @@ Remember to only output the paragraph you write, without repeating the already w
             ("human", ""),
         ])
                 
-        chat = get_chat()
-        write_chain = write_prompt | chat            
+                    
         
         text = ""
         responses = []
@@ -3506,6 +3505,9 @@ Remember to only output the paragraph you write, without repeating the already w
             return
         for idx, step in enumerate(planning_steps):
             # Invoke the write_chain
+            chat = get_chat()
+            write_chain = write_prompt | chat
+        
             result = write_chain.invoke({
                 "intructions": initial_instruction,
                 "plan": plan,
