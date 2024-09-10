@@ -3456,7 +3456,7 @@ Do not output any other content. As this is an ongoing work, omit open-ended con
         plan = plan_chain.invoke({"intructions": initial_prompt})
         print('plan: ', plan.content)
 
-        return {"plan": plan, "num_steps":num_steps}
+        return {"plan": plan.content, "num_steps":num_steps}
     
     def count_words(text):
         words = text.split()
