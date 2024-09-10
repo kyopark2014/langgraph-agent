@@ -3587,7 +3587,7 @@ Remember to only output the paragraph you write, without repeating the already w
     #Make sure to cover the tropes that relate to AI, robots, and consciousness. \
     #Finally tackle where you think the show was going in future seasons had it not been cancelled."
 
-    instruction = f"다음의 주제를 5000자로 된 에세이를 작성하세요.\n\n주제: {query}"
+    instruction = f"다음의 주제를 5000자로 된 긴 문장으로 완성하세요.\n\n주제: {query}"
 
     # Run the workflow
     isTyping(connectionId, requestId)    
@@ -3603,14 +3603,6 @@ Remember to only output the paragraph you write, without repeating the already w
     output = app.invoke(inputs, config)
     print('output: ', output)
     
-    #value = ""
-    #for output in app.stream(inputs, config):   
-    #    for key, value in output.items():
-    #        print(f"Finished: {key}")
-            #print("value: ", value)
-            
-    #print('value: ', value)        
-    #readStreamMsg(connectionId, requestId, value["messages"][-1].content)
     return output['final_doc']
 
 ####################### Knowledge Base #######################
