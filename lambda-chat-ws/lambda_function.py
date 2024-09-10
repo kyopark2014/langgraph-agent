@@ -3466,7 +3466,7 @@ Do not output any other content. As this is an ongoing work, omit open-ended con
         plan = plan.strip().replace('\n\n', '\n')
         planning_steps = plan.split('\n')
             
-        human = """You are an excellent writing assistant. I will give you an original writing instruction and my planned writing steps. \
+        system = """You are an excellent writing assistant. I will give you an original writing instruction and my planned writing steps. \
 I will also provide you with the text I have already written. \
 Please help me continue writing the next paragraph based on the writing instruction, writing steps, and the already written text.
 
@@ -3489,7 +3489,7 @@ Please integrate the original writing instruction, writing steps, and the alread
 If needed, you can add a small subtitle at the beginning. \
 Remember to only output the paragraph you write, without repeating the already written text.
 """
-        write_prompt = ChatPromptTemplate.from_messages([("human", human)])
+        write_prompt = ChatPromptTemplate.from_messages([("system", system)])
                 
         chat = get_chat()
         write_chain = write_prompt | chat            
@@ -3508,10 +3508,12 @@ Remember to only output the paragraph you write, without repeating the already w
                 "text": text,
                 "STEP": step
             })
+            print('result: ', result)
+            
             print(f"----------------------------{idx}----------------------------")
             print(step)
             print("----------------------------\n\n")
-            responses.append(result)
+            responses.append(result.content)
             text += result + '\n\n'
 
         final_doc = '\n\n'.join(responses)
