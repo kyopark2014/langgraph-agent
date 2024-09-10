@@ -3440,8 +3440,8 @@ The writing instruction is as follows:
 </instruction>
 
 Please break it down in the following format, with each subtask taking up one line:
-Paragraph 1. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [Word count requirement, e.g., 400 words]
-Paragraph 2. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [word count requirement, e.g. 1000 words].
+1. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [Word count requirement, e.g., 400 words]
+2. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [word count requirement, e.g. 1000 words].
 ...
 
 Make sure that each subtask is clear and specific, and that all subtasks cover the entire content of the writing instruction. \
