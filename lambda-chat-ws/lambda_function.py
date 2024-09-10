@@ -3561,7 +3561,7 @@ Remember to only output the paragraph you write, without repeating the already w
         print('final_doc: ', final_doc)
         print('word_count: ', word_count)
         
-        return {"num_steps":num_steps}    
+        return {"num_steps":num_steps}
     
     def buildWriteAgent():
         workflow = StateGraph(State)
@@ -3599,7 +3599,7 @@ Remember to only output the paragraph you write, without repeating the already w
     }
     
     output = app.invoke(inputs, config)
-    print('output: ', output)
+    print('output: ', output['final_doc'])
     
     #value = ""
     #for output in app.stream(inputs, config):   
@@ -3609,7 +3609,7 @@ Remember to only output the paragraph you write, without repeating the already w
             
     #print('value: ', value)        
     #readStreamMsg(connectionId, requestId, value["messages"][-1].content)
-    return output
+    return output['final_doc']
 
 ####################### Knowledge Base #######################
 # Knowledge Base
