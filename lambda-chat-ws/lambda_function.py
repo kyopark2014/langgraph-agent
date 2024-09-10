@@ -3416,13 +3416,6 @@ def run_long_writing(connectionId, requestId, query):
         write_steps : List[str]
         word_count : int
     
-    class Plan(BaseModel):
-        """List of paragraphs as a json format"""
-
-        paragraphs: List[str] = Field(
-            description="different paragraphs to write, should be in sorted order"
-        )
-        
     def planning_node(state: State):
         """take the initial prompt and write a plan to make a long doc"""
         print("---PLANNING THE WRITING---")
@@ -3470,27 +3463,8 @@ Do not output any other content. As this is an ongoing work, omit open-ended con
         num_steps = int(state['num_steps'])
         num_steps += 1
         
-        # plan = plan.strip().replace('\n\n', '\n')
-        # planning_steps = plan.split('\n')
-        print('plan: ', plan)
-        
-        for attempt in range(5):
-            chat = get_chat()
-            structured_llm = chat.with_structured_output(Plan, include_raw=True)
-            info = structured_llm.invoke(plan)
-            print(f'attempt: {attempt}, info: {info}')
-            
-            if not info['parsed'] == None:
-                parsed_info = info['parsed']
-                print('parsed_info: ', parsed_info)    
-                
-                planning_steps = parsed_info.paragraphs                    
-                print('planning_steps: ', planning_steps)
-                break
-        
-        if 'parsing_error' in info:
-            print('parsing_error: ', info['parsing_error'])
-            planning_steps = []
+        plan = plan.strip().replace('\n\n', '\n')
+        planning_steps = plan.split('\n')
             
         human = """You are an excellent writing assistant. I will give you an original writing instruction and my planned writing steps. \
 I will also provide you with the text I have already written. \
