@@ -149,7 +149,7 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 - [GPT Newspape](https://www.youtube.com/watch?v=E7nFHaSs3q8)에서는 신문요약에 대해 설명하고 있습니다. ([github](https://github.com/rotemweiss57/gpt-newspaper/tree/master) 링크)
 
-- [AgentWrite LangGraph](https://github.com/samwit/agent_tutorials/tree/main/agent_write)는 Agent를 이용한 Write 과정에 대해 설명하고 있습니다. 
+- [AgentWrite LangGraph](https://github.com/samwit/agent_tutorials/tree/main/agent_write)는 Agent를 이용한 Write 과정에 대해 설명하고 있습니다. 상세한 설명은 [AgentWrite with LangGraph - Youtube](https://www.youtube.com/watch?v=nK9K8UPraXk)를 참고합니다.
 
 
 ## 직접 실습 해보기
