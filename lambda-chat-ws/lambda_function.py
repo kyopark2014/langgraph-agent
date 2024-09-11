@@ -3629,7 +3629,7 @@ def run_long_writing_agent(connectionId, requestId, query):
     planner = get_planner()
     
     instruction = f"다음의 주제를 4000자로 된 긴 문장으로 완성하세요.\n\n주제: {query}"
-    response = planner.invoke({"instruction": instruction})
+    response = planner.invoke({"instruction": query})
     print('response: ', response.content)
     
     for attempt in range(5):
