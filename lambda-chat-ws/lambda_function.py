@@ -3721,7 +3721,57 @@ def run_long_writing_agent(connectionId, requestId, query):
             "reflection": reflection,
             "search_queries": search_queries
         }
+        
+    def revise_answer(draft, search_queries, reflection):   
+        print("###### revise_answer ######")
+        revise_template = (
+            "You are an excellent writing assistant." 
+            "Revise this draft using the critique and additional information."
+            "Provide the final answer with <result> tag."            
+                        
+            "<draft>"
+            "{draft}"
+            "</draft>"
+                        
+            "<critique>"
+            "{reflection}"
+            "</critique>"
 
+            "<information>"
+            "{content}"
+            "</information>"
+        )
+                    
+        revise_prompt = ChatPromptTemplate([
+            ('human', revise_template)
+        ])
+            
+        content = []        
+        if useEnhancedSearch:
+            for q in search_queries:
+                response = enhanced_search(q)     
+                print(f'q: {q}, response: {response}')
+                content.append(response)                   
+        else:
+            search = TavilySearchResults(k=2)
+            for q in search_queries:
+                response = search.invoke(q)
+                for r in response:
+                    if 'content' in r:
+                        content.append(r['content'])
+
+        chat = get_chat()
+        reflect = revise_prompt | chat
+           
+        res = reflect.invoke(
+            {
+                "draft": draft,
+                "reflection": reflection,
+                "content": content
+            }
+        )                                    
+        return res.content[res.content.find('<result>')+8:len(res.content)-9]
+        
     planner = get_planner()
     
     instruction = f"다음의 주제를 4000자로 된 긴 문장으로 완성하세요.\n\n주제: {query}"
@@ -3737,8 +3787,11 @@ def run_long_writing_agent(connectionId, requestId, query):
     print('drafts: ', drafts)
         
     for draft in drafts:
-        result = reflect(draft)
-        print('result: ', result)
+        output = reflect(draft)
+        print('reflection: ', output)
+        
+        response = revise_answer(draft, output.search_queries, output.reflection)
+        print('revise: ', response)
 
     class State(TypedDict):
         instruction : str
