@@ -3590,11 +3590,11 @@ Remember to only output the paragraph you write, without repeating the already w
 # Long Writing Agent
 #########################################################
 def run_long_writing_agent(connectionId, requestId, query):
-    class Paragraph(BaseModel):
-        """List of paragraphs as a json format"""
+    class Instruction(BaseModel):
+        """List of instructions as a json format"""
 
-        paragraphs: List[str] = Field(
-            description="different paragraphs to write, should be in sorted order"
+        instructions: List[str] = Field(
+            description="different instructions of paragraphs to write, should be in sorted order"
         )
 
     def get_planner():
@@ -3638,14 +3638,14 @@ def run_long_writing_agent(connectionId, requestId, query):
     
     for attempt in range(5):
         chat = get_chat()
-        structured_llm = chat.with_structured_output(Paragraph, include_raw=True)
+        structured_llm = chat.with_structured_output(Instruction, include_raw=True)
         info = structured_llm.invoke(response.content)
         print(f'attempt: {attempt}, info: {info}')
                 
         if not info['parsed'] == None:
             parsed_info = info['parsed']
             # print('parsed_info: ', parsed_info)        
-            print('paragraphs: ', parsed_info.paragraphs)
+            print('instructions: ', parsed_info.instructions)
             break
     
     return ""
