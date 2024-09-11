@@ -3790,7 +3790,7 @@ def run_long_writing_agent(connectionId, requestId, query):
         output = reflect(draft)
         print('reflection: ', output)
         
-        response = revise_answer(draft, output.search_queries, output.reflection)
+        response = revise_answer(draft, output['search_queries'], output['reflection'])
         print('revise: ', response)
 
     class State(TypedDict):
