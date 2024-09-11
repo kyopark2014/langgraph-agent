@@ -3793,6 +3793,7 @@ def run_long_writing_agent(connectionId, requestId, query):
         
         revise_draft = revise_answer(draft, output['search_queries'], output['reflection'])
         print('--> draft: ', draft)
+        print('--> reflection: ', output)
         print('--> revise: ', revise_draft)
         
         msg += f"{revise_draft}\n\n"

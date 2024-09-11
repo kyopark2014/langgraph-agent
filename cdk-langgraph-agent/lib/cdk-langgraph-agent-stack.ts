@@ -573,7 +573,7 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
       description: 'lambda for chat using websocket',
       functionName: `lambda-chat-ws-for-${projectName}`,
       code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, '../../lambda-chat-ws')),
-      timeout: cdk.Duration.seconds(600),
+      timeout: cdk.Duration.seconds(900),
       memorySize: 8192,
       role: roleLambdaWebsocket,
       environment: {
