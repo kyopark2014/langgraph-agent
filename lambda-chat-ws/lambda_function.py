@@ -3785,7 +3785,8 @@ def run_long_writing_agent(connectionId, requestId, query):
     
     drafts = write(instruction, planning_steps)
     print('drafts: ', drafts)
-        
+    
+    msg = ""    
     for draft in drafts:
         output = reflect(draft)
         print('reflection: ', output)
@@ -3793,6 +3794,8 @@ def run_long_writing_agent(connectionId, requestId, query):
         revise_draft = revise_answer(draft, output['search_queries'], output['reflection'])
         print('--> draft: ', draft)
         print('--> revise: ', revise_draft)
+        
+        msg += f"{revise_draft}\n\n"
 
     class State(TypedDict):
         instruction : str
@@ -3821,7 +3824,7 @@ def run_long_writing_agent(connectionId, requestId, query):
             "planning_steps": planning_steps
         }  
     
-    return ""
+    return msg
     
 
 ####################### Knowledge Base #######################
