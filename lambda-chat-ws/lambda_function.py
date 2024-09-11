@@ -3679,6 +3679,48 @@ def run_long_writing_agent(connectionId, requestId, query):
             text += result.content + '\n\n'
 
         return responses
+    
+        
+    class Reflection(BaseModel):
+        missing: str = Field(description="Critique of what is missing.")
+        advisable: str = Field(description="Critique of what is helpful for better writing")
+        superfluous: str = Field(description="Critique of what is superfluous")
+
+    class Research(BaseModel):
+        """Provide reflection and then follow up with search queries to improve the writing."""
+
+        reflection: Reflection = Field(description="Your reflection on the initial writing.")
+        search_queries: list[str] = Field(
+            description="1-3 search queries for researching improvements to address the critique of your current writing."
+        )
+    
+    def reflect(draft):
+        print("###### reflect ######")
+        print('draft: ', draft)
+    
+        reflection = []
+        search_queries = []
+        for attempt in range(5):
+            chat = get_chat()
+            structured_llm = chat.with_structured_output(Research, include_raw=True)
+            
+            info = structured_llm.invoke(draft)
+            print(f'attempt: {attempt}, info: {info}')
+                
+            if not info['parsed'] == None:
+                parsed_info = info['parsed']
+                # print('reflection: ', parsed_info.reflection)                
+                reflection = [parsed_info.reflection.missing, parsed_info.reflection.advisable]
+                search_queries = parsed_info.search_queries
+                
+                print('reflection: ', parsed_info.reflection)            
+                print('search_queries: ', search_queries)                
+                break
+        
+        return {
+            "reflection": reflection,
+            "search_queries": search_queries
+        }
 
     planner = get_planner()
     
@@ -3691,9 +3733,12 @@ def run_long_writing_agent(connectionId, requestId, query):
     planning_steps = plan.split('\n')        
     print('planning_steps: ', planning_steps)
     
-    draft = write(instruction, planning_steps)
-    print('draft: ', draft)
-    
+    drafts = write(instruction, planning_steps)
+    print('drafts: ', drafts)
+        
+    for draft in drafts:
+        result = reflect(draft)
+        print('result: ', result)
 
     class State(TypedDict):
         instruction : str
