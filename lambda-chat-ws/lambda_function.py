@@ -3607,6 +3607,11 @@ def run_long_writing_agent(connectionId, requestId, query):
             "The writing instruction is as follows:"
             "{instruction}"
             
+            "Please break it down in the following format, with each subtask taking up one line:"
+            "1. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [Word count requirement, e.g., 400 words]"
+            "2. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [word count requirement, e.g. 1000 words]."
+            "..."
+            
             "Make sure that each subtask is clear and specific, and that all subtasks cover the entire content of the writing instruction."
             "Do not split the subtasks too finely; each subtask's paragraph should be no less than 200 words and no more than 1000 words."
             "Do not output any other content. As this is an ongoing work, omit open-ended conclusions or other rhetorical hooks."
