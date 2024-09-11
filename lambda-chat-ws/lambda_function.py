@@ -3618,7 +3618,7 @@ def run_long_writing_agent(connectionId, requestId, query):
         )
         
         planner_prompt = ChatPromptTemplate([
-            ('system', planner_template)
+            ('human', planner_template)
         ])
                 
         chat = get_chat()   
