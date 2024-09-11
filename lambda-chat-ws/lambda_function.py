@@ -3425,14 +3425,15 @@ def run_writing_agent(connectionId, requestId, query):
         num_steps += 1
         
         human = """I need you to help me break down the following long-form writing instruction into multiple subtasks. \
-Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph.
+Write a 5000 word piece. \
+Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph. \
 The writing instruction is as follows:
 
 <instruction>
 {intructions}
 </instruction>
 
-Please break it down in the following format, with each subtask taking up one line:
+Please break it down in the following format, with each subtask taking up one line: \
 1. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [Word count requirement, e.g., 400 words]
 2. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [word count requirement, e.g. 1000 words].
 ...
@@ -3569,13 +3570,11 @@ Remember to only output the paragraph you write, without repeating the already w
     #Make sure to cover the tropes that relate to AI, robots, and consciousness. \
     #Finally tackle where you think the show was going in future seasons had it not been cancelled."
 
-    instruction = f"다음의 주제를 4000자로 된 긴 문장으로 완성하세요.\n\n주제: {query}"
-
     # Run the workflow
     isTyping(connectionId, requestId)    
     
     inputs = {
-        "initial_prompt": instruction,
+        "initial_prompt": query,
         "num_steps": 0
     }    
     config = {
@@ -3592,10 +3591,10 @@ Remember to only output the paragraph you write, without repeating the already w
 #########################################################
 def run_long_writing_agent(connectionId, requestId, query):
     class Plan(BaseModel):
-        """List of paragraphs as a json format"""
+        """List of steps as a json format"""
 
-        paragraphs: List[str] = Field(
-            description="different paragraphs to write, should be in sorted order"
+        steps: List[str] = Field(
+            description="different steps to write, should be in sorted order"
         )
 
     def get_planner():
