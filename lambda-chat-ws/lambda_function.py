@@ -3623,6 +3623,63 @@ def run_long_writing_agent(connectionId, requestId, query):
         planner = planner_prompt | chat
         return planner
 
+    def write(instruction, planning_steps):
+        write_template = (
+            "You are an excellent writing assistant." 
+            "I will give you an original writing instruction and my planned writing steps."
+            "I will also provide you with the text I have already written."
+            "Please help me continue writing the next paragraph based on the writing instruction, writing steps, and the already written text."
+
+            "Writing instruction:"
+            "<instruction>"
+            "{intructions}"
+            "</instruction>"
+
+            "Writing steps:"
+            "<plan>"
+            "{plan}"
+            "</plan>"
+
+            "Already written text:"
+            "<text>"
+            "{text}"
+            "</text>"
+
+            "Please integrate the original writing instruction, writing steps, and the already written text, and now continue writing {STEP}."
+            "If needed, you can add a small subtitle at the beginning."
+            "Remember to only output the paragraph you write, without repeating the already written text."
+        )
+
+        write_prompt = ChatPromptTemplate([
+            ('human', write_template)
+        ])
+        
+        text = ""
+        responses = []
+        if len(planning_steps) > 50:
+            print("plan is too long")
+            # print(plan)
+            return
+        
+        for idx, step in enumerate(planning_steps):
+            # Invoke the write_chain
+            chat = get_chat()
+            write_chain = write_prompt | chat
+        
+            result = write_chain.invoke({
+                "intructions": instruction,
+                "plan": planning_steps,
+                "text": text,
+                "STEP": step
+            })
+            print(f"--> step:{step}")
+            print(f"--> {result.content}")
+            
+            responses.append(result.content)
+            text += result.content + '\n\n'
+
+        return responses
+
     planner = get_planner()
     
     instruction = f"다음의 주제를 4000자로 된 긴 문장으로 완성하세요.\n\n주제: {query}"
@@ -3634,39 +3691,38 @@ def run_long_writing_agent(connectionId, requestId, query):
     planning_steps = plan.split('\n')        
     print('planning_steps: ', planning_steps)
     
+    draft = write(instruction, planning_steps)
+    print('draft: ', draft)
     
-    return ""
 
-    """
+    class State(TypedDict):
+        instruction : str
+        planning_steps : str
+        num_steps : int
+        final_doc : str
+        write_steps : List[str]
+        word_count : int
+            
     def plan(state: State):
         print("###### plan ######")
-        print('task: ', state["task"])
-            
-        task = [HumanMessage(content=state["task"])]
-
-        planner = get_planner()
-        response = planner.invoke({"messages": task})
-        print('response.content: ', response.content)
-            
-        for attempt in range(5):
-            chat = get_chat()
-            structured_llm = chat.with_structured_output(Plan, include_raw=True)
-            info = structured_llm.invoke(response.content)
-            print(f'attempt: {attempt}, info: {info}')
-                
-            if not info['parsed'] == None:
-                parsed_info = info['parsed']
-                # print('parsed_info: ', parsed_info)        
-                print('steps: ', parsed_info.steps)
-                    
-                return {
-                    "task": state["task"],
-                    "plan": parsed_info.steps
-                }
+        instruction = state["instruction"]
+        print('subject: ', instruction)
         
-        print('parsing_error: ', info['parsing_error'])                
-        return {"plan": []}  
-    """
+        planner = get_planner()
+    
+        response = planner.invoke({"instruction": instruction})
+        print('response: ', response.content)
+    
+        plan = response.content.strip().replace('\n\n', '\n')
+        planning_steps = plan.split('\n')        
+        print('planning_steps: ', planning_steps)
+            
+        return {
+            "instruction": instruction,
+            "planning_steps": planning_steps
+        }  
+    
+    return ""
     
 
 ####################### Knowledge Base #######################
