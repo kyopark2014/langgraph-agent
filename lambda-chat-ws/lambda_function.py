@@ -3621,14 +3621,25 @@ def run_long_writing_agent(connectionId, requestId, query):
             ('human', planner_template) 
         ])
                 
-        chat = get_chat()   
+        chat = get_chat()
         
         planner = planner_prompt | chat
         return planner
 
     planner = get_planner()
     response = planner.invoke({"instruction": query})
-    print('response: ', response)
+    print('response: ', response.content)
+    
+    for attempt in range(5):
+        chat = get_chat()
+        structured_llm = chat.with_structured_output(Plan, include_raw=True)
+        info = structured_llm.invoke(response.content)
+        print(f'attempt: {attempt}, info: {info}')
+                
+        if not info['parsed'] == None:
+            parsed_info = info['parsed']
+            # print('parsed_info: ', parsed_info)        
+            print('steps: ', parsed_info.steps)
     
     return ""
 
