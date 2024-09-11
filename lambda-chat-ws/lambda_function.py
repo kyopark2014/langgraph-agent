@@ -3405,9 +3405,9 @@ def run_multi_agent_tool(connectionId, requestId, query):
     return value["messages"][-1].content
     
 ####################### LangGraph #######################
-# Long Writing Agent
+# Writing Agent
 #########################################################
-def run_long_writing(connectionId, requestId, query):
+def run_writing_agent(connectionId, requestId, query):
     class State(TypedDict):
         initial_prompt : str
         plan : str
@@ -3489,12 +3489,7 @@ Already written text:
 Please integrate the original writing instruction, writing steps, and the already written text, and now continue writing {STEP}. \
 If needed, you can add a small subtitle at the beginning. \
 Remember to only output the paragraph you write, without repeating the already written text.
-"""
-        #write_prompt = ChatPromptTemplate.from_messages([
-        #    ("system", system),
-        #    ("human", ""),
-        #])
-                
+"""                
         write_prompt = ChatPromptTemplate([
             ('human', write_template)
         ])
@@ -3531,18 +3526,7 @@ Remember to only output the paragraph you write, without repeating the already w
         word_count = count_words(final_doc)
         print(f"Total word count: {word_count}")
 
-        return {"final_doc": final_doc, "word_count": word_count, "num_steps":num_steps}
-
-    def write_markdown_file(content, filename):
-        """Writes the given content as a markdown file to the local directory.
-
-        Args:
-            content: The string content to write to the file.
-            filename: The filename to save the file as.
-        """
-        with open(f"{filename}.md", "w") as f:
-            f.write(content)
-            
+        return {"final_doc": final_doc, "word_count": word_count, "num_steps":num_steps}            
     def saving_node(state: State):
         """take the finished long doc and save it to local disk as a .md file   """
         print("---SAVING THE DOC---")
@@ -3555,8 +3539,6 @@ Remember to only output the paragraph you write, without repeating the already w
 
         final_doc += f"\n\nTotal word count: {word_count}"
 
-        #write_markdown_file(final_doc, f"final_doc")
-        #write_markdown_file(plan, f"plan")
         print('plan: ', plan)
         print('final_doc: ', final_doc)
         print('word_count: ', word_count)
@@ -3587,7 +3569,7 @@ Remember to only output the paragraph you write, without repeating the already w
     #Make sure to cover the tropes that relate to AI, robots, and consciousness. \
     #Finally tackle where you think the show was going in future seasons had it not been cancelled."
 
-    instruction = f"다음의 주제를 5000단어 된 긴 문장으로 완성하세요.\n\n주제: {query}"
+    instruction = f"다음의 주제를 4000자로 된 긴 문장으로 완성하세요.\n\n주제: {query}"
 
     # Run the workflow
     isTyping(connectionId, requestId)    
@@ -3604,6 +3586,83 @@ Remember to only output the paragraph you write, without repeating the already w
     print('output: ', output)
     
     return output['final_doc']
+
+####################### LangGraph #######################
+# Long Writing Agent
+#########################################################
+def run_long_writing_agent(connectionId, requestId, query):
+    class Plan(BaseModel):
+        """List of paragraphs as a json format"""
+
+        paragraphs: List[str] = Field(
+            description="different paragraphs to write, should be in sorted order"
+        )
+
+    def get_planner():
+        planner_template = (
+            "You are a helpful assistant highly skilled in long-form writing."
+            "You will break down the writing instruction into multiple subtasks."
+            #"each subtask should include the main points and word count requirements for that paragraph."
+            "Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph."
+
+            "The writing instruction is as follows:"
+            "{instruction}"
+            
+            "Make sure that each subtask is clear and specific, and that all subtasks cover the entire content of the writing instruction."
+            "Do not split the subtasks too finely; each subtask's paragraph should be no less than 200 words and no more than 1000 words."
+            "Do not output any other content. As this is an ongoing work, omit open-ended conclusions or other rhetorical hooks."
+            
+            #"For the following long-form writing instruction, break down come up with a simple step by step plan."
+            #"This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps."
+            #"The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."
+        )
+        
+        planner_prompt = ChatPromptTemplate([
+            ('system', planner_template)
+        ])
+                
+        chat = get_chat()   
+        
+        planner = planner_prompt | chat
+        return planner
+
+    planner = get_planner()
+    response = planner.invoke({"instruction": query})
+    print('response: ', response)
+    
+    return ""
+
+    """
+    def plan(state: State):
+        print("###### plan ######")
+        print('task: ', state["task"])
+            
+        task = [HumanMessage(content=state["task"])]
+
+        planner = get_planner()
+        response = planner.invoke({"messages": task})
+        print('response.content: ', response.content)
+            
+        for attempt in range(5):
+            chat = get_chat()
+            structured_llm = chat.with_structured_output(Plan, include_raw=True)
+            info = structured_llm.invoke(response.content)
+            print(f'attempt: {attempt}, info: {info}')
+                
+            if not info['parsed'] == None:
+                parsed_info = info['parsed']
+                # print('parsed_info: ', parsed_info)        
+                print('steps: ', parsed_info.steps)
+                    
+                return {
+                    "task": state["task"],
+                    "plan": parsed_info.steps
+                }
+        
+        print('parsing_error: ', info['parsing_error'])                
+        return {"plan": []}  
+    """
+    
 
 ####################### Knowledge Base #######################
 # Knowledge Base
@@ -4567,8 +4626,11 @@ def getResponse(connectionId, jsonBody):
                 elif convType == 'multi-agent-tool':  # multi-agent
                     msg = run_multi_agent_tool(connectionId, requestId, text)      
                     
-                elif convType == 'long-writing':  # long writing
-                    msg = run_long_writing(connectionId, requestId, text)
+                elif convType == 'writing-agent':  # writing agent
+                    msg = run_writing_agent(connectionId, requestId, text)
+                
+                elif convType == 'long-writing-agent':  # long writing
+                    msg = run_long_writing_agent(connectionId, requestId, text)
                     
                 elif convType == "rag-knowledge-base":
                     msg, reference = get_answer_using_knowledge_base(chat, text, connectionId, requestId)                
