@@ -4061,7 +4061,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         # reflection
         if multi_region == 'enable':  # parallel processing
-            final_doc = revise_drafts_using_parallel_processing(drafts)
+            final_doc = revise_drafts_using_parallel_processing(drafts[:2])
         else:
             reflection_app = buildReflection()
                 
