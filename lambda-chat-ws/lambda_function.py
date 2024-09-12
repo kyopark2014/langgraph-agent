@@ -3607,7 +3607,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         if isKorean(query):
             planner_template = (
                 "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."
-                "이번 글쓰기는 10,000단어 이하의 장편입니다."
+                "이번 글쓰기는 10,000 단어 정도의 장편입니다."
                 "당신은 글쓰기 지시 사항을 여러 개의 하위 작업으로 나눌 것입니다."
                 "각 하위 작업은 에세이의 한 단락 작성을 안내할 것이며, 해당 단락의 주요 내용과 단어 수 요구 사항을 포함해야 합니다."
 
@@ -3628,7 +3628,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         else:
             planner_template = (
                 "You are a helpful assistant highly skilled in long-form writing."
-                "This writing is a long piece of under 10,000 words."
+                "This writing assignment is a long piece of around 10,000 words. "
                 "You will break down the writing instruction into multiple subtasks."
                 "Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph."
 
