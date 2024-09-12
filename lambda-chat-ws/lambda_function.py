@@ -3837,9 +3837,11 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             }
         )
         output = res.content
-        print('output: ', output)
+        # print('output: ', output)
         
         revised_draft = output[output.find('<result>')+8:len(output)-9]
+        if revised_draft[0]=='\n':
+            revised_draft = revised_draft[1:]
 
         print('--> draft: ', draft)
         print('--> reflection: ', reflection)
@@ -4009,9 +4011,11 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "STEP": step
             })            
             output = result.content
-            print('output: ', output)
+            # print('output: ', output)
             
             draft = output[output.find('<result>')+8:len(output)-9]
+            if draft[0]=='\n':
+                draft = draft[1:]
 
             print(f"--> step:{step}")
             print(f"--> {draft}")
