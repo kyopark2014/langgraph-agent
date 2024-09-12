@@ -3597,30 +3597,57 @@ Remember to only output the paragraph you write, without repeating the already w
 ####################### LangGraph #######################
 # Long Writing Agent
 #########################################################
-def run_long_writing_agent(connectionId, requestId, query):
+def run_long_form_writing_agent(connectionId, requestId, query):
     def get_planner():
-        planner_template = (
-            "You are a helpful assistant highly skilled in long-form writing."
-            "You will break down the writing instruction into multiple subtasks."
-            #"each subtask should include the main points and word count requirements for that paragraph."
-            "Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph."
+        
+        if isKorean(query):
+            planner_template = (
+                "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."
+                "당신은 글쓰기 지시 사항을 여러 개의 하위 작업으로 나눌 것입니다."
+                #"each subtask should include the main points and word count requirements for that paragraph."
+                "각 하위 작업은 에세이의 한 단락 작성을 안내할 것이며, 해당 단락의 주요 내용과 단어 수 요구 사항을 포함해야 합니다."
 
-            "The writing instruction is as follows:"
-            "{instruction}"
-            
-            "Please break it down in the following format, with each subtask taking up one line:"
-            "1. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [Word count requirement, e.g., 400 words]"
-            "2. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [word count requirement, e.g. 1000 words]."
-            "..."
-            
-            "Make sure that each subtask is clear and specific, and that all subtasks cover the entire content of the writing instruction."
-            "Do not split the subtasks too finely; each subtask's paragraph should be no less than 200 words and no more than 1000 words."
-            "Do not output any other content. As this is an ongoing work, omit open-ended conclusions or other rhetorical hooks."
-            
-            #"For the following long-form writing instruction, break down come up with a simple step by step plan."
-            #"This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps."
-            #"The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."
-        )
+                "글쓰기 지시 사항:"
+                "<instruction>"
+                "{instruction}"
+                "<instruction>"
+                
+                "다음 형식으로 나누어 주시기 바랍니다. 각 하위 작업은 한 줄을 차지합니다:"
+                "1. Main Point: [문단의 주요 내용을 자세히 설명하십시오.], Word Count: [Word count requirement, e.g., 400 words]"
+                "2. Main Point: [문단의 주요 내용을 자세히 설명하십시오.], Word Count: [word count requirement, e.g. 1000 words]."
+                "..."
+                
+                "각 하위 작업이 명확하고 구체적인지, 그리고 모든 하위 작업이 작문 지시 사항의 전체 내용을 다루고 있는지 확인하세요."
+                "과제를 너무 세분화하지 마세요. 각 하위 과제의 문단은 200단어 이상 1000단어 이하여야 합니다."
+                "다른 내용은 출력하지 마십시오. 이것은 진행 중인 작업이므로 열린 결론이나 다른 수사학적 표현을 생략하십시오."
+                
+                #"For the following long-form writing instruction, break down come up with a simple step by step plan."
+                #"This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps."
+                #"The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."
+            )
+        else:
+            planner_template = (
+                "You are a helpful assistant highly skilled in long-form writing."
+                "You will break down the writing instruction into multiple subtasks."
+                #"each subtask should include the main points and word count requirements for that paragraph."
+                "Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph."
+
+                "The writing instruction is as follows:"
+                "{instruction}"
+                
+                "Please break it down in the following format, with each subtask taking up one line:"
+                "1. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [Word count requirement, e.g., 400 words]"
+                "2. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [word count requirement, e.g. 1000 words]."
+                "..."
+                
+                "Make sure that each subtask is clear and specific, and that all subtasks cover the entire content of the writing instruction."
+                "Do not split the subtasks too finely; each subtask's paragraph should be no less than 200 words and no more than 1000 words."
+                "Do not output any other content. As this is an ongoing work, omit open-ended conclusions or other rhetorical hooks."
+                
+                #"For the following long-form writing instruction, break down come up with a simple step by step plan."
+                #"This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps."
+                #"The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."
+            )
         
         planner_prompt = ChatPromptTemplate([
             ('human', planner_template) 
@@ -3816,23 +3843,6 @@ def run_long_writing_agent(connectionId, requestId, query):
         workflow.add_edge("revise_draft", END)
         
         return workflow.compile()
-    
-    """    
-    drafts = write(instruction, planning_steps)
-    print('drafts: ', drafts)
-    
-    msg = ""    
-    for draft in drafts:
-        output = reflect(draft)
-        print('reflection: ', output)
-        
-        revise_draft = revise_answer(draft, output['search_queries'], output['reflection'])
-        print('--> draft: ', draft)
-        print('--> reflection: ', output)
-        print('--> revise: ', revise_draft)
-        
-        msg += f"{revise_draft}\n\n"
-    """
     
     # Workflow - Long Writing
     class State(TypedDict):
@@ -4981,8 +4991,8 @@ def getResponse(connectionId, jsonBody):
                 elif convType == 'writing-agent':  # writing agent
                     msg = run_writing_agent(connectionId, requestId, text)
                 
-                elif convType == 'long-writing-agent':  # long writing
-                    msg = run_long_writing_agent(connectionId, requestId, text)
+                elif convType == 'long-form-writing-agent':  # long writing
+                    msg = run_long_form_writing_agent(connectionId, requestId, text)
                     
                 elif convType == "rag-knowledge-base":
                     msg, reference = get_answer_using_knowledge_base(chat, text, connectionId, requestId)                
