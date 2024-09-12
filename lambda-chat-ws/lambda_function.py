@@ -4977,7 +4977,10 @@ def getResponse(connectionId, jsonBody):
     global map_chain, memory_chain
     
     # Multi-LLM
-    profile = LLM_for_chat[selected_chat]
+    if multi_region == 'enable':
+        profile = multi_region_models[selected_chat]
+    else:
+        profile = LLM_for_chat[selected_chat]
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
     # print(f'selected_chat: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
