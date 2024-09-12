@@ -2955,7 +2955,7 @@ Utilize all the information below as needed:
             
         if state["revision_number"] > max_revisions:
             return "end"
-        return "contine"
+        return "continue"
     
     def buildEasyWriter():
         workflow = StateGraph(State)
@@ -2973,7 +2973,7 @@ Utilize all the information below as needed:
             should_continue, 
             {
                 "end": END, 
-                "contine": "reflection"}
+                "continue": "reflection"}
         )
 
         workflow.add_edge("planner", "research_plan")
@@ -3139,7 +3139,7 @@ You should use the previous critique to add important information to your answer
             
         if state["revision_number"] > max_revisions:
             return "end"
-        return "contine"
+        return "continue"
 
     def buildKnowledgeGuru():    
         workflow = StateGraph(State)
@@ -3155,7 +3155,7 @@ You should use the previous critique to add important information to your answer
             should_continue, 
             {
                 "end": END, 
-                "contine": "reflect"}
+                "continue": "reflect"}
         )
 
         workflow.add_edge("generate", "reflect")
@@ -3757,9 +3757,11 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 print('search_queries: ', search_queries)                
                 break
         
+        revision_number = state["revision_number"] if state.get("revision_number") is not None else 1
         return {
             "reflection": reflection,
-            "search_queries": search_queries
+            "search_queries": search_queries,
+            "revision_number": revision_number + 1            
         }
         
     def revise_draft(state: ReflectionState):   
@@ -3847,10 +3849,23 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         print('--> reflection: ', reflection)
         print('--> revised_draft: ', revised_draft)
         
+        revision_number = state["revision_number"] if state.get("revision_number") is not None else 1
+        
         return {
-            "revised_draft": revised_draft
+            "revised_draft": revised_draft,            
+            "revision_number": int(state['revision_number'])
         }
         
+    MAX_REVISIONS = 1
+    def should_continue(state: ReflectionState, config):
+        print("###### should_continue ######")
+        max_revisions = config.get("configurable", {}).get("max_revisions", MAX_REVISIONS)
+        print("max_revisions: ", max_revisions)
+            
+        if state["revision_number"] > max_revisions:
+            return "end"
+        return "continue"        
+    
     def buildReflection():
         workflow = StateGraph(ReflectionState)
 
@@ -3860,10 +3875,17 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 
         # Set entry point
         workflow.set_entry_point("reflect_node")
+        
+        workflow.add_conditional_edges(
+            "revise_draft", 
+            should_continue, 
+            {
+                "end": END, 
+                "continue": "reflect_node"}
+        )
 
         # Add edges
         workflow.add_edge("reflect_node", "revise_draft")
-        workflow.add_edge("revise_draft", END)
         
         return workflow.compile()
     
@@ -4016,7 +4038,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "draft": draft
             }    
             config = {
-                "recursion_limit": 50
+                "recursion_limit": 50,
+                "max_revisions": 1
             }
             output = reflection_app.invoke(inputs, config)
             
@@ -4026,7 +4049,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "final_doc": final_doc
         }
         
-    def buildLongWriting():
+    def buildLongTermWriting():
         workflow = StateGraph(State)
 
         # Add nodes
@@ -4044,7 +4067,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         return workflow.compile()
     
-    app = buildLongWriting()
+    app = buildLongTermWriting()
     
     # Run the workflow
     isTyping(connectionId, requestId)        

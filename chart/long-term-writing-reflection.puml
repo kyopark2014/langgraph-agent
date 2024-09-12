@@ -1,0 +1,53 @@
+@startuml Self RAG
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+skinparam wrapWidth 200
+skinparam maxMessageSize 200
+
+!$BLACK = "#black"
+!$COLOR_A_6 = "#d4de5e"
+!$COLOR_A_5 = "#7f3b08"
+!$COLOR_A_4 = "#b35806"
+!$COLOR_A_3 = "#e08214"
+!$COLOR_A_2 = "#fdb863"
+!$COLOR_A_1 = "#fee0b6"
+!$COLOR_NEUTRAL = "#f7f7f7"
+!$COLOR_B_1 = "#d8daeb"
+!$COLOR_B_2 = "#b2abd2"
+!$COLOR_B_3 = "#8073ac"
+!$COLOR_B_4 = "#542788"
+!$COLOR_B_5 = "#2d004b"
+!$COLOR_REL_LINE = "#8073ac"
+!$COLOR_REL_TEXT = "#8073ac"
+
+UpdateElementStyle("container", $bgColor=$COLOR_A_6, $fontColor=$BLACK, $borderColor=$COLOR_A_1, $shadowing="false", $legendText="Internal user")
+UpdateElementStyle("system", $bgColor=$COLOR_B_4, $fontColor=$COLOR_NEUTRAL, $borderColor=$COLOR_B_2, $legendText="External system")
+UpdateRelStyle($lineColor=$COLOR_REL_LINE, $textColor=$COLOR_REL_TEXT)
+
+LAYOUT_WITH_LEGEND()
+
+'System(start, "Start")
+'System(END, "END")
+
+Container(reflect_node, "reflect_node")
+Container(revise_draft, "revise_draft")
+
+Rel(Start, reflect_node, "draft")
+
+'Boundary(c1, "tools_condition") {
+    SystemQueue_Ext(should_continue, "should_continue\n(revision_number<max_revisions)")
+'}
+
+Rel(reflect_node, revise_draft, "draft,\nreflection,\nsearch_queries")
+
+Rel(revise_draft, should_continue, "revised_draft,\nrevision_number")
+
+Rel(should_continue, END, "end")
+
+Rel(should_continue, reflect_node, "confinue")
+
+
+
+
+@enduml
