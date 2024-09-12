@@ -66,13 +66,75 @@ selected_embedding = 0
 separated_chat_history = os.environ.get('separated_chat_history')
 enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
 enableHybridSearch = os.environ.get('enableHybridSearch')
-useParallelRAG = os.environ.get('useParallelRAG', 'true')
 useParrelWebSearch = True
 useEnhancedSearch = True
 
 prompt_flow_name = os.environ.get('prompt_flow_name')
 rag_prompt_flow_name = os.environ.get('rag_prompt_flow_name')
 knowledge_base_name = os.environ.get('knowledge_base_name')
+
+"""  
+multi_region_models = [  # claude sonnet 3.5
+    {
+        "bedrock_region": "us-west-2", # Oregon
+        "model_type": "claude3.5",
+        "max_tokens": 4096,
+        "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    },
+    {
+        "bedrock_region": "us-east-1", # N.Virginia
+        "model_type": "claude3.5",
+        "max_tokens": 4096,
+        "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    },
+    {
+        "bedrock_region": "eu-central-1", # Frankfurt
+        "model_type": "claude3.5",
+        "max_tokens": 4096,
+        "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    },
+    {
+        "bedrock_region": "ap-northeast-1", # Tokyo
+        "model_type": "claude3.5",
+        "max_tokens": 4096,
+        "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    }
+]
+"""
+    
+multi_region_models = [   # claude sonnet 3.0
+    {   
+        "bedrock_region": "us-west-2", # Oregon
+        "model_type": "claude3",
+        "max_tokens": 4096,
+        "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+    },
+    {
+        "bedrock_region": "us-east-1", # N.Virginia
+        "model_type": "claude3",
+        "max_tokens": 4096,
+        "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+    },
+    {
+        "bedrock_region": "ca-central-1", # Canada
+        "model_type": "claude3",
+        "max_tokens": 4096,
+        "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+    },
+    {
+        "bedrock_region": "eu-west-2", # London
+        "model_type": "claude3",
+        "max_tokens": 4096,
+        "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+    },
+    {
+        "bedrock_region": "sa-east-1", # Sao Paulo
+        "model_type": "claude3",
+        "max_tokens": 4096,
+        "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
+    }
+]
+multi_region = 'disable'
 
 reference_docs = []
 # api key to get weather information in agent
@@ -137,7 +199,12 @@ MSG_LENGTH = 100
 # Multi-LLM
 def get_chat():
     global selected_chat
-    profile = LLM_for_chat[selected_chat]
+    
+    if multi_region == 'enable':
+        profile = multi_region_models[selected_chat]
+    else:
+        profile = LLM_for_chat[selected_chat]
+        
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
     maxOutputTokens = 4096
@@ -955,70 +1022,8 @@ def grade_document_based_on_relevance(conn, question, doc, models, selected):
         conn.send(None)
     
     conn.close()
-                                
+                                    
 def grade_documents_using_parallel_processing(question, documents):
-    """    
-    models = [  # claude 3.5
-        {
-            "bedrock_region": "us-west-2", # Oregon
-            "model_type": "claude3.5",
-            "max_tokens": 4096,
-            "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
-        },
-        {
-            "bedrock_region": "us-east-1", # N.Virginia
-            "model_type": "claude3.5",
-            "max_tokens": 4096,
-            "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
-        },
-        {
-            "bedrock_region": "eu-central-1", # Frankfurt
-            "model_type": "claude3.5",
-            "max_tokens": 4096,
-            "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
-        },
-        {
-            "bedrock_region": "ap-northeast-1", # Tokyo
-            "model_type": "claude3.5",
-            "max_tokens": 4096,
-            "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
-        }
-    ]
-    """
-    
-    models = [   # claude 3.0
-        {   
-            "bedrock_region": "us-west-2", # Oregon
-            "model_type": "claude3",
-            "max_tokens": 4096,
-            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-        },
-        {
-            "bedrock_region": "us-east-1", # N.Virginia
-            "model_type": "claude3",
-            "max_tokens": 4096,
-            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-        },
-        {
-            "bedrock_region": "ca-central-1", # Canada
-            "model_type": "claude3",
-            "max_tokens": 4096,
-            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-        },
-        {
-            "bedrock_region": "eu-west-2", # London
-            "model_type": "claude3",
-            "max_tokens": 4096,
-            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-        },
-        {
-            "bedrock_region": "sa-east-1", # Sao Paulo
-            "model_type": "claude3",
-            "max_tokens": 4096,
-            "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
-        }
-    ]
-    
     filtered_docs = []    
 
     processes = []
@@ -1030,11 +1035,11 @@ def grade_documents_using_parallel_processing(question, documents):
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
             
-        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, models, selected))
+        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, multi_region_models, selected))
         processes.append(process)
 
         selected = selected + 1
-        if selected == len(models):
+        if selected == len(multi_region_models):
             selected = 0
     for process in processes:
         process.start()
@@ -1101,7 +1106,7 @@ def grade_documents(question, documents):
     print("###### grade_documents ######")
     
     filtered_docs = []
-    if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
+    if multi_region == 'enable':  # parallel processing
         print("start grading...")
         filtered_docs = grade_documents_using_parallel_processing(question, documents)
 
@@ -1944,7 +1949,7 @@ def run_corrective_rag(connectionId, requestId, query):
         filtered_docs = []
         web_search = "No"
         
-        if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
+        if multi_region == 'enable':  # parallel processing
             print("start grading...")
             filtered_docs = grade_documents_using_parallel_processing(question, documents)
             
@@ -2119,7 +2124,7 @@ def run_self_rag(connectionId, requestId, query):
         documents = state["documents"]
         count = state["count"] if state.get("count") is not None else -1
         
-        if useParallelRAG == 'true' or multiRegionGrade == 'enable':  # parallel processing
+        if multi_region == 'enable':  # parallel processing
             print("start grading...")
             filtered_docs = grade_documents_using_parallel_processing(question, documents)
 
@@ -3528,6 +3533,7 @@ Remember to only output the paragraph you write, without repeating the already w
         print(f"Total word count: {word_count}")
 
         return {"final_doc": final_doc, "word_count": word_count, "num_steps":num_steps}            
+    
     def saving_node(state: State):
         """take the finished long doc and save it to local disk as a .md file   """
         print("---SAVING THE DOC---")
@@ -3543,6 +3549,8 @@ Remember to only output the paragraph you write, without repeating the already w
         print('plan: ', plan)
         print('final_doc: ', final_doc)
         print('word_count: ', word_count)
+        
+        # To-Do: save the result in S3 as a md file
         
         return {"num_steps":num_steps}
     
@@ -3622,64 +3630,62 @@ def run_long_writing_agent(connectionId, requestId, query):
         
         planner = planner_prompt | chat
         return planner
-
-    def write(instruction, planning_steps):
-        write_template = (
-            "You are an excellent writing assistant." 
-            "I will give you an original writing instruction and my planned writing steps."
-            "I will also provide you with the text I have already written."
-            "Please help me continue writing the next paragraph based on the writing instruction, writing steps, and the already written text."
-
-            "Writing instruction:"
-            "<instruction>"
-            "{intructions}"
-            "</instruction>"
-
-            "Writing steps:"
-            "<plan>"
-            "{plan}"
-            "</plan>"
-
-            "Already written text:"
-            "<text>"
-            "{text}"
-            "</text>"
-
-            "Please integrate the original writing instruction, writing steps, and the already written text, and now continue writing {STEP}."
-            "If needed, you can add a small subtitle at the beginning."
-            "Remember to only output the paragraph you write, without repeating the already written text."
-        )
-
-        write_prompt = ChatPromptTemplate([
-            ('human', write_template)
-        ])
-        
-        text = ""
-        responses = []
-        if len(planning_steps) > 50:
-            print("plan is too long")
-            # print(plan)
-            return
-        
-        for idx, step in enumerate(planning_steps):
-            # Invoke the write_chain
-            chat = get_chat()
-            write_chain = write_prompt | chat
-        
-            result = write_chain.invoke({
-                "intructions": instruction,
-                "plan": planning_steps,
-                "text": text,
-                "STEP": step
-            })
-            print(f"--> step:{step}")
-            print(f"--> {result.content}")
-            
-            responses.append(result.content)
-            text += result.content + '\n\n'
-
-        return responses
     
+    """
+    def tavily_search(conn, q, k):     
+        # Invoke the write_chain
+        chat = get_chat()
+        write_chain = write_prompt | chat
+            
+        result = write_chain.invoke({
+            "intructions": instruction,
+            "plan": planning_steps,
+            "text": text,
+            "STEP": step
+        })
+        print(f"--> step:{step}")
+        print(f"--> {result.content}")
+                
+        responses.append(result.content)
+        text += result.content + '\n\n'
+            
+        conn.send(content)    
+        conn.close()
+        
+    def grade_documents_using_parallel_processing(question, documents):
+        filtered_docs = []    
+
+        processes = []
+        parent_connections = []
+        
+        selected = 0
+        for i, doc in enumerate(documents):
+            #print(f"grading doc[{i}]: {doc.page_content}")        
+            parent_conn, child_conn = Pipe()
+            parent_connections.append(parent_conn)
+                
+            process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, multi_region_models, selected))
+            processes.append(process)
+
+            selected = selected + 1
+            if selected == len(multi_region_models):
+                selected = 0
+        for process in processes:
+            process.start()
+                
+        for parent_conn in parent_connections:
+            relevant_doc = parent_conn.recv()
+
+            if relevant_doc is not None:
+                filtered_docs.append(relevant_doc)
+
+        for process in processes:
+            process.join()
+        
+        #print('filtered_docs: ', filtered_docs)
+        return filtered_docs
+    """
+
         
     class Reflection(BaseModel):
         missing: str = Field(description="Critique of what is missing.")
@@ -3771,18 +3777,8 @@ def run_long_writing_agent(connectionId, requestId, query):
             }
         )                                    
         return res.content[res.content.find('<result>')+8:len(res.content)-9]
-        
-    planner = get_planner()
     
-    instruction = f"다음의 주제를 4000자로 된 긴 문장으로 완성하세요.\n\n주제: {query}"
-    response = planner.invoke({"instruction": query})
-    print('response: ', response.content)
-    
-    plan = response.content
-    plan = plan.strip().replace('\n\n', '\n')
-    planning_steps = plan.split('\n')        
-    print('planning_steps: ', planning_steps)
-    
+    """    
     drafts = write(instruction, planning_steps)
     print('drafts: ', drafts)
     
@@ -3797,16 +3793,17 @@ def run_long_writing_agent(connectionId, requestId, query):
         print('--> revise: ', revise_draft)
         
         msg += f"{revise_draft}\n\n"
-
+    """
+    
     class State(TypedDict):
         instruction : str
-        planning_steps : str
-        num_steps : int
+        planning_steps : List[str]
+        drafts : List[str]
+        # num_steps : int
         final_doc : str
-        write_steps : List[str]
         word_count : int
             
-    def plan(state: State):
+    def planning_node(state: State):
         print("###### plan ######")
         instruction = state["instruction"]
         print('subject: ', instruction)
@@ -3824,10 +3821,119 @@ def run_long_writing_agent(connectionId, requestId, query):
             "instruction": instruction,
             "planning_steps": planning_steps
         }  
-    
-    return msg
-    
 
+    def writing_node(state: State):
+        print("###### write ######")        
+        instruction = state["instruction"]
+        planning_steps = state["planning_steps"]        
+        print('instruction: ', instruction)
+        print('planning_steps: ', planning_steps)
+        
+        write_template = (
+            "You are an excellent writing assistant." 
+            "I will give you an original writing instruction and my planned writing steps."
+            "I will also provide you with the text I have already written."
+            "Please help me continue writing the next paragraph based on the writing instruction, writing steps, and the already written text."
+
+            "Writing instruction:"
+            "<instruction>"
+            "{intructions}"
+            "</instruction>"
+
+            "Writing steps:"
+            "<plan>"
+            "{plan}"
+            "</plan>"
+
+            "Already written text:"
+            "<text>"
+            "{text}"
+            "</text>"
+
+            "Please integrate the original writing instruction, writing steps, and the already written text, and now continue writing {STEP}."
+            "If needed, you can add a small subtitle at the beginning."
+            "Remember to only output the paragraph you write, without repeating the already written text."
+        )
+
+        write_prompt = ChatPromptTemplate([
+            ('human', write_template)
+        ])
+        
+        text = ""
+        drafts = []
+        if len(planning_steps) > 50:
+            print("plan is too long")
+            # print(plan)
+            return
+        
+        for idx, step in enumerate(planning_steps):
+            # Invoke the write_chain
+            chat = get_chat()
+            write_chain = write_prompt | chat
+            
+            result = write_chain.invoke({
+                "intructions": instruction,
+                "plan": planning_steps,
+                "text": text,
+                "STEP": step
+            })
+            print(f"--> step:{step}")
+            print(f"--> {result.content}")
+                
+            drafts.append(result.content)
+            text += result.content + '\n\n'
+
+        return {
+            "drafts": drafts
+        }
+
+    def revising_node(state: State):
+        print("###### revise ######")        
+        drafts = state["drafts"]        
+        print('drafts: ', drafts)
+            
+        final_doc = ""   
+        for idx, draft in enumerate(drafts):
+            final_doc += draft + '\n\n'
+
+        return {
+            "final_doc": final_doc
+        }
+        
+    def buildLongWriting():
+        workflow = StateGraph(State)
+
+        # Add nodes
+        workflow.add_node("planning_node", planning_node)
+        workflow.add_node("writing_node", writing_node)
+        workflow.add_node("revising_node", revising_node)
+
+        # Set entry point
+        workflow.set_entry_point("planning_node")
+
+        # Add edges
+        workflow.add_edge("planning_node", "writing_node")
+        workflow.add_edge("writing_node", "revising_node")
+        workflow.add_edge("revising_node", END)
+        
+        return workflow.compile()
+    
+    app = buildLongWriting()
+    
+    # Run the workflow
+    isTyping(connectionId, requestId)        
+    inputs = {
+        "instruction": query
+    }    
+    config = {
+        "recursion_limit": 50
+    }
+    
+    output = app.invoke(inputs, config)
+    print('output: ', output)
+    
+    return output['final_doc']
+            
 ####################### Knowledge Base #######################
 # Knowledge Base
 ##############################################################
@@ -4677,17 +4783,11 @@ def getResponse(connectionId, jsonBody):
     convType = jsonBody['convType']
     print('convType: ', convType)
     
-    multi_region = 'disable'
+    global multi_region    
     if "multi_region" in jsonBody:
         multi_region = jsonBody['multi_region']
     print('multi_region: ', multi_region)
-    
-    global multiRegionGrade
-    if multi_region == 'enable':
-        multiRegionGrade = 'enable'
-    else:
-        multiRegionGrade = 'disable'
-    
+        
     print('initiate....')
     global reference_docs
     reference_docs = []
