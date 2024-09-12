@@ -3607,7 +3607,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         if isKorean(query):
             planner_template = (
                 "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."
-                "이번 글쓰기는 8000단어 이상의 장편입니다."
+                "이번 글쓰기는 20000단어 이상의 장편입니다."
                 "당신은 글쓰기 지시 사항을 여러 개의 하위 작업으로 나눌 것입니다."
                 "각 하위 작업은 에세이의 한 단락 작성을 안내할 것이며, 해당 단락의 주요 내용과 단어 수 요구 사항을 포함해야 합니다."
 
@@ -3622,13 +3622,13 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "..."
                 
                 "각 하위 작업이 명확하고 구체적인지, 그리고 모든 하위 작업이 작문 지시 사항의 전체 내용을 다루고 있는지 확인하세요."
-                "과제를 너무 세분화하지 마세요. 각 하위 과제의 문단은 200단어 이상 1000단어 이하여야 합니다."
+                "과제를 너무 세분화하지 마세요. 각 하위 과제의 문단은 500단어 이상 2000단어 이하여야 합니다."
                 "다른 내용은 출력하지 마십시오. 이것은 진행 중인 작업이므로 열린 결론이나 다른 수사학적 표현을 생략하십시오."                
             )
         else:
             planner_template = (
                 "You are a helpful assistant highly skilled in long-form writing."
-                "This writing is a long piece of over 8,000 words."
+                "This writing is a long piece of over 20,000 words."
                 "You will break down the writing instruction into multiple subtasks."
                 "Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph."
 
@@ -3643,7 +3643,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "..."
                 
                 "Make sure that each subtask is clear and specific, and that all subtasks cover the entire content of the writing instruction."
-                "Do not split the subtasks too finely; each subtask's paragraph should be no less than 200 words and no more than 1000 words."
+                "Do not split the subtasks too finely; each subtask's paragraph should be no less than 500 words and no more than 2000 words."
                 "Do not output any other content. As this is an ongoing work, omit open-ended conclusions or other rhetorical hooks."                
             )
         
