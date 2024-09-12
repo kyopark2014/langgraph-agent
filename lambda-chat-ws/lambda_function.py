@@ -3674,7 +3674,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 
         reflection: Reflection = Field(description="Your reflection on the initial writing.")
         search_queries: list[str] = Field(
-            description="1-3 search queries for researching improvements to address the critique of your current writing."
+            description="1-3 search korean queries for researching improvements to address the critique of your current writing."
         )
     
     def reflect_node(state: ReflectionState):
