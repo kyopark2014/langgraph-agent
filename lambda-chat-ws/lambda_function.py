@@ -3794,8 +3794,8 @@ def run_long_writing_agent(connectionId, requestId, query):
         revised_draft = res.content[res.content.find('<result>')+8:len(res.content)-9]
         
         print('--> draft: ', draft)
-        print('--> reflection: ', output)
-        print('--> revise: ', revised_draft)
+        print('--> reflection: ', reflection)
+        print('--> revised_draft: ', revised_draft)
         
         return {
             "revised_draft": revised_draft
