@@ -3719,6 +3719,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         reflection : List[str]
         search_queries : List[str]
         revised_draft: str
+        revision_number: int
         
     class Reflection(BaseModel):
         missing: str = Field(description="Critique of what is missing.")
@@ -3853,7 +3854,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         return {
             "revised_draft": revised_draft,            
-            "revision_number": int(state['revision_number'])
+            "revision_number": revision_number
         }
         
     MAX_REVISIONS = 1
