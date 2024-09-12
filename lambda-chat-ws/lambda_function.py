@@ -3865,8 +3865,10 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         # print('output: ', output)
         
         revised_draft = output[output.find('<result>')+8:len(output)-9]
+        print('revised_draft: ', revised_draft) 
+            
         if revised_draft.find('#')!=-1 and revised_draft.find('#')!=0:
-                revised_draft = revised_draft[revised_draft.find('#')-1:]
+                revised_draft = revised_draft[revised_draft.find('#'):]
 
         print('--> draft: ', draft)
         print('--> reflection: ', reflection)
@@ -4039,9 +4041,10 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             # print('output: ', output)
             
             draft = output[output.find('<result>')+8:len(output)-9]
-                        
+            print('draft: ', draft) 
+                       
             if draft.find('#')!=-1 and draft.find('#')!=0:
-                draft = draft[draft.find('#')-1:]
+                draft = draft[draft.find('#'):]
             
             print(f"--> step:{step}")
             print(f"--> {draft}")
