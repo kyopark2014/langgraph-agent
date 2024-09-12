@@ -3767,23 +3767,42 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         print('search_queries: ', search_queries)
         print('reflection: ', reflection)
         
-        revise_template = (
-            "You are an excellent writing assistant." 
-            "Revise this draft using the critique and additional information."
-            "Provide the final answer with <result> tag."
-                        
-            "<draft>"
-            "{draft}"
-            "</draft>"
-                        
-            "<critique>"
-            "{reflection}"
-            "</critique>"
+        if isKorean(draft):
+            revise_template = (
+                "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."                
+                "Revise this draft using the critique and additional information."
+                "최종 결과에 <result> tag를 붙여주세요."
+                            
+                "<draft>"
+                "{draft}"
+                "</draft>"
+                            
+                "<critique>"
+                "{reflection}"
+                "</critique>"
 
-            "<information>"
-            "{content}"
-            "</information>"
-        )
+                "<information>"
+                "{content}"
+                "</information>"
+            )
+        else:    
+            revise_template = (
+                "You are an excellent writing assistant." 
+                "Revise this draft using the critique and additional information."
+                "Provide the final answer with <result> tag."
+                            
+                "<draft>"
+                "{draft}"
+                "</draft>"
+                            
+                "<critique>"
+                "{reflection}"
+                "</critique>"
+
+                "<information>"
+                "{content}"
+                "</information>"
+            )
                     
         revise_prompt = ChatPromptTemplate([
             ('human', revise_template)
@@ -3953,7 +3972,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "필요하다면 앞에 작은 부제를 추가할 수 있습니다."
                 "이미 작성된 텍스트를 반복하지 말고 작성한 문단만 출력하세요."                
                 "Markdown 포맷으로 서식을 작성하세요."
-                "<result> tag를 붙여주세요."
+                "최종 결과에 <result> tag를 붙여주세요."
             )
         else:    
             write_template = (
