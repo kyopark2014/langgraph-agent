@@ -3869,36 +3869,68 @@ def run_long_writing_agent(connectionId, requestId, query):
         print('instruction: ', instruction)
         print('planning_steps: ', planning_steps)
         
-        write_template = (
-            "You are an excellent writing assistant." 
-            "I will give you an original writing instruction and my planned writing steps."
-            "I will also provide you with the text I have already written."
-            "Please help me continue writing the next paragraph based on the writing instruction, writing steps, and the already written text."
+        if isKorean(instruction):
+            write_template = (
+                "당신은 훌륭한 글쓰기 도우미입니다." 
+                "저는 귀하께 원본 글쓰기 지시사항과 계획한 글쓰기 단계를 제공하겠습니다."
+                "또한 제가 이미 작성한 텍스트를 제공하겠습니다."
+                "다음 단락을 계속 작성해 주시기 바랍니다. 글쓰기 지시사항, 글쓰기 단계 및 이미 작성된 텍스트를 기반으로 해주시면 됩니다."
 
-            "Writing instruction:"
-            "<instruction>"
-            "{intructions}"
-            "</instruction>"
+                "글쓰기 지시사항:"
+                "<instruction>"
+                "{intructions}"
+                "</instruction>"
 
-            "Writing steps:"
-            "<plan>"
-            "{plan}"
-            "</plan>"
+                "글쓰기 단계:"
+                "<plan>"
+                "{plan}"
+                "</plan>"
 
-            "Already written text:"
-            "<text>"
-            "{text}"
-            "</text>"
+                "이미 작성한 텍스트:"
+                "<text>"
+                "{text}"
+                "</text>"
 
-            "Please integrate the original writing instruction, writing steps, and the already written text, and now continue writing {STEP}."
-            "If needed, you can add a small subtitle at the beginning."
-            "Remember to only output the paragraph you write, without repeating the already written text."
-            
-            "Use markdown syntax to format your output:"
-            "- Headings: # for main, ## for sections, ### for subsections, etc."
-            "- Lists: * or - for bulleted, 1. 2. 3. for numbered"
-            "- Do not repeat yourself"
-        )
+                "원본 작문 지시 사항, 작문 단계 및 이미 작성된 텍스트를 통합하고 이제 계속 작성하십시오. {STEP}."
+                "필요하다면 앞에 작은 부제를 추가할 수 있습니다."
+                "기억하세요. 이미 작성된 텍스트를 반복하지 말고 작성한 문단만 출력하세요."
+                
+                "Markdown 구문을 사용하여 출력을 서식 지정하세요:"
+                "- Headings: # for main, ## for sections, ### for subsections, etc."
+                "- Lists: * or - for bulleted, 1. 2. 3. for numbered"
+                "- Do not repeat yourself"
+            )
+        else:    
+            write_template = (
+                "You are an excellent writing assistant." 
+                "I will give you an original writing instruction and my planned writing steps."
+                "I will also provide you with the text I have already written."
+                "Please help me continue writing the next paragraph based on the writing instruction, writing steps, and the already written text."
+
+                "Writing instruction:"
+                "<instruction>"
+                "{intructions}"
+                "</instruction>"
+
+                "Writing steps:"
+                "<plan>"
+                "{plan}"
+                "</plan>"
+
+                "Already written text:"
+                "<text>"
+                "{text}"
+                "</text>"
+
+                "Please integrate the original writing instruction, writing steps, and the already written text, and now continue writing {STEP}."
+                "If needed, you can add a small subtitle at the beginning."
+                "Remember to only output the paragraph you write, without repeating the already written text."
+                
+                "Use markdown syntax to format your output:"
+                "- Headings: # for main, ## for sections, ### for subsections, etc."
+                "- Lists: * or - for bulleted, 1. 2. 3. for numbered"
+                "- Do not repeat yourself"
+            )
 
         write_prompt = ChatPromptTemplate([
             ('human', write_template)
