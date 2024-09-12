@@ -3720,7 +3720,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             revise_template = (
                 "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."                
                 "draft을 critique과 information 사용하여 수정하십시오."
-                "최종 결과에 <result> tag를 붙여주세요."
+                "최종 결과는 한국어로 작성하고 <result> tag를 붙여주세요."
                             
                 "<draft>"
                 "{draft}"
