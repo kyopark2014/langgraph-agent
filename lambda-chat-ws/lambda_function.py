@@ -3603,8 +3603,7 @@ Remember to only output the paragraph you write, without repeating the already w
 # Long term Writing Agent
 #########################################################
 def run_long_form_writing_agent(connectionId, requestId, query):
-    def get_planner():
-        
+    def get_planner():        
         if isKorean(query):
             planner_template = (
                 "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."
@@ -3655,61 +3654,6 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         planner = planner_prompt | chat
         return planner
     
-    """
-    def tavily_search(conn, q, k):     
-        # Invoke the write_chain
-        chat = get_chat()
-        write_chain = write_prompt | chat
-            
-        result = write_chain.invoke({
-            "intructions": instruction,
-            "plan": planning_steps,
-            "text": text,
-            "STEP": step
-        })
-        print(f"--> step:{step}")
-        print(f"--> {result.content}")
-                
-        responses.append(result.content)
-        text += result.content + '\n\n'
-            
-        conn.send(content)    
-        conn.close()
-        
-    def grade_documents_using_parallel_processing(question, documents):
-        filtered_docs = []    
-
-        processes = []
-        parent_connections = []
-        
-        selected = 0
-        for i, doc in enumerate(documents):
-            #print(f"grading doc[{i}]: {doc.page_content}")        
-            parent_conn, child_conn = Pipe()
-            parent_connections.append(parent_conn)
-                
-            process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, multi_region_models, selected))
-            processes.append(process)
-
-            selected = selected + 1
-            if selected == len(multi_region_models):
-                selected = 0
-        for process in processes:
-            process.start()
-                
-        for parent_conn in parent_connections:
-            relevant_doc = parent_conn.recv()
-
-            if relevant_doc is not None:
-                filtered_docs.append(relevant_doc)
-
-        for process in processes:
-            process.join()
-        
-        #print('filtered_docs: ', filtered_docs)
-        return filtered_docs
-    """
-
     # Workflow - Reflection
     class ReflectionState(TypedDict):
         draft : str
@@ -4058,26 +4002,81 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "drafts": drafts
         }
 
+    def revise_draft(conn, reflection_app, idx, draft):     
+        inputs = {
+            "draft": draft
+        }    
+        config = {
+            "recursion_limit": 50,
+            "max_revisions": 1
+        }
+        output = reflection_app.invoke(inputs, config)
+        
+        result = {
+            "revised_draft": output['revised_draft'],
+            "idx": idx
+        }
+            
+        conn.send(result)    
+        conn.close()
+        
+    def revise_drafts_using_parallel_processing(drafts):
+        revise_drafts = drafts
+        
+        processes = []
+        parent_connections = []
+        
+        reflection_app = buildReflection()
+                
+        for idx, draft in enumerate(drafts):
+            parent_conn, child_conn = Pipe()
+            parent_connections.append(parent_conn)
+            
+            process = Process(target=revise_draft, args=(child_conn, reflection_app, idx, draft))
+            processes.append(process)
+            
+        for process in processes:
+            process.start()
+                
+        for parent_conn in parent_connections:
+            result = parent_conn.recv()
+
+            if result is not None:
+                print('result: ', result)
+                revise_drafts[result['idx']] = result['revised_draft']
+
+        for process in processes:
+            process.join()
+                
+        final_doc = ""   
+        for revised_draft in revise_drafts:
+            final_doc += revised_draft + '\n\n'
+        
+        return final_doc
+
     def revise_answer(state: State):
         print("###### revise ######")        
         drafts = state["drafts"]        
         print('drafts: ', drafts)
         
         # reflection
-        reflection_app = buildReflection()
-            
-        final_doc = ""   
-        for idx, draft in enumerate(drafts):
-            inputs = {
-                "draft": draft
-            }    
-            config = {
-                "recursion_limit": 50,
-                "max_revisions": 1
-            }
-            output = reflection_app.invoke(inputs, config)
-            
-            final_doc += output['revised_draft'] + '\n\n'
+        if multi_region == 'enable':  # parallel processing
+            final_doc = revise_drafts_using_parallel_processing(drafts)
+        else:
+            reflection_app = buildReflection()
+                
+            final_doc = ""   
+            for idx, draft in enumerate(drafts):
+                inputs = {
+                    "draft": draft
+                }    
+                config = {
+                    "recursion_limit": 50,
+                    "max_revisions": 1
+                }
+                output = reflection_app.invoke(inputs, config)
+                
+                final_doc += output['revised_draft'] + '\n\n'
 
         return {
             "final_doc": final_doc
