@@ -3773,7 +3773,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         if isKorean(draft):
             revise_template = (
                 "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."                
-                "Revise this draft using the critique and additional information."
+                "draft을 critique과 information 사용하여 수정하십시오."
                 "최종 결과에 <result> tag를 붙여주세요."
                             
                 "<draft>"
@@ -3868,7 +3868,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         print('revised_draft: ', revised_draft) 
             
         if revised_draft.find('#')!=-1 and revised_draft.find('#')!=0:
-                revised_draft = revised_draft[revised_draft.find('#'):]
+            revised_draft = revised_draft[revised_draft.find('#'):]
 
         print('--> draft: ', draft)
         print('--> reflection: ', reflection)
