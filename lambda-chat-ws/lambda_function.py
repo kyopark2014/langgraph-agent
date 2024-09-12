@@ -3628,6 +3628,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         else:
             planner_template = (
                 "You are a helpful assistant highly skilled in long-form writing."
+                "This writing is a long piece of over 5,000 words."
                 "You will break down the writing instruction into multiple subtasks."
                 "Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph."
 
@@ -3959,7 +3960,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "- Headings: # for main, ## for sections, ### for subsections, etc."
                 "- Lists: * or - for bulleted, 1. 2. 3. for numbered"
                 "- Do not repeat yourself"
-                "Put it in <result> tags."
+                "Provide the final answer using Korean with <result> tag."
             )
 
         write_prompt = ChatPromptTemplate([
