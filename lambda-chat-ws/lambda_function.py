@@ -4002,7 +4002,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "drafts": drafts
         }
 
-    def revise_draft(conn, reflection_app, idx, draft):     
+    def reflect_draft(conn, reflection_app, idx, draft):     
         inputs = {
             "draft": draft
         }    
@@ -4020,7 +4020,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         conn.send(result)    
         conn.close()
         
-    def revise_drafts_using_parallel_processing(drafts):
+    def reflect_drafts_using_parallel_processing(drafts):
         revised_drafts = drafts
         
         processes = []
@@ -4032,7 +4032,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             parent_conn, child_conn = Pipe()
             parent_connections.append(parent_conn)
             
-            process = Process(target=revise_draft, args=(child_conn, reflection_app, idx, draft))
+            process = Process(target=reflect_draft, args=(child_conn, reflection_app, idx, draft))
             processes.append(process)
             
         for process in processes:
@@ -4061,7 +4061,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         # reflection
         if multi_region == 'enable':  # parallel processing
-            final_doc = revise_drafts_using_parallel_processing(drafts[:2])
+            final_doc = reflect_drafts_using_parallel_processing(drafts)
         else:
             reflection_app = buildReflection()
                 
