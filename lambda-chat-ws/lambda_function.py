@@ -1009,7 +1009,7 @@ def get_retrieval_grader(chat):
 
 def grade_document_based_on_relevance(conn, question, doc, models, selected):     
     chat = get_multi_region_chat(models, selected)
-    retrieval_grader = get_retrieval_grader(chat)       
+    retrieval_grader = get_retrieval_grader(chat)
     score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
     # print(f"score: {score}")
     
@@ -3595,7 +3595,7 @@ Remember to only output the paragraph you write, without repeating the already w
     return output['final_doc']
 
 ####################### LangGraph #######################
-# Long Writing Agent
+# Long term Writing Agent
 #########################################################
 def run_long_form_writing_agent(connectionId, requestId, query):
     def get_planner():
@@ -3794,7 +3794,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             ('human', revise_template)
         ])
             
-        content = []        
+        content = []     
+        useEnhancedSearch = False   
         if useEnhancedSearch:
             for q in search_queries:
                 response = enhanced_search(q)     
@@ -3802,11 +3803,33 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 content.append(response)                   
         else:
             search = TavilySearchResults(k=2)
+            
+            related_docs = []                        
             for q in search_queries:
                 response = search.invoke(q)
+                
+                docs = filtered_docs = []
                 for r in response:
                     if 'content' in r:
-                        content.append(r['content'])
+                        # content.append(r['content'])
+                        
+                        docs.append(
+                            Document(
+                                page_content=r['content']
+                            )
+                        )
+                
+                print('docs: ', docs)
+                filtered_docs = grade_documents(q, docs)
+                print('filtered_docs: ', filtered_docs)
+                
+                if len(filtered_docs):
+                    related_docs += filtered_docs
+            
+            for d in related_docs:
+                content.append(d.content)
+        
+        print('content: ', content)
 
         chat = get_chat()
         reflect = revise_prompt | chat
@@ -3882,9 +3905,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         if isKorean(instruction):
             write_template = (
                 "당신은 훌륭한 글쓰기 도우미입니다." 
-                "저는 귀하께 원본 글쓰기 지시사항과 계획한 글쓰기 단계를 제공하겠습니다."
-                "또한 제가 이미 작성한 텍스트를 제공하겠습니다."
-                "다음 단락을 계속 작성해 주시기 바랍니다. 글쓰기 지시사항, 글쓰기 단계 및 이미 작성된 텍스트를 기반으로 해주시면 됩니다."
+                "아래와 같이 원본 글쓰기 지시사항과 계획한 글쓰기 단계를 제공하겠습니다."
+                "또한 제가 이미 작성한 텍스트를 제공합니다."
 
                 "글쓰기 지시사항:"
                 "<instruction>"
@@ -3901,11 +3923,17 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "{text}"
                 "</text>"
 
-                "원본 작문 지시 사항, 작문 단계 및 이미 작성된 텍스트를 통합하고 이제 계속 작성하십시오. {STEP}."
-                "필요하다면 앞에 작은 부제를 추가할 수 있습니다."
-                "기억하세요. 이미 작성된 텍스트를 반복하지 말고 작성한 문단만 출력하세요."
+                "글쓰기 지시 사항, 글쓰기 단계, 이미 작성된 텍스트를 참조하여 다음 단락을 계속 작성합니다."
+                "다음 단락:"
+                "<next_paragraph>"
+                "{STEP}"
+                "</next_paragraph>"
                 
-                "Markdown 구문을 사용하여 출력을 서식 지정하세요:"
+                "글이 끊어지지 않고 잘 이해되도록 하나의 문단을 충분히 길게 작성합니다."
+                "필요하다면 앞에 작은 부제를 추가할 수 있습니다."
+                "이미 작성된 텍스트를 반복하지 말고 작성한 문단만 출력하세요."
+                
+                "Markdown 구문을 사용하여 출력의 서식을 지정하세요:"
                 "- Headings: # for main, ## for sections, ### for subsections, etc."
                 "- Lists: * or - for bulleted, 1. 2. 3. for numbered"
                 "- Do not repeat yourself"
