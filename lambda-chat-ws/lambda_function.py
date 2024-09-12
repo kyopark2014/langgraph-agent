@@ -3853,6 +3853,11 @@ def run_long_writing_agent(connectionId, requestId, query):
             "Please integrate the original writing instruction, writing steps, and the already written text, and now continue writing {STEP}."
             "If needed, you can add a small subtitle at the beginning."
             "Remember to only output the paragraph you write, without repeating the already written text."
+            
+            "Use markdown syntax to format your output:"
+            "- Headings: # for main, ## for sections, ### for subsections, etc."
+            "- Lists: * or - for bulleted, 1. 2. 3. for numbered"
+            "- Do not repeat yourself"
         )
 
         write_prompt = ChatPromptTemplate([
