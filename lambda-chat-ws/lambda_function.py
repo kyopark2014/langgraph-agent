@@ -1161,7 +1161,10 @@ def get_references_for_agent(docs):
         if "from" in doc.metadata:
             sourceType = doc.metadata['from']
         else:
-            sourceType = "OpenSearch"
+            if useEnhancedSearch:
+                sourceType = "OpenSearch"
+            else:
+                sourceType = "WWW"
         #print('sourceType: ', sourceType)        
         
         #if len(doc.page_content)>=1000:
@@ -3809,7 +3812,10 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         ])
             
         content = []     
+        
+        global useEnhancedSearch
         useEnhancedSearch = False   
+        
         if useEnhancedSearch:
             for q in search_queries:
                 response = enhanced_search(q)     
@@ -3859,8 +3865,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         # print('output: ', output)
         
         revised_draft = output[output.find('<result>')+8:len(output)-9]
-        if revised_draft[0]=='\n':
-            revised_draft = revised_draft[1:]
+        if revised_draft.find('#')!=-1 and revised_draft.find('#')!=0:
+                revised_draft = revised_draft[revised_draft.find('#')-1:]
 
         print('--> draft: ', draft)
         print('--> reflection: ', reflection)
@@ -4033,9 +4039,10 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             # print('output: ', output)
             
             draft = output[output.find('<result>')+8:len(output)-9]
-            if draft[0]=='\n':
-                draft = draft[1:]
-
+                        
+            if draft.find('#')!=-1 and draft.find('#')!=0:
+                draft = draft[draft.find('#')-1:]
+            
             print(f"--> step:{step}")
             print(f"--> {draft}")
                 
