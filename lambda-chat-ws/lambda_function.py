@@ -3686,6 +3686,11 @@ def run_long_writing_agent(connectionId, requestId, query):
         return filtered_docs
     """
 
+    class ReviseState(TypedDict):
+        draft : str
+        reflection : List[str]
+        search_queries : List[str]
+        revised_draft: str
         
     class Reflection(BaseModel):
         missing: str = Field(description="Critique of what is missing.")
@@ -3700,8 +3705,9 @@ def run_long_writing_agent(connectionId, requestId, query):
             description="1-3 search queries for researching improvements to address the critique of your current writing."
         )
     
-    def reflect(draft):
+    def reflect_node(state: ReviseState):
         print("###### reflect ######")
+        draft = state['draft']
         print('draft: ', draft)
     
         reflection = []
@@ -3728,8 +3734,16 @@ def run_long_writing_agent(connectionId, requestId, query):
             "search_queries": search_queries
         }
         
-    def revise_answer(draft, search_queries, reflection):   
+    def revise_draft(state: ReviseState):   
         print("###### revise_answer ######")
+        
+        draft = state['draft']
+        search_queries = state['search_queries']
+        reflection = state['reflection']
+        print('draft: ', draft)
+        print('search_queries: ', search_queries)
+        print('reflection: ', reflection)
+        
         revise_template = (
             "You are an excellent writing assistant." 
             "Revise this draft using the critique and additional information."
@@ -3775,8 +3789,29 @@ def run_long_writing_agent(connectionId, requestId, query):
                 "reflection": reflection,
                 "content": content
             }
-        )                                    
-        return res.content[res.content.find('<result>')+8:len(res.content)-9]
+        )              
+        revised_draft = res.content[res.content.find('<result>')+8:len(res.content)-9]
+        return {
+            "revised_draft": revised_draft
+        }
+        
+    def buildReflection():
+        workflow = StateGraph(ReviseState)
+
+        # Add nodes
+        workflow.add_node("reflect_node", reflect_node)
+        workflow.add_node("revise_draft", revise_draft)
+
+        # Set entry point
+        workflow.set_entry_point("reflect_node")
+
+        # Add edges
+        workflow.add_edge("reflect_node", "revise_draft")
+        workflow.add_edge("revise_draft", END)
+        
+        return workflow.compile()
+    
+    
     
     """    
     drafts = write(instruction, planning_steps)
@@ -3803,7 +3838,7 @@ def run_long_writing_agent(connectionId, requestId, query):
         final_doc : str
         word_count : int
             
-    def planning_node(state: State):
+    def plan_node(state: State):
         print("###### plan ######")
         instruction = state["instruction"]
         print('subject: ', instruction)
@@ -3822,7 +3857,7 @@ def run_long_writing_agent(connectionId, requestId, query):
             "planning_steps": planning_steps
         }  
 
-    def writing_node(state: State):
+    def write_node(state: State):
         print("###### write ######")        
         instruction = state["instruction"]
         planning_steps = state["planning_steps"]        
@@ -3892,10 +3927,21 @@ def run_long_writing_agent(connectionId, requestId, query):
             "drafts": drafts
         }
 
-    def revising_node(state: State):
+    def revise_answer(state: State):
         print("###### revise ######")        
         drafts = state["drafts"]        
         print('drafts: ', drafts)
+        
+        # reflection
+        reflection_app = buildReflection()
+        inputs = {
+            "draft": drafts[0]
+        }    
+        config = {
+            "recursion_limit": 50
+        }
+        output = reflection_app.invoke(inputs, config)
+        print('output: ', output)
             
         final_doc = ""   
         for idx, draft in enumerate(drafts):
@@ -3909,9 +3955,9 @@ def run_long_writing_agent(connectionId, requestId, query):
         workflow = StateGraph(State)
 
         # Add nodes
-        workflow.add_node("planning_node", planning_node)
-        workflow.add_node("writing_node", writing_node)
-        workflow.add_node("revising_node", revising_node)
+        workflow.add_node("planning_node", plan_node)
+        workflow.add_node("writing_node", write_node)
+        workflow.add_node("revising_node", revise_answer)
 
         # Set entry point
         workflow.set_entry_point("planning_node")
