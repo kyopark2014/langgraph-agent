@@ -4021,7 +4021,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         conn.close()
         
     def revise_drafts_using_parallel_processing(drafts):
-        revise_drafts = drafts
+        revised_drafts = drafts
         
         processes = []
         parent_connections = []
@@ -4043,13 +4043,13 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 
             if result is not None:
                 print('result: ', result)
-                revise_drafts[result['idx']] = result['revised_draft']
+                revised_drafts[result['idx']] = result['revised_draft']
 
         for process in processes:
             process.join()
                 
         final_doc = ""   
-        for revised_draft in revise_drafts:
+        for revised_draft in revised_drafts:
             final_doc += revised_draft + '\n\n'
         
         return final_doc
