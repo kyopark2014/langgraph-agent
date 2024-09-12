@@ -3607,6 +3607,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         if isKorean(query):
             planner_template = (
                 "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."
+                "이번 글쓰기는 5000단어 이상의 장편입니다."
                 "당신은 글쓰기 지시 사항을 여러 개의 하위 작업으로 나눌 것입니다."
                 "각 하위 작업은 에세이의 한 단락 작성을 안내할 것이며, 해당 단락의 주요 내용과 단어 수 요구 사항을 포함해야 합니다."
 
