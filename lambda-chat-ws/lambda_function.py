@@ -3738,7 +3738,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             revise_template = (
                 "You are an excellent writing assistant." 
                 "Revise this draft using the critique and additional information."
-                "Provide the final answer with <result> tag."
+                "Provide the final answer using Korean with <result> tag."
                             
                 "<draft>"
                 "{draft}"
