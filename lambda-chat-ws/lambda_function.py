@@ -3604,7 +3604,6 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             planner_template = (
                 "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."
                 "당신은 글쓰기 지시 사항을 여러 개의 하위 작업으로 나눌 것입니다."
-                #"each subtask should include the main points and word count requirements for that paragraph."
                 "각 하위 작업은 에세이의 한 단락 작성을 안내할 것이며, 해당 단락의 주요 내용과 단어 수 요구 사항을 포함해야 합니다."
 
                 "글쓰기 지시 사항:"
@@ -3619,21 +3618,18 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 
                 "각 하위 작업이 명확하고 구체적인지, 그리고 모든 하위 작업이 작문 지시 사항의 전체 내용을 다루고 있는지 확인하세요."
                 "과제를 너무 세분화하지 마세요. 각 하위 과제의 문단은 200단어 이상 1000단어 이하여야 합니다."
-                "다른 내용은 출력하지 마십시오. 이것은 진행 중인 작업이므로 열린 결론이나 다른 수사학적 표현을 생략하십시오."
-                
-                #"For the following long-form writing instruction, break down come up with a simple step by step plan."
-                #"This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps."
-                #"The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."
+                "다른 내용은 출력하지 마십시오. 이것은 진행 중인 작업이므로 열린 결론이나 다른 수사학적 표현을 생략하십시오."                
             )
         else:
             planner_template = (
                 "You are a helpful assistant highly skilled in long-form writing."
                 "You will break down the writing instruction into multiple subtasks."
-                #"each subtask should include the main points and word count requirements for that paragraph."
                 "Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph."
 
                 "The writing instruction is as follows:"
+                "<instruction>"
                 "{instruction}"
+                "<instruction>"
                 
                 "Please break it down in the following format, with each subtask taking up one line:"
                 "1. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [Word count requirement, e.g., 400 words]"
@@ -3642,11 +3638,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 
                 "Make sure that each subtask is clear and specific, and that all subtasks cover the entire content of the writing instruction."
                 "Do not split the subtasks too finely; each subtask's paragraph should be no less than 200 words and no more than 1000 words."
-                "Do not output any other content. As this is an ongoing work, omit open-ended conclusions or other rhetorical hooks."
-                
-                #"For the following long-form writing instruction, break down come up with a simple step by step plan."
-                #"This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps."
-                #"The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."
+                "Do not output any other content. As this is an ongoing work, omit open-ended conclusions or other rhetorical hooks."                
             )
         
         planner_prompt = ChatPromptTemplate([
@@ -3778,7 +3770,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         revise_template = (
             "You are an excellent writing assistant." 
             "Revise this draft using the critique and additional information."
-            "Provide the final answer with <result> tag."            
+            "Provide the final answer with <result> tag."
                         
             "<draft>"
             "{draft}"
@@ -3843,9 +3835,12 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "reflection": reflection,
                 "content": content
             }
-        )              
-        revised_draft = res.content[res.content.find('<result>')+8:len(res.content)-9]
+        )
+        output = res.content
+        print('output: ', output)
         
+        revised_draft = output[output.find('<result>')+8:len(output)-9]
+
         print('--> draft: ', draft)
         print('--> reflection: ', reflection)
         print('--> revised_draft: ', revised_draft)
@@ -3946,20 +3941,17 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "{text}"
                 "</text>"
 
-                "글쓰기 지시 사항, 글쓰기 단계, 이미 작성된 텍스트를 참조하여 다음 단락을 계속 작성합니다."
-                "다음 단락:"
-                "<next_paragraph>"
+                "글쓰기 지시 사항, 글쓰기 단계, 이미 작성된 텍스트를 참조하여 다음 단계을 계속 작성합니다."
+                "다음 단계:"
+                "<step>"
                 "{STEP}"
-                "</next_paragraph>"
+                "</step>"
                 
                 "글이 끊어지지 않고 잘 이해되도록 하나의 문단을 충분히 길게 작성합니다."
                 "필요하다면 앞에 작은 부제를 추가할 수 있습니다."
-                "이미 작성된 텍스트를 반복하지 말고 작성한 문단만 출력하세요."
-                
-                "Markdown 구문을 사용하여 출력의 서식을 지정하세요."
-                #"- Headings: # for main, ## for sections, ### for subsections, etc."
-                #"- Lists: * or - for bulleted, 1. 2. 3. for numbered"
-                "Do not repeat yourself"
+                "이미 작성된 텍스트를 반복하지 말고 작성한 문단만 출력하세요."                
+                "Markdown 포맷으로 서식을 작성하세요."
+                "<result> tag를 붙여주세요."
             )
         else:    
             write_template = (
@@ -3991,6 +3983,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "- Headings: # for main, ## for sections, ### for subsections, etc."
                 "- Lists: * or - for bulleted, 1. 2. 3. for numbered"
                 "- Do not repeat yourself"
+                "Put it in <result> tags."
             )
 
         write_prompt = ChatPromptTemplate([
@@ -4014,12 +4007,17 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "plan": planning_steps,
                 "text": text,
                 "STEP": step
-            })
+            })            
+            output = result.content
+            print('output: ', output)
+            
+            draft = output[output.find('<result>')+8:len(output)-9]
+
             print(f"--> step:{step}")
-            print(f"--> {result.content}")
+            print(f"--> {draft}")
                 
-            drafts.append(result.content)
-            text += result.content + '\n\n'
+            drafts.append(draft)
+            text += draft + '\n\n'
 
         return {
             "drafts": drafts
