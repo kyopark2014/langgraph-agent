@@ -3686,7 +3686,8 @@ def run_long_writing_agent(connectionId, requestId, query):
         return filtered_docs
     """
 
-    class ReviseState(TypedDict):
+    # Workflow - Reflection
+    class ReflectionState(TypedDict):
         draft : str
         reflection : List[str]
         search_queries : List[str]
@@ -3705,7 +3706,7 @@ def run_long_writing_agent(connectionId, requestId, query):
             description="1-3 search queries for researching improvements to address the critique of your current writing."
         )
     
-    def reflect_node(state: ReviseState):
+    def reflect_node(state: ReflectionState):
         print("###### reflect ######")
         draft = state['draft']
         print('draft: ', draft)
@@ -3734,7 +3735,7 @@ def run_long_writing_agent(connectionId, requestId, query):
             "search_queries": search_queries
         }
         
-    def revise_draft(state: ReviseState):   
+    def revise_draft(state: ReflectionState):   
         print("###### revise_answer ######")
         
         draft = state['draft']
@@ -3791,12 +3792,17 @@ def run_long_writing_agent(connectionId, requestId, query):
             }
         )              
         revised_draft = res.content[res.content.find('<result>')+8:len(res.content)-9]
+        
+        print('--> draft: ', draft)
+        print('--> reflection: ', output)
+        print('--> revise: ', revised_draft)
+        
         return {
             "revised_draft": revised_draft
         }
         
     def buildReflection():
-        workflow = StateGraph(ReviseState)
+        workflow = StateGraph(ReflectionState)
 
         # Add nodes
         workflow.add_node("reflect_node", reflect_node)
@@ -3810,8 +3816,6 @@ def run_long_writing_agent(connectionId, requestId, query):
         workflow.add_edge("revise_draft", END)
         
         return workflow.compile()
-    
-    
     
     """    
     drafts = write(instruction, planning_steps)
@@ -3830,6 +3834,7 @@ def run_long_writing_agent(connectionId, requestId, query):
         msg += f"{revise_draft}\n\n"
     """
     
+    # Workflow - Long Writing
     class State(TypedDict):
         instruction : str
         planning_steps : List[str]
@@ -3858,7 +3863,7 @@ def run_long_writing_agent(connectionId, requestId, query):
         }  
 
     def write_node(state: State):
-        print("###### write ######")        
+        print("###### write (execute) ######")        
         instruction = state["instruction"]
         planning_steps = state["planning_steps"]        
         print('instruction: ', instruction)
@@ -3934,18 +3939,18 @@ def run_long_writing_agent(connectionId, requestId, query):
         
         # reflection
         reflection_app = buildReflection()
-        inputs = {
-            "draft": drafts[0]
-        }    
-        config = {
-            "recursion_limit": 50
-        }
-        output = reflection_app.invoke(inputs, config)
-        print('output: ', output)
             
         final_doc = ""   
         for idx, draft in enumerate(drafts):
-            final_doc += draft + '\n\n'
+            inputs = {
+                "draft": draft
+            }    
+            config = {
+                "recursion_limit": 50
+            }
+            output = reflection_app.invoke(inputs, config)
+            
+            final_doc += output['revised_draft'] + '\n\n'
 
         return {
             "final_doc": final_doc
