@@ -4085,7 +4085,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         return subject
     
     def markdown_to_html(body):
-        header = """
+        html = f"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -4100,14 +4100,11 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 </head>
 <body>
     <div class="markdown-body">
-        <md-block>"""
-        footer = """
+        <md-block>{body}
         </md-block>
     </div>
 </body>
-</html>"""
-        html = header + body + footer
-        
+</html>"""        
         return html
 
     def revise_answer(state: State):
