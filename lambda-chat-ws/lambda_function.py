@@ -4080,7 +4080,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 
                 final_doc += output['revised_draft'] + '\n\n'
 
-        markdown_key = 'markdown/'+'test.md'
+        fname = "test"
+        markdown_key = 'markdown/'+f"{fname}.md"
                         
         s3_client = boto3.client('s3')  
         response = s3_client.put_object(
