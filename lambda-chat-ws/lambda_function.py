@@ -4083,6 +4083,32 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             print('error message: ', err_msg)                    
             raise Exception ("Not able to request to LLM")        
         return subject
+    
+    def markdown_to_html(body):
+        header = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <md-block>
+    </md-block>
+    <script type="module" src="https://md-block.verou.me/md-block.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.css" integrity="sha512-n5zPz6LZB0QV1eraRj4OOxRbsV7a12eAGfFcrJ4bBFxxAwwYDp542z5M0w24tKPEhKk2QzjjIpR5hpOjJtGGoA==" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+</head>
+<body>
+    <div class="markdown-body">
+        <md-block>"""
+        footer = """
+        </md-block>
+    </div>
+</body>
+</html>"""
+        html = header + body + footer
+        
+        return html
 
     def revise_answer(state: State):
         print("###### revise ######")
@@ -4111,26 +4137,44 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         subject = get_subject(state['instruction'])
         subject = subject.replace(" ","_")
         
+        # markdown file
         markdown_key = 'markdown/'+f"{subject}.md"
-        print('markdown_key: ', markdown_key)
+        # print('markdown_key: ', markdown_key)
         
         markdown_body = f"## {state['instruction']}\n\n"+final_doc
-        body = markdown_body.encode('utf-8')
-        
+                
         s3_client = boto3.client('s3')  
         response = s3_client.put_object(
             Bucket=s3_bucket,
             Key=markdown_key,
             ContentType='text/markdown',
-            Body=body
+            Body=markdown_body.encode('utf-8')
         )
-        print('response: ', response)
+        # print('response: ', response)
         
-        link = f"{path}{markdown_key}"
-        print('link: ', link)
+        markdown_url = f"{path}{markdown_key}"
+        print('markdown_url: ', markdown_url)
+        
+        # html file
+        html_key = 'markdown/'+f"{subject}.html"
+        
+        html_body = markdown_to_html(markdown_body.encode('utf-8'))
+        print('html_body: ', html_body)
+        
+        s3_client = boto3.client('s3')  
+        response = s3_client.put_object(
+            Bucket=s3_bucket,
+            Key=html_key,
+            ContentType='text/html',
+            Body=html_body
+        )
+        # print('response: ', response)
+        
+        html_url = f"{path}{html_key}"
+        print('html_url: ', html_url)
         
         return {
-            "final_doc": final_doc+f"\n<a href={link} target=_blank>[최종 결과 링크]</a>"
+            "final_doc": final_doc+f"\n<a href={html_url} target=_blank>[미리보기 링크]</a>\n<a href={markdown_url} target=_blank>[다운로드 링크]</a>"
         }
         
     def buildLongTermWriting():
