@@ -4115,7 +4115,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         print('markdown_key: ', markdown_key)
         
         markdown_body = f"## 질문: {state['instruction']}\n\n"+final_doc
-        body = markdown_body.encode('utf-8')
+        body = markdown_body.decode('cp949').encode('utf-8')
         
         s3_client = boto3.client('s3')  
         response = s3_client.put_object(
