@@ -3599,6 +3599,38 @@ Remember to only output the paragraph you write, without repeating the already w
     
     return output['final_doc']
 
+
+def get_subject(query):
+    system = (
+        "다음의 <question> tag에 있는 내용을 영어 10단어 이내로 요약해줘."
+    )
+    
+    human = "<question>{question}</question>"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    print('prompt: ', prompt)
+    
+    chat = get_chat()
+    chain = prompt | chat    
+    try: 
+        result = chain.invoke(
+            {
+                "question": query
+            }
+        )        
+        subject = result.content
+        print('the subject of query: ', subject)
+        
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        raise Exception ("Not able to request to LLM")
+    
+    return subject
+
+subject = get_subject("지방 조직이 분비하는 exosome들이 어떻게 면역체계에 역할을 하고 어떻게 하면 좋은 exosome들을 분비시켜 당뇨나 병을 예방할수 있는지 알려주세요.")
+print('subject: ', subject)
+
 ####################### LangGraph #######################
 # Long term Writing Agent
 #########################################################
