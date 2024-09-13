@@ -3602,7 +3602,7 @@ Remember to only output the paragraph you write, without repeating the already w
 
 def get_subject(query):
     system = (
-        "Extract the subject of the question in 6 words or fewer."
+        "Extract the subject of the question in 6 words or fewer using English."
     )
     
     human = "<question>{question}</question>"
