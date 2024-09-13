@@ -4128,9 +4128,11 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         link = f"{path}{markdown_key}"
         print('link: ', link)
+        
+        link += f"<a href={link} target=_blank>[최종 결과 링크]</a>"
                         
         return {
-            "final_doc": final_doc+f"\n[최종결과 파일]({link})"
+            "final_doc": final_doc
         }
         
     def buildLongTermWriting():
