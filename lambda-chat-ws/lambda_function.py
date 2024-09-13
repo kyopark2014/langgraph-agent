@@ -3602,7 +3602,7 @@ Remember to only output the paragraph you write, without repeating the already w
 
 def get_subject(query):
     system = (
-        "다음의 <question> tag에 있는 내용을 영어 10단어 이내의 문장으로 요약해줘."
+        "다음의 <question> tag에 있는 내용을 영어 6단어 이내의 하나의 문장으로 요약해줘."
     )
     
     human = "<question>{question}</question>"
