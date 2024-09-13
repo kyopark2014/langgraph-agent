@@ -4171,7 +4171,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         print('html_url: ', html_url)
         
         return {
-            "final_doc": final_doc+f"\n<a href={html_url} target=_blank>[미리보기 링크]</a>\n<a href={markdown_url} target=_blank>[다운로드 링크]</a>"
+            "final_doc": final_doc+f"\n<a href={html_url} target=_blank>[미리보기 링크]</a>\n<a href={markdown_url} download=\"filename\">[다운로드 링크]</a>"
         }
         
     def buildLongTermWriting():
