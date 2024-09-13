@@ -1,4 +1,4 @@
-## 질문: adipocyte cells (3T3L1)과 macrophages co-culutre 실험을 어떻게 design할수 있을까 ? 
+## adipocyte cells (3T3L1)과 macrophages co-culutre 실험을 어떻게 design할수 있을까 ? 
 
 ### 실험 목적 및 배경
 
