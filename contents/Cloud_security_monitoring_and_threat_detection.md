@@ -1,4 +1,4 @@
-## 질문: AWS Security Hub, Amazon GuardDuty와 Azure Sentinel을 비교해주세요. AWS 서비스가 Azure Sentinel 대비 강점도 자세히 알려주세요. 
+## AWS Security Hub, Amazon GuardDuty와 Azure Sentinel을 비교해주세요. AWS 서비스가 Azure Sentinel 대비 강점도 자세히 알려주세요. 
 
 ### AWS Security Hub, Amazon GuardDuty, Azure Sentinel 비교
 
