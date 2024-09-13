@@ -4155,7 +4155,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         # html file
         html_key = 'markdown/'+f"{subject}.html"
         
-        html_body = markdown_to_html(markdown_body.encode('utf-8'))
+        html_body = markdown_to_html(markdown_body)
         print('html_body: ', html_body)
         
         s3_client = boto3.client('s3')  
