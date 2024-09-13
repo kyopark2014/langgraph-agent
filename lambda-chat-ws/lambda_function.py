@@ -4130,7 +4130,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         print('link: ', link)
         
         return {
-            "final_doc": final_doc+f"<a href={link} target=_blank>[최종 결과 링크]</a>"
+            "final_doc": final_doc+f"\n<a href={link} target=_blank>[최종 결과 링크]</a>"
         }
         
     def buildLongTermWriting():
