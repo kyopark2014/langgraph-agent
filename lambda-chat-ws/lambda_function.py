@@ -4059,7 +4059,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 
     def get_subject(query):
         system = (
-            "Extract the subject of the question in 6 words or fewer using English."
+            "Extract the subject of the question in 6 words or fewer. Translate to English."
         )
         
         human = "<question>{question}</question>"
