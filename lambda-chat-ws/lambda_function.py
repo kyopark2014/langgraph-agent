@@ -4110,7 +4110,6 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 
         subject = get_subject(state['instruction'])
         subject = subject.replace(" ","_")
-        subject = subject.lower()
         
         markdown_key = 'markdown/'+f"{subject}.md"
         print('markdown_key: ', markdown_key)
