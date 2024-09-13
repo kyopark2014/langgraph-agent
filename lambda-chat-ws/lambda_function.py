@@ -4059,7 +4059,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 
     def get_subject(query):
         system = (
-            "Extract the subject of the question in 6 words or fewer. Translate to English."
+            "Extract the subject of the question in 6 words or fewer."
         )
         
         human = "<question>{question}</question>"
@@ -4136,6 +4136,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         subject = subject.replace("?","")
         subject = subject.replace("!","")
         subject = subject.replace(".","")
+        subject = subject.replace(":","")
         
         # markdown file
         markdown_key = 'markdown/'+f"{subject}.md"
