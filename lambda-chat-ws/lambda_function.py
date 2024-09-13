@@ -4108,26 +4108,10 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 
                 final_doc += output['revised_draft'] + '\n\n'
 
-        subject = get_subject("지방 조직이 분비하는 exosome들이 어떻게 면역체계에 역할을 하고 어떻게 하면 좋은 exosome들을 분비시켜 당뇨나 병을 예방할수 있는지 알려주세요.")
-        subject.replace(' ', '_')
-        print('subject: ', subject)
-
-        subject = get_subject("adipocyte cells (3T3L1)과 macrophages co-culutre 실험을 어떻게 design할수 있을까?")
-        subject.replace(' ', '_')
-        print('subject: ', subject)
-        
-        subject = get_subject("AWS Security Hub, Amazon GuardDuty와 Azure Sentinel을 비교해주세요. AWS 서비스가 Azure Sentinel 대비 강점도 자세히 알려주세요.")
-        subject.replace(' ', '_')
-        print('subject: ', subject)
-        
-        subject = get_subject("AWS Security Hub, Amazon GuardDuty와 Azure Sentinel을 비교해주세요. AWS 서비스가 Azure Sentinel 대비 강점도 자세히 알려주세요.")
-        subject.replace(' ', '_')
-        print('subject: ', subject)
-        
-
-
         subject = get_subject(state['instruction'])
-        subject.replace(' ', '_')
+        subject = subject.replace(" ","_")
+        subject = subject.lower()
+        
         markdown_key = 'markdown/'+f"{subject}.md"
         print('markdown_key: ', markdown_key)
         
