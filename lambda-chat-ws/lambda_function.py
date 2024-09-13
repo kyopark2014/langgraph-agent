@@ -3599,38 +3599,6 @@ Remember to only output the paragraph you write, without repeating the already w
     
     return output['final_doc']
 
-
-def get_subject(query):
-    system = (
-        "Extract the subject of the question in 6 words or fewer using English."
-    )
-    
-    human = "<question>{question}</question>"
-    
-    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-    print('prompt: ', prompt)
-    
-    chat = get_chat()
-    chain = prompt | chat    
-    try: 
-        result = chain.invoke(
-            {
-                "question": query
-            }
-        )        
-        subject = result.content
-        print('the subject of query: ', subject)
-        
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)                    
-        raise Exception ("Not able to request to LLM")
-    
-    return subject
-
-subject = get_subject("지방 조직이 분비하는 exosome들이 어떻게 면역체계에 역할을 하고 어떻게 하면 좋은 exosome들을 분비시켜 당뇨나 병을 예방할수 있는지 알려주세요.")
-print('subject: ', subject)
-
 ####################### LangGraph #######################
 # Long term Writing Agent
 #########################################################
@@ -3920,8 +3888,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         return {
             "instruction": instruction,
             "planning_steps": planning_steps
-        }  
-
+        }
+        
     def write_node(state: State):
         print("###### write (execute) ######")        
         instruction = state["instruction"]
@@ -4089,6 +4057,33 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         return final_doc
 
+    def get_subject(query):
+        system = (
+            "Extract the subject of the question in 6 words or fewer using English."
+        )
+        
+        human = "<question>{question}</question>"
+        
+        prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+        # print('prompt: ', prompt)
+        
+        chat = get_chat()
+        chain = prompt | chat    
+        try: 
+            result = chain.invoke(
+                {
+                    "question": query
+                }
+            )        
+            subject = result.content
+            # print('the subject of query: ', subject)
+            
+        except Exception:
+            err_msg = traceback.format_exc()
+            print('error message: ', err_msg)                    
+            raise Exception ("Not able to request to LLM")        
+        return subject
+
     def revise_answer(state: State):
         print("###### revise ######")
         drafts = state["drafts"]        
@@ -4113,8 +4108,28 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 
                 final_doc += output['revised_draft'] + '\n\n'
 
-        fname = parse.quote(state['instruction'])
-        markdown_key = 'markdown/'+f"{fname}.md"
+        subject = get_subject("지방 조직이 분비하는 exosome들이 어떻게 면역체계에 역할을 하고 어떻게 하면 좋은 exosome들을 분비시켜 당뇨나 병을 예방할수 있는지 알려주세요.")
+        subject.replace(' ', '_')
+        print('subject: ', subject)
+
+        subject = get_subject("adipocyte cells (3T3L1)과 macrophages co-culutre 실험을 어떻게 design할수 있을까?")
+        subject.replace(' ', '_')
+        print('subject: ', subject)
+        
+        subject = get_subject("AWS Security Hub, Amazon GuardDuty와 Azure Sentinel을 비교해주세요. AWS 서비스가 Azure Sentinel 대비 강점도 자세히 알려주세요.")
+        subject.replace(' ', '_')
+        print('subject: ', subject)
+        
+        subject = get_subject("AWS Security Hub, Amazon GuardDuty와 Azure Sentinel을 비교해주세요. AWS 서비스가 Azure Sentinel 대비 강점도 자세히 알려주세요.")
+        subject.replace(' ', '_')
+        print('subject: ', subject)
+        
+
+
+        subject = get_subject(state['instruction'])
+        subject.replace(' ', '_')
+        markdown_key = 'markdown/'+f"{subject}.md"
+        print('markdown_key: ', markdown_key)
         
         markdown_body = f"## 질문: {state['instruction']}\n\n"+final_doc                        
         s3_client = boto3.client('s3')  
