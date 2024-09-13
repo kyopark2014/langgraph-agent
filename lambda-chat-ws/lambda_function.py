@@ -4080,7 +4080,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 
                 final_doc += output['revised_draft'] + '\n\n'
 
-        markdown_key = '/markdown/'+'test.md'
+        markdown_key = 'markdown/'+'test.md'
                         
         s3_client = boto3.client('s3')  
         response = s3_client.put_object(
@@ -4091,11 +4091,11 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         )
         print('response: ', response)
         
-        link = f"{path}{doc_prefix}{markdown_key}"
+        link = f"{path}{markdown_key}"
         print('link: ', link)
                         
         return {
-            "final_doc": final_doc+f"\n\n[최종결과 파일]({link})"
+            "final_doc": final_doc+f"\n[최종결과 파일]({link})"
         }
         
     def buildLongTermWriting():
