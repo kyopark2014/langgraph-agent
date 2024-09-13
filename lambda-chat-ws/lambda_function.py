@@ -4001,6 +4001,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             text += draft + '\n\n'
 
         return {
+            "instruction": instruction,
             "drafts": drafts
         }
 
@@ -4057,7 +4058,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         return final_doc
 
     def revise_answer(state: State):
-        print("###### revise ######")        
+        print("###### revise ######")
         drafts = state["drafts"]        
         print('drafts: ', drafts)
         
@@ -4080,7 +4081,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 
                 final_doc += output['revised_draft'] + '\n\n'
 
-        fname = "test"
+        fname = parse.quote(state['instruction'])
         markdown_key = 'markdown/'+f"{fname}.md"
                         
         s3_client = boto3.client('s3')  
