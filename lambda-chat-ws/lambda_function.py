@@ -4083,13 +4083,14 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 
         fname = parse.quote(state['instruction'])
         markdown_key = 'markdown/'+f"{fname}.md"
-                        
+        
+        markdown_body = f"## 질문: {state['instruction']}\n\n"+final_doc                        
         s3_client = boto3.client('s3')  
         response = s3_client.put_object(
             Bucket=s3_bucket,
             Key=markdown_key,
             ContentType='text/markdown',
-            Body=final_doc
+            Body=markdown_body.encode('utf-8')
         )
         print('response: ', response)
         
