@@ -3691,6 +3691,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             info = structured_llm.invoke(draft)
             print(f'attempt: {attempt}, info: {info}')
                 
+            search_queries = []
             if not info['parsed'] == None:
                 parsed_info = info['parsed']
                 # print('reflection: ', parsed_info.reflection)                
@@ -3707,7 +3708,10 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                     translated_search.append(search)
                 
                 print('translated_search: ', translated_search)
-                search_queries += translated_search                           
+                search_queries += translated_search
+                
+                print('search_queries (mixed): ', search_queries)     
+        
                 break
         
         revision_number = state["revision_number"] if state.get("revision_number") is not None else 1
@@ -3784,6 +3788,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             related_docs = []                        
             for q in search_queries:
                 response = search.invoke(q)
+                print(f'q: {q}, response: {response}')
                 
                 docs = filtered_docs = []
                 for r in response:
@@ -3797,11 +3802,13 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                         )
                 
                 print('docs: ', docs)
-                filtered_docs = grade_documents(q, docs)
-                print('filtered_docs: ', filtered_docs)
                 
-                if len(filtered_docs):
-                    related_docs += filtered_docs
+                if len(docs):
+                    filtered_docs = grade_documents(q, docs)
+                    print('filtered_docs: ', filtered_docs)
+                
+                    if len(filtered_docs):
+                        related_docs += filtered_docs
             
             for d in related_docs:
                 content.append(d.page_content)
@@ -4020,7 +4027,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         }    
         config = {
             "recursion_limit": 50,
-            "max_revisions": 1
+            "max_revisions": MAX_REVISIONS
         }
         output = reflection_app.invoke(inputs, config)
         
