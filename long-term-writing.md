@@ -1,5 +1,8 @@
 # Long Term Writing
 
+
+<img width="683" alt="image" src="https://github.com/user-attachments/assets/e98376e3-a469-4a20-b5ed-7d21cfa8909c">
+
 ![image](https://github.com/user-attachments/assets/be4efa7d-8e93-419e-a46c-2c0eb9f41400)
 
 
