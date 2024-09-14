@@ -3698,14 +3698,23 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 search_queries = parsed_info.search_queries
                 
                 print('reflection: ', parsed_info.reflection)            
-                print('search_queries: ', search_queries)                
+                print('search_queries: ', search_queries)     
+        
+                translated_search = []
+                for q in search_queries:
+                    chat = get_chat()
+                    search = traslation(chat, q, "Korean", "English")
+                    translated_search.append(search)
+                
+                print('translated_search: ', translated_search)
+                search_queries += translated_search                           
                 break
         
         revision_number = state["revision_number"] if state.get("revision_number") is not None else 1
         return {
             "reflection": reflection,
             "search_queries": search_queries,
-            "revision_number": revision_number + 1            
+            "revision_number": revision_number + 1
         }
         
     def revise_draft(state: ReflectionState):   
@@ -3890,7 +3899,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "planning_steps": planning_steps
         }
         
-    def write_node(state: State):
+    def execute_node(state: State):
         print("###### write (execute) ######")        
         instruction = state["instruction"]
         planning_steps = state["planning_steps"]        
@@ -4183,15 +4192,15 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 
         # Add nodes
         workflow.add_node("planning_node", plan_node)
-        workflow.add_node("writing_node", write_node)
+        workflow.add_node("execute_node", execute_node)
         workflow.add_node("revising_node", revise_answer)
 
         # Set entry point
         workflow.set_entry_point("planning_node")
 
         # Add edges
-        workflow.add_edge("planning_node", "writing_node")
-        workflow.add_edge("writing_node", "revising_node")
+        workflow.add_edge("planning_node", "execute_node")
+        workflow.add_edge("execute_node", "revising_node")
         workflow.add_edge("revising_node", END)
         
         return workflow.compile()
