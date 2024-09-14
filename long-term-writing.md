@@ -2,7 +2,7 @@
 
 전체적인 activity diagram은 아래와 같습니다. Multi agent 구조로 구성합니다.
 
-<img width="722" alt="image" src="https://github.com/user-attachments/assets/58a0d0ea-4c04-4465-b55f-f711f1830064">
+<img width="706" alt="image" src="https://github.com/user-attachments/assets/6fe65b1b-a591-4eae-af28-4b5d028774c5">
 
 사용자의 instruction은 plan_node에서 n개의 plan을 생성합니다. execution_node는 instruction, plans와 현재의 step을 이용하여 draft를 생성합니다. n개의 draft들이 생성됩니다.
 
