@@ -3674,7 +3674,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 
         reflection: Reflection = Field(description="Your reflection on the initial writing.")
         search_queries: list[str] = Field(
-            description="1-3 search korean queries for researching improvements to address the critique of your current writing."
+            description="1-3 search queries for researching improvements to address the critique of your current writing."
         )
     
     def reflect_node(state: ReflectionState):
@@ -3691,7 +3691,6 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             info = structured_llm.invoke(draft)
             print(f'attempt: {attempt}, info: {info}')
                 
-            search_queries = []
             if not info['parsed'] == None:
                 parsed_info = info['parsed']
                 # print('reflection: ', parsed_info.reflection)                
@@ -3701,17 +3700,20 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 print('reflection: ', parsed_info.reflection)            
                 print('search_queries: ', search_queries)     
         
-                translated_search = []
-                for q in search_queries:
-                    chat = get_chat()
-                    search = traslation(chat, q, "Korean", "English")
-                    translated_search.append(search)
-                
-                print('translated_search: ', translated_search)
-                search_queries += translated_search
-                
-                print('search_queries (mixed): ', search_queries)     
-        
+                if isKorean(draft):
+                    translated_search = []
+                    for q in search_queries:
+                        chat = get_chat()
+                        if isKorean(q):
+                            search = traslation(chat, q, "Korean", "English")
+                        else:
+                            search = traslation(chat, q, "English", "Korean")
+                        translated_search.append(search)
+                        
+                    print('translated_search: ', translated_search)
+                    search_queries += translated_search
+
+                print('search_queries (mixed): ', search_queries)
                 break
         
         revision_number = state["revision_number"] if state.get("revision_number") is not None else 1
