@@ -1,7 +1,10 @@
 # Long Term Writing
 
+전체적인 activity diagram은 아래와 같습니다. Multi agent 구조로 구성합니다.
 
-<img width="683" alt="image" src="https://github.com/user-attachments/assets/e98376e3-a469-4a20-b5ed-7d21cfa8909c">
+<img width="722" alt="image" src="https://github.com/user-attachments/assets/58a0d0ea-4c04-4465-b55f-f711f1830064">
+
+<img width="200" alt="image" src="https://github.com/user-attachments/assets/2020f67e-53bd-4d10-995d-d88c952f7f83">
 
 ![image](https://github.com/user-attachments/assets/be4efa7d-8e93-419e-a46c-2c0eb9f41400)
 
