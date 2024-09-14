@@ -749,7 +749,7 @@ def search_by_tavily(keyword: str) -> str:
     if tavily_api_key:
         keyword = keyword.replace('\'','')
         
-        search = TavilySearchResults(maxResults=3)
+        search = TavilySearchResults(max_results=3)
                     
         output = search.invoke(keyword)
         print('tavily output: ', output)
@@ -1059,7 +1059,7 @@ def grade_documents_using_parallel_processing(question, documents):
     return filtered_docs
 
 def tavily_search(conn, q, k):     
-    search = TavilySearchResults(maxResults=k) 
+    search = TavilySearchResults(max_results=k) 
     response = search.invoke(q)     
     print('response: ', response)
     
@@ -1314,7 +1314,7 @@ def web_search(question, documents):
     global reference_docs
     
     # Web search
-    web_search_tool = TavilySearchResults(maxResults=3)
+    web_search_tool = TavilySearchResults(max_results=3)
     
     docs = web_search_tool.invoke({"query": question})
     # print('web_search: ', len(docs))
@@ -2791,7 +2791,7 @@ def run_essay_writer(connectionId, requestId, query):
                 content += tavily_search_using_parallel_processing(queries.queries)
                 
             else:        
-                search = TavilySearchResults(maxResults=2)
+                search = TavilySearchResults(max_results=2)
                 for q in queries.queries:
                     response = search.invoke(q)     
                     # print('response: ', response)        
@@ -2936,7 +2936,7 @@ Utilize all the information below as needed:
                     print('content: ', c)            
                     content.extend(c)
                 else:
-                    search = TavilySearchResults(maxResults=2)
+                    search = TavilySearchResults(max_results=2)
                     for q in queries.queries:
                         response = search.invoke(q)     
                         # print('response: ', response)        
@@ -3102,7 +3102,7 @@ You should use the previous critique to add important information to your answer
                 print(f'q: {q}, response: {response}')
                 content.append(response)                   
         else:
-            search = TavilySearchResults(maxResults=2)
+            search = TavilySearchResults(max_results=2)
             for q in state["search_queries"]:
                 response = search.invoke(q)     
                 for r in response:
@@ -3786,7 +3786,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 print(f'q: {q}, response: {response}')
                 content.append(response)                   
         else:
-            search = TavilySearchResults(maxResults=2)
+            search = TavilySearchResults(max_results=2)
             
             related_docs = []                        
             for q in search_queries:
