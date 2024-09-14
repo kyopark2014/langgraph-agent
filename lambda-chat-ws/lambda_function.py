@@ -3785,7 +3785,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 print(f'q: {q}, response: {response}')
                 content.append(response)                   
         else:
-            search = TavilySearchResults(k=2)
+            search = TavilySearchResults(maxResults=2)
             
             related_docs = []                        
             for q in search_queries:
