@@ -243,40 +243,6 @@ def get_chat():
     
     return chat
 
-def get_multi_region_chat(models, selected):
-    profile = models[selected]
-    bedrock_region =  profile['bedrock_region']
-    modelId = profile['model_id']
-    maxOutputTokens = 4096
-    print(f'selected_chat: {selected}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-                          
-    # bedrock   
-    boto3_bedrock = boto3.client(
-        service_name='bedrock-runtime',
-        region_name=bedrock_region,
-        config=Config(
-            retries = {
-                'max_attempts': 30
-            }
-        )
-    )
-    parameters = {
-        "max_tokens":maxOutputTokens,     
-        "temperature":0.1,
-        "top_k":250,
-        "top_p":0.9,
-        "stop_sequences": [HUMAN_PROMPT]
-    }
-    # print('parameters: ', parameters)
-
-    chat = ChatBedrock(   # new chat model
-        model_id=modelId,
-        client=boto3_bedrock, 
-        model_kwargs=parameters,
-    )    
-    
-    return chat
-
 def get_multimodal():
     global selected_multimodal
     print('LLM_for_chat: ', LLM_for_chat)
@@ -1009,8 +975,8 @@ def get_retrieval_grader(chat):
     retrieval_grader = grade_prompt | structured_llm_grader
     return retrieval_grader
 
-def grade_document_based_on_relevance(conn, question, doc, models, selected):     
-    chat = get_multi_region_chat(models, selected)
+def grade_document_based_on_relevance(conn, question, doc):     
+    chat = get_chat()
     retrieval_grader = get_retrieval_grader(chat)
     score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
     # print(f"score: {score}")
@@ -1031,18 +997,14 @@ def grade_documents_using_parallel_processing(question, documents):
     processes = []
     parent_connections = []
     
-    selected = 0
     for i, doc in enumerate(documents):
         #print(f"grading doc[{i}]: {doc.page_content}")        
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
             
-        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc, multi_region_models, selected))
+        process = Process(target=grade_document_based_on_relevance, args=(child_conn, question, doc))
         processes.append(process)
 
-        selected = selected + 1
-        if selected == len(multi_region_models):
-            selected = 0
     for process in processes:
         process.start()
             
