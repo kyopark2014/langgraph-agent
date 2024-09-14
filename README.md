@@ -115,12 +115,20 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 ![image](https://github.com/user-attachments/assets/7207687c-5649-4e2d-b4ab-c51ebf9c60f4)
 
+### Long Term Writing
+
+[long-term-writing.md](https://github.com/kyopark2014/langgraph-agent/blob/main/long-term-writing.md)에서는 plan and excute 패턴을 가지는 agent와 reflection을 수행하는 agent를 이용하여 instruction으로 장문의 글쓰기를 수행합니다. Multi agent 구조로 구성함으로써 복잡한 workflow를 단순하게 구현할 수 있습니다.
+
+![image](https://github.com/user-attachments/assets/6007e82d-f617-48a9-b23a-38a156f4abd1)
+
+
 
 ### Multi Agent 
 
 [multi-agent.md](./multi-agent.md)에서는 여러개의 Agent를 이용하는 방법에 대해 설명합니다. 
 
 ![image](https://github.com/user-attachments/assets/7adb21cb-8bd7-4fca-af71-2a8ccc536f49)
+
 
 
 ## Reference
