@@ -3833,7 +3833,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         # print('output: ', output)
         
         revised_draft = output[output.find('<result>')+8:len(output)-9]
-        print('revised_draft: ', revised_draft) 
+        # print('revised_draft: ', revised_draft) 
             
         if revised_draft.find('#')!=-1 and revised_draft.find('#')!=0:
             revised_draft = revised_draft[revised_draft.find('#'):]
