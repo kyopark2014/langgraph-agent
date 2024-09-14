@@ -749,7 +749,7 @@ def search_by_tavily(keyword: str) -> str:
     if tavily_api_key:
         keyword = keyword.replace('\'','')
         
-        search = TavilySearchResults(k=3)
+        search = TavilySearchResults(maxResults=3)
                     
         output = search.invoke(keyword)
         print('tavily output: ', output)
@@ -1059,7 +1059,7 @@ def grade_documents_using_parallel_processing(question, documents):
     return filtered_docs
 
 def tavily_search(conn, q, k):     
-    search = TavilySearchResults(k=k) 
+    search = TavilySearchResults(maxResults=k) 
     response = search.invoke(q)     
     print('response: ', response)
     
@@ -1314,7 +1314,7 @@ def web_search(question, documents):
     global reference_docs
     
     # Web search
-    web_search_tool = TavilySearchResults(k=3)
+    web_search_tool = TavilySearchResults(maxResults=3)
     
     docs = web_search_tool.invoke({"query": question})
     # print('web_search: ', len(docs))
@@ -2791,7 +2791,7 @@ def run_essay_writer(connectionId, requestId, query):
                 content += tavily_search_using_parallel_processing(queries.queries)
                 
             else:        
-                search = TavilySearchResults(k=2)
+                search = TavilySearchResults(maxResults=2)
                 for q in queries.queries:
                     response = search.invoke(q)     
                     # print('response: ', response)        
@@ -2936,7 +2936,7 @@ Utilize all the information below as needed:
                     print('content: ', c)            
                     content.extend(c)
                 else:
-                    search = TavilySearchResults(k=2)
+                    search = TavilySearchResults(maxResults=2)
                     for q in queries.queries:
                         response = search.invoke(q)     
                         # print('response: ', response)        
@@ -3102,7 +3102,7 @@ You should use the previous critique to add important information to your answer
                 print(f'q: {q}, response: {response}')
                 content.append(response)                   
         else:
-            search = TavilySearchResults(k=2)
+            search = TavilySearchResults(maxResults=2)
             for q in state["search_queries"]:
                 response = search.invoke(q)     
                 for r in response:
@@ -3755,7 +3755,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             revise_template = (
                 "You are an excellent writing assistant." 
                 "Revise this draft using the critique and additional information."
-                "Provide the final answer using Korean with <result> tag."
+                # "Provide the final answer using Korean with <result> tag."
+                "Provide the final answer with <result> tag."
                             
                 "<draft>"
                 "{draft}"
@@ -3911,7 +3912,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
     def execute_node(state: State):
         print("###### write (execute) ######")        
         instruction = state["instruction"]
-        planning_steps = state["planning_steps"]        
+        planning_steps = state["planning_steps"]
         print('instruction: ', instruction)
         print('planning_steps: ', planning_steps)
         
@@ -3978,7 +3979,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "- Headings: # for main, ## for sections, ### for subsections, etc."
                 "- Lists: * or - for bulleted, 1. 2. 3. for numbered"
                 "- Do not repeat yourself"
-                "Provide the final answer using Korean with <result> tag."
+                "Provide the final answer with <result> tag."
+                #"Provide the final answer using Korean with <result> tag."
             )
 
         write_prompt = ChatPromptTemplate([
@@ -4007,7 +4009,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             # print('output: ', output)
             
             draft = output[output.find('<result>')+8:len(output)-9]
-            print('draft: ', draft) 
+            # print('draft: ', draft) 
                        
             if draft.find('#')!=-1 and draft.find('#')!=0:
                 draft = draft[draft.find('#'):]
