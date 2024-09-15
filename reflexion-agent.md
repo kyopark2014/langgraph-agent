@@ -47,3 +47,21 @@ graph = builder.compile()
 
 ![image](https://github.com/kyopark2014/llm-agent/assets/52392004/00f6d691-1b19-4fa9-9d1a-6049698d9d00)
 
+
+[Reflexion](https://github.com/langchain-ai/langgraph/blob/main/docs/docs/tutorials/reflexion/reflexion.ipynb)에서는 AnswerQuestion/Reflectin 클래스를 이용하여 문장에서 Reflection에 필요한 정보를 추출합니다.
+
+```python
+class Reflection(BaseModel):
+    missing: str = Field(description="Critique of what is missing.")
+    superfluous: str = Field(description="Critique of what is superfluous")
+
+
+class AnswerQuestion(BaseModel):
+    """Answer the question. Provide an answer, reflection, and then follow up with search queries to improve the answer."""
+
+    answer: str = Field(description="~250 word detailed answer to the question.")
+    reflection: Reflection = Field(description="Your reflection on the initial answer.")
+    search_queries: list[str] = Field(
+        description="1-3 search queries for researching improvements to address the critique of your current answer."
+    )
+```
