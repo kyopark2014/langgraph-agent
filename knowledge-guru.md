@@ -125,7 +125,7 @@ def generate(state: State):
 ```
 
 
-Reflection과 search_queries를 구하기 위한 Research 클래스를 정의합니다.
+Reflection과 search_queries를 구하기 위한 Research 클래스를 정의합니다. 이 방식은 [Reflexion](https://github.com/langchain-ai/langgraph/blob/main/docs/docs/tutorials/reflexion/reflexion.ipynb)의 AnswerQuestion/Reflectin을 참조하여 구현하였습니다.
 
 ```python
 class Reflection(BaseModel):
