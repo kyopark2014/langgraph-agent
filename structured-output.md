@@ -149,7 +149,15 @@ class Plan(BaseModel):
 
 structured_llm = chat.with_structured_output(Plan, include_raw=True)
 
-info = structured_llm.invoke("To find the hometown of the 2024 Australian Open winner, we would need to follow these steps:\n\n1. Wait for the 2024 Australian Open tennis tournament to take place (typically in January 2024 in Melbourne, Australia).\n2. Identify the winner of the men's singles or women's singles tournament.\n3. Research biographical information about the 2024 Australian Open winner to determine their hometown or place of birth.\n4. The hometown or birthplace of the 2024 Australian Open winner is the final answer.\n\nSince the 2024 Australian Open has not happened yet, we cannot provide the actual hometown until the tournament takes place and the winner is determined. The key steps are to wait for the event, identify the winner, and then research their biographical details to find their hometown or birthplace.")
+info = structured_llm.invoke("To find the hometown of the 2024 Australian Open winner, we would need to follow these steps:
+
+1. \Wait for the 2024 Australian Open tennis tournament to take place (typically in January 2024 in Melbourne, Australia).
+2. Identify the winner of the men's singles or women's singles tournament.
+3. Research biographical information about the 2024 Australian Open winner to determine their hometown or place of birth.
+4. The hometown or birthplace of the 2024 Australian Open winner is the final answer.
+
+Since the 2024 Australian Open has not happened yet, we cannot provide the actual hometown until the tournament takes place and the winner is determined.
+The key steps are to wait for the event, identify the winner, and then research their biographical details to find their hometown or birthplace.")
 
 parsed_info = info['parsed']
 parsed_info.steps
