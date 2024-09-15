@@ -3099,7 +3099,7 @@ You should use the previous critique to add important information to your answer
         content = []        
         if useEnhancedSearch:
             for q in state["search_queries"]:
-                response = enhanced_search(q)     
+                response = enhanced_search(q)
                 print(f'q: {q}, response: {response}')
                 content.append(response)                   
         else:
@@ -3604,59 +3604,6 @@ Remember to only output the paragraph you write, without repeating the already w
 # Long term Writing Agent
 #########################################################
 def run_long_form_writing_agent(connectionId, requestId, query):
-    def get_planner():        
-        if isKorean(query):
-            planner_template = (
-                "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."
-                "이번 글쓰기는 20,000 단어 이상의 장편을 목표로 합니다."
-                "당신은 글쓰기 지시 사항을 여러 개의 하위 작업으로 나눌 것입니다."
-                "각 하위 작업은 에세이의 한 단락 작성을 안내할 것이며, 해당 단락의 주요 내용과 단어 수 요구 사항을 포함해야 합니다."
-
-                "글쓰기 지시 사항:"
-                "<instruction>"
-                "{instruction}"
-                "<instruction>"
-                
-                "다음 형식으로 나누어 주시기 바랍니다. 각 하위 작업은 한 줄을 차지합니다:"
-                "1. Main Point: [문단의 주요 내용을 자세히 설명하십시오.], Word Count: [Word count requirement, e.g., 800 words]"
-                "2. Main Point: [문단의 주요 내용을 자세히 설명하십시오.], Word Count: [word count requirement, e.g. 1500 words]."
-                "..."
-                
-                "각 하위 작업이 명확하고 구체적인지, 그리고 모든 하위 작업이 작문 지시 사항의 전체 내용을 다루고 있는지 확인하세요."
-                "과제를 너무 세분화하지 마세요. 각 하위 과제의 문단은 500단어 이상 3000단어 이하여야 합니다."
-                "다른 내용은 출력하지 마십시오. 이것은 진행 중인 작업이므로 열린 결론이나 다른 수사학적 표현을 생략하십시오."                
-            )
-        else:
-            planner_template = (
-                "You are a helpful assistant highly skilled in long-form writing."
-                "This writing aims for a novel of over 20,000 words."
-                "You will break down the writing instruction into multiple subtasks."
-                "Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph."
-
-                "The writing instruction is as follows:"
-                "<instruction>"
-                "{instruction}"
-                "<instruction>"
-                
-                "Please break it down in the following format, with each subtask taking up one line:"
-                "1. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [Word count requirement, e.g., 800 words]"
-                "2. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [word count requirement, e.g. 1500 words]."
-                "..."
-                
-                "Make sure that each subtask is clear and specific, and that all subtasks cover the entire content of the writing instruction."
-                "Do not split the subtasks too finely; each subtask's paragraph should be no less than 500 words and no more than 3000 words."
-                "Do not output any other content. As this is an ongoing work, omit open-ended conclusions or other rhetorical hooks."                
-            )
-        
-        planner_prompt = ChatPromptTemplate([
-            ('human', planner_template) 
-        ])
-                
-        chat = get_chat()
-        
-        planner = planner_prompt | chat
-        return planner
-    
     # Workflow - Reflection
     class ReflectionState(TypedDict):
         draft : str
@@ -3797,11 +3744,17 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 docs = filtered_docs = []
                 for r in response:
                     if 'content' in r:
-                        # content.append(r['content'])
-                        
+                        content = r.get("content")
+                        url = r.get("url")
+                            
                         docs.append(
                             Document(
-                                page_content=r['content']
+                                page_content=content,
+                                metadata={
+                                    'name': 'WWW',
+                                    'uri': url,
+                                    'from': 'tavily'
+                                },
                             )
                         )
                 
@@ -3896,7 +3849,56 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         instruction = state["instruction"]
         print('subject: ', instruction)
         
-        planner = get_planner()
+        if isKorean(instruction):
+            planner_template = (
+                "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."
+                "이번 글쓰기는 20,000 단어 이상의 장편을 목표로 합니다."
+                "당신은 글쓰기 지시 사항을 여러 개의 하위 작업으로 나눌 것입니다."
+                "각 하위 작업은 에세이의 한 단락 작성을 안내할 것이며, 해당 단락의 주요 내용과 단어 수 요구 사항을 포함해야 합니다."
+
+                "글쓰기 지시 사항:"
+                "<instruction>"
+                "{instruction}"
+                "<instruction>"
+                
+                "다음 형식으로 나누어 주시기 바랍니다. 각 하위 작업은 한 줄을 차지합니다:"
+                "1. Main Point: [문단의 주요 내용을 자세히 설명하십시오.], Word Count: [Word count requirement, e.g., 800 words]"
+                "2. Main Point: [문단의 주요 내용을 자세히 설명하십시오.], Word Count: [word count requirement, e.g. 1500 words]."
+                "..."
+                
+                "각 하위 작업이 명확하고 구체적인지, 그리고 모든 하위 작업이 작문 지시 사항의 전체 내용을 다루고 있는지 확인하세요."
+                "과제를 너무 세분화하지 마세요. 각 하위 과제의 문단은 500단어 이상 3000단어 이하여야 합니다."
+                "다른 내용은 출력하지 마십시오. 이것은 진행 중인 작업이므로 열린 결론이나 다른 수사학적 표현을 생략하십시오."                
+            )
+        else:
+            planner_template = (
+                "You are a helpful assistant highly skilled in long-form writing."
+                "This writing aims for a novel of over 20,000 words."
+                "You will break down the writing instruction into multiple subtasks."
+                "Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph."
+
+                "The writing instruction is as follows:"
+                "<instruction>"
+                "{instruction}"
+                "<instruction>"
+                
+                "Please break it down in the following format, with each subtask taking up one line:"
+                "1. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [Word count requirement, e.g., 800 words]"
+                "2. Main Point: [Describe the main point of the paragraph, in detail], Word Count: [word count requirement, e.g. 1500 words]."
+                "..."
+                
+                "Make sure that each subtask is clear and specific, and that all subtasks cover the entire content of the writing instruction."
+                "Do not split the subtasks too finely; each subtask's paragraph should be no less than 500 words and no more than 3000 words."
+                "Do not output any other content. As this is an ongoing work, omit open-ended conclusions or other rhetorical hooks."                
+            )
+        
+        planner_prompt = ChatPromptTemplate([
+            ('human', planner_template) 
+        ])
+                
+        chat = get_chat()
+        
+        planner = planner_prompt | chat
     
         response = planner.invoke({"instruction": instruction})
         print('response: ', response.content)
