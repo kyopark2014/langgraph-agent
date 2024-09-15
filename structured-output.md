@@ -151,7 +151,7 @@ structured_llm = chat.with_structured_output(Plan, include_raw=True)
 
 info = structured_llm.invoke("To find the hometown of the 2024 Australian Open winner, we would need to follow these steps:
 
-1. \Wait for the 2024 Australian Open tennis tournament to take place (typically in January 2024 in Melbourne, Australia).
+1. Wait for the 2024 Australian Open tennis tournament to take place (typically in January 2024 in Melbourne, Australia).
 2. Identify the winner of the men's singles or women's singles tournament.
 3. Research biographical information about the 2024 Australian Open winner to determine their hometown or place of birth.
 4. The hometown or birthplace of the 2024 Australian Open winner is the final answer.
