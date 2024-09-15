@@ -1,6 +1,6 @@
 # Reflexion Agent
 
-[reflexion.ipynb](https://github.com/langchain-ai/langgraph/blob/main/examples/reflexion/reflexion.ipynb?ref=blog.langchain.dev)에서는 [Reflexion: Language Agents with Verbal Reinforcement Learning](https://arxiv.org/pdf/2303.11366)을 기반한 Reflexion을 구현하고 있습니다.
+[reflexion.ipynb](https://github.com/langchain-ai/langgraph/blob/main/docs/docs/tutorials/reflexion/reflexion.ipynb)에서는 [Reflexion: Language Agents with Verbal Reinforcement Learning](https://arxiv.org/pdf/2303.11366)을 기반한 Reflexion을 구현하고 있습니다.
 
 Reflexion의 Diagram은 아래와 같습니다. 
 
