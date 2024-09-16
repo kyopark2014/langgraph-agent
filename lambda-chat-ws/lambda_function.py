@@ -218,7 +218,7 @@ def tavily_search(query, max_results):
     if selected_tavily != -1:
         try:
             tavily_client = TavilyClient(api_key=tavily_api_key[selected_tavily])
-            response = tavily_client.search(query, max_results=max_results)
+            response = tavily_client.search(query, max_results)
             # print('tavily response: ', response)
             
             for r in response["results"]:
