@@ -1116,7 +1116,7 @@ def grade_documents_using_parallel_processing(question, documents):
     #print('filtered_docs: ', filtered_docs)
     return filtered_docs
 
-def tavily_search(conn, q, k):     
+def web_search_by_tavily(conn, q, k):     
     search = TavilySearchResults(max_results=k) 
     response = search.invoke(q)     
     print('response: ', response)
@@ -1129,7 +1129,7 @@ def tavily_search(conn, q, k):
     conn.send(content)    
     conn.close()
     
-def tavily_search_using_parallel_processing(qurles):
+def web_search_using_parallel_processing(qurles):
     content = []    
 
     processes = []
@@ -1140,7 +1140,7 @@ def tavily_search_using_parallel_processing(qurles):
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
                     
-        process = Process(target=tavily_search, args=(child_conn, q, k))
+        process = Process(target=web_search_by_tavily, args=(child_conn, q, k))
         processes.append(process)
         
     for process in processes:
@@ -2825,7 +2825,7 @@ def run_essay_writer(connectionId, requestId, query):
         
         if not queries == None:
             if useParrelWebSearch:
-                content += tavily_search_using_parallel_processing(queries.queries)
+                content += web_search_using_parallel_processing(queries.queries)
                 
             else:        
                 search = TavilySearchResults(max_results=2)
@@ -2969,7 +2969,7 @@ Utilize all the information below as needed:
                 content = state["content"] if state.get("content") is not None else []
                 
                 if useParrelWebSearch:
-                    c = tavily_search_using_parallel_processing(queries.queries)
+                    c = web_search_using_parallel_processing(queries.queries)
                     print('content: ', c)            
                     content.extend(c)
                 else:
