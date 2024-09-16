@@ -658,10 +658,10 @@ def get_parent_content(parent_doc_id):
     
     metadata = source['metadata']    
     #print('name: ', metadata['name'])   
-    #print('uri: ', metadata['uri'])   
+    #print('url: ', metadata['url'])   
     #print('doc_level: ', metadata['doc_level']) 
     
-    return source['text'], metadata['name'], metadata['uri']
+    return source['text'], metadata['name'], metadata['url']
 
 @tool 
 def get_book_list(keyword: str) -> str:
@@ -827,7 +827,7 @@ def search_by_tavily(keyword: str) -> str:
                         page_content=content,
                         metadata={
                             'name': 'WWW',
-                            'uri': url,
+                            'url': url,
                             'from': 'tavily'
                         },
                     )
@@ -877,15 +877,15 @@ def search_by_opensearch(keyword: str) -> str:
             doc_level = document[0].metadata['doc_level']
             #print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
             
-            excerpt, name, uri = get_parent_content(parent_doc_id) # use pareant document
-            #print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, uri: {uri}, content: {excerpt}")
+            excerpt, name, url = get_parent_content(parent_doc_id) # use pareant document
+            #print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, url: {url}, content: {excerpt}")
             
             docs.append(
                 Document(
                     page_content=excerpt,
                     metadata={
                         'name': name,
-                        'uri': uri,
+                        'url': url,
                         'doc_level': doc_level,
                         'from': 'vector'
                     },
@@ -901,7 +901,7 @@ def search_by_opensearch(keyword: str) -> str:
             #print(f'## Document(opensearch-vector) {i+1}: {document}')
             
             excerpt = document[0].page_content        
-            uri = document[0].metadata['uri']            
+            url = document[0].metadata['url']            
             name = document[0].metadata['name']
             
             docs.append(
@@ -909,7 +909,7 @@ def search_by_opensearch(keyword: str) -> str:
                     page_content=excerpt,
                     metadata={
                         'name': name,
-                        'uri': uri,
+                        'url': url,
                         'from': 'vector'
                     },
                 )
@@ -933,7 +933,7 @@ def search_by_opensearch(keyword: str) -> str:
     answer = "" 
     for doc in filtered_docs:
         excerpt = doc.page_content
-        uri = doc.metadata['uri']
+        url = doc.metadata['url']
         
         answer = answer + f"{excerpt}\n\n"
         
@@ -1022,16 +1022,16 @@ def lexical_search_for_tool(query, top_k):
         if "page" in document['_source']['metadata']:
             page = document['_source']['metadata']['page']
         
-        uri = ""
-        if "uri" in document['_source']['metadata']:
-            uri = document['_source']['metadata']['uri']            
+        url = ""
+        if "url" in document['_source']['metadata']:
+            url = document['_source']['metadata']['url']            
         
         docs.append(
                 Document(
                     page_content=excerpt,
                     metadata={
                         'name': name,
-                        'uri': uri,
+                        'url': url,
                         'page': page,
                         'from': 'lexical'
                     },
@@ -1129,14 +1129,14 @@ def tavily_search(conn, q, k):
     conn.send(content)    
     conn.close()
     
-def tavily_search_using_parallel_processing(quries):
+def tavily_search_using_parallel_processing(qurles):
     content = []    
 
     processes = []
     parent_connections = []
     
     k = 2
-    for i, q in enumerate(quries):
+    for i, q in enumerate(qurles):
         parent_conn, child_conn = Pipe()
         parent_connections.append(parent_conn)
                     
@@ -1208,10 +1208,10 @@ def get_references_for_agent(docs):
         if "page" in doc.metadata:
             page = doc.metadata['page']
             #print('page: ', page)            
-        uri = ""
-        if "uri" in doc.metadata:
-            uri = doc.metadata['uri']
-            #print('uri: ', uri)                
+        url = ""
+        if "url" in doc.metadata:
+            url = doc.metadata['url']
+            #print('url: ', url)                
         name = ""
         if "name" in doc.metadata:
             name = doc.metadata['name']
@@ -1241,9 +1241,9 @@ def get_references_for_agent(docs):
         print('excerpt(quotation removed): ', excerpt)
         
         if page:                
-            reference = reference + f"{i+1}. {page}page in <a href={uri} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
+            reference = reference + f"{i+1}. {page}page in <a href={url} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
         else:
-            reference = reference + f"{i+1}. <a href={uri} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
+            reference = reference + f"{i+1}. <a href={url} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
     return reference
 
 def retrieve(question):
@@ -1273,15 +1273,15 @@ def retrieve(question):
             doc_level = document[0].metadata['doc_level']
             print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
                 
-            excerpt, name, uri = get_parent_content(parent_doc_id) # use pareant document
-            print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, uri: {uri}, content: {excerpt}")
+            excerpt, name, url = get_parent_content(parent_doc_id) # use pareant document
+            print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, url: {url}, content: {excerpt}")
             
             docs.append(
                 Document(
                     page_content=excerpt,
                     metadata={
                         'name': name,
-                        'uri': uri,
+                        'url': url,
                         'doc_level': doc_level,
                         'from': 'vector'
                     },
@@ -1297,14 +1297,14 @@ def retrieve(question):
             print(f'## Document(opensearch-vector) {i+1}: {document}')
             
             excerpt = document[0].page_content        
-            uri = document[0].metadata['uri']
+            url = document[0].metadata['url']
                             
             docs.append(
                 Document(
                     page_content=excerpt,
                     metadata={
                         'name': name,
-                        'uri': uri,
+                        'url': url,
                         'from': 'vector'
                     },
                 )
@@ -1349,19 +1349,19 @@ def retrieve(question):
             name = document['_source']['metadata']['name']
             # print('name: ', name)
 
-            uri = ""
-            if "uri" in document['_source']['metadata']:
-                uri = document['_source']['metadata']['uri']
-            # print('uri: ', uri)
+            url = ""
+            if "url" in document['_source']['metadata']:
+                url = document['_source']['metadata']['url']
+            # print('url: ', url)
             
-            print(f"lexical search --> doc[{i}]: {excerpt}, name:{name}, uri:{uri}\n")
+            print(f"lexical search --> doc[{i}]: {excerpt}, name:{name}, url:{url}\n")
             
             docs.append(
                 Document(
                     page_content=excerpt,
                     metadata={
                         'name': name,
-                        'uri': uri,
+                        'url': url,
                         'from': 'lexical'
                     },
                 )
@@ -1401,7 +1401,7 @@ def web_search(question, documents):
                 page_content=content,
                 metadata={
                     'name': 'WWW',
-                    'uri': url,
+                    'url': url,
                     'from': 'tavily'
                 },
             )
@@ -3660,7 +3660,20 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         search_queries: list[str] = Field(
             description="1-3 search queries for researching improvements to address the critique of your current writing."
         )
-    
+
+    class ReflectionKor(BaseModel):
+        missing: str = Field(description="작성된 글에 있어야하는데 빠진 내용이나 단점")
+        advisable: str = Field(description="더 좋은 글이 되기 위해 추가하여야 할 내용")
+        superfluous: str = Field(description="글의 길이나 스타일에 대한 비평")
+
+    class ResearchKor(BaseModel):
+        """글쓰기를 개선하기 위한 검색 쿼리를 제공합니다."""
+
+        reflection: ReflectionKor = Field(description="작성된 글에 대한 평가")
+        search_queries: list[str] = Field(
+            description="현재 글과 관련된 3개 이내의 검색어"
+        )    
+        
     def reflect_node(state: ReflectionState):
         print("###### reflect ######")
         draft = state['draft']
@@ -3670,8 +3683,11 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         search_queries = []
         for attempt in range(5):
             chat = get_chat()
-            structured_llm = chat.with_structured_output(Research, include_raw=True)
-            
+            if isKorean(draft):
+                structured_llm = chat.with_structured_output(ResearchKor, include_raw=True)
+            else:
+                structured_llm = chat.with_structured_output(Research, include_raw=True)
+                
             info = structured_llm.invoke(draft)
             print(f'attempt: {attempt}, info: {info}')
                 
@@ -3770,7 +3786,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 print(f'q: {q}, response: {response}')
                 content.append(response)                   
         else:
-            search = TavilySearchResults(max_results=2)
+            search = TavilySearchResults(max_results=4)
             
             related_docs = []                        
             for q in search_queries:
@@ -3788,7 +3804,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                                 page_content=content,
                                 metadata={
                                     'name': 'WWW',
-                                    'uri': url,
+                                    'url': url,
                                     'from': 'tavily'
                                 },
                             )
@@ -4336,7 +4352,7 @@ def get_reference_of_knoweledge_base(docs, path, doc_prefix):
         
         link = ""
         if "s3Location" in document.metadata["location"]:
-            link = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
+            link = document.metadata["location"]["s3Location"]["url"] if document.metadata["location"]["s3Location"]["url"] is not None else ""
             
             print('link:', link)    
             pos = link.find(f"/{doc_prefix}")
@@ -5308,7 +5324,7 @@ def getResponse(connectionId, jsonBody):
                                 "name": object,
                                 "source": {
                                     "s3Location": {
-                                        "uri": s3Location
+                                        "url": s3Location
                                     },
                                     "sourceType": 'S3'
                                 },
@@ -5329,7 +5345,7 @@ def getResponse(connectionId, jsonBody):
                             metadata={
                                 'name': object,
                                 # 'page':i+1,
-                                'uri': path+doc_prefix+parse.quote(object)
+                                'url': path+doc_prefix+parse.quote(object)
                             }
                         )
                     )
