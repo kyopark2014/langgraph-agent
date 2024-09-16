@@ -40,10 +40,11 @@ from langgraph.graph import START, END, StateGraph
 from langgraph.prebuilt import ToolNode
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import tools_condition
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic.v1 import BaseModel, Field
 from typing import Annotated, List, Tuple, TypedDict, Literal, Sequence, Union
 import functools
 from langchain_aws import AmazonKnowledgeBasesRetriever
+from tavily import TavilyClient  
     
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
@@ -178,13 +179,74 @@ try:
     )
     #print('get_tavily_api_secret: ', get_tavily_api_secret)
     secret = json.loads(get_tavily_api_secret['SecretString'])
-    #print('secret: ', secret)
-    tavily_api_key = secret['tavily_api_key']
+    # print('secret: ', secret)
+    tavily_api_key = json.loads(secret['tavily_api_key'])
+    # print('tavily_api_key: ', tavily_api_key)
 except Exception as e: 
     raise e
 
-if tavily_api_key:
-    os.environ["TAVILY_API_KEY"] = tavily_api_key
+def check_tavily_secret(tavily_api_key):
+    query = 'what is LangGraph'
+    valid_keys = []
+    for key in tavily_api_key:
+        try:
+            tavily_client = TavilyClient(api_key=key)
+            response = tavily_client.search(query, max_results=1)
+            # print('tavily response: ', response)
+            
+            if 'results' in response and len(response['results']):
+                valid_keys.append(key)
+        except Exception as e:
+            print('Exception: ', e)
+    # print('valid_keys: ', valid_keys)
+    
+    return valid_keys
+
+tavily_api_key = check_tavily_secret(tavily_api_key)
+# print('tavily_api_key: ', tavily_api_key)
+print('The number of valid tavily api keys: ', len(tavily_api_key))
+
+selected_tavily = -1
+if len(tavily_api_key):
+    os.environ["TAVILY_API_KEY"] = tavily_api_key[0]
+    selected_tavily = 0
+      
+def tavily_search(query, max_results):
+    global selected_tavily
+    docs = []
+    
+    if selected_tavily != -1:
+        try:
+            tavily_client = TavilyClient(api_key=tavily_api_key[selected_tavily])
+            response = tavily_client.search(query, max_results=max_results)
+            # print('tavily response: ', response)
+            
+            for r in response["results"]:
+                name = r.get("title")
+                if name is None:
+                    name = 'WWW'
+            
+                docs.append(
+                    Document(
+                        page_content=r.get("content"),
+                        metadata={
+                            'name': name,
+                            'url': r.get("url"),
+                            'from': 'tavily'
+                        },
+                    )
+                )   
+            
+            selected_tavily = selected_tavily + 1
+            if selected_tavily == len(tavily_api_key):
+                selected_tavily = 0
+                
+        except Exception as e:
+            print('Exception: ', e)
+    return docs
+
+# result = tavily_search('what is LangChain', 2)
+# print('search result: ', result)
     
 # websocket
 connection_url = os.environ.get('connection_url')
