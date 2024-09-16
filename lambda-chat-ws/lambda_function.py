@@ -3774,54 +3774,24 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         revise_prompt = ChatPromptTemplate([
             ('human', revise_template)
         ])
-            
-        content = []     
+                    
+        # web search
+        filtered_docs = []  
         
-        global useEnhancedSearch
-        useEnhancedSearch = False   
+        for q in search_queries:
+            docs = tavily_search(q, 4)
+            print(f'q: {q}, WEB: {docs}')
+            
+            if len(docs):
+                filtered_docs += grade_documents(q, docs)
+                
+        print('filtered_docs: ', filtered_docs)
         
-        if useEnhancedSearch:
-            for q in search_queries:
-                response = enhanced_search(q)     
-                print(f'q: {q}, response: {response}')
-                content.append(response)                   
-        else:
-            search = TavilySearchResults(max_results=4)
-            
-            related_docs = []                        
-            for q in search_queries:
-                response = search.invoke(q)
-                print(f'q: {q}, response: {response}')
-                
-                docs = filtered_docs = []
-                for r in response:
-                    if 'content' in r:
-                        content = r.get("content")
-                        url = r.get("url")
-                            
-                        docs.append(
-                            Document(
-                                page_content=content,
-                                metadata={
-                                    'name': 'WWW',
-                                    'url': url,
-                                    'from': 'tavily'
-                                },
-                            )
-                        )
-                
-                print('docs: ', docs)
-                
-                if len(docs):
-                    filtered_docs = grade_documents(q, docs)
-                    print('filtered_docs: ', filtered_docs)
-                
-                    if len(filtered_docs):
-                        related_docs += filtered_docs
-            
-            for d in related_docs:
+        content = []   
+        if len(filtered_docs):
+            for d in filtered_docs:
                 content.append(d.page_content)
-        
+            
         print('content: ', content)
 
         chat = get_chat()
