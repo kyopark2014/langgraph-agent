@@ -3637,7 +3637,7 @@ Remember to only output the paragraph you write, without repeating the already w
     return output['final_doc']
 
 ####################### LangGraph #######################
-# Long term Writing Agent
+# Long form Writing Agent
 #########################################################
 def run_long_form_writing_agent(connectionId, requestId, query):
     # Workflow - Reflection
@@ -4237,7 +4237,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "final_doc": final_doc+f"\n<a href={html_url} target=_blank>[미리보기 링크]</a>\n<a href={markdown_url} download=\"{subject}.md\">[다운로드 링크]</a>"
         }
         
-    def buildLongTermWriting():
+    def buildLongformWriting():
         workflow = StateGraph(State)
 
         # Add nodes
@@ -4255,7 +4255,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         return workflow.compile()
     
-    app = buildLongTermWriting()
+    app = buildLongformWriting()
     
     # Run the workflow
     isTyping(connectionId, requestId)        
