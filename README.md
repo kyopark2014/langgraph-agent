@@ -134,7 +134,7 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 ### Map Reduce
 
-[Map Redue](https://github.com/kyopark2014/langgraph-agent/blob/main/map-reduce-parallel-processing.md)에서는 Map Reduce 패턴의 병렬처리 방법에 대해 설명하고 있습니다. 
+[Map Reduce](https://github.com/kyopark2014/langgraph-agent/blob/main/map-reduce-parallel-processing.md)에서는 Map Reduce 패턴의 병렬처리 방법에 대해 설명하고 있습니다. 
 
 ## Reference
 
