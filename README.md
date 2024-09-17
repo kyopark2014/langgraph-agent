@@ -115,6 +115,10 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 ![image](https://github.com/user-attachments/assets/7207687c-5649-4e2d-b4ab-c51ebf9c60f4)
 
+### AgentWrite
+
+[AgentWrite LangGraph](https://github.com/samwit/agent_tutorials/tree/main/agent_write)는 Agent를 이용한 Write 과정에 대해 설명하고 있습니다. 상세한 설명은 [AgentWrite with LangGraph - Youtube](https://www.youtube.com/watch?v=nK9K8UPraXk)를 참고합니다.
+
 ### Long Term Writing
 
 [long-term-writing.md](https://github.com/kyopark2014/langgraph-agent/blob/main/long-term-writing.md)에서는 plan and execute 패턴을 가지는 agent와 reflection을 수행하는 agent를 이용하여 instruction으로 장문의 글쓰기를 수행합니다. Multi agent 구조로 구성함으로써 복잡한 workflow를 단순하게 구현할 수 있습니다.
@@ -127,6 +131,10 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 [multi-agent.md](./multi-agent.md)에서는 여러개의 Agent를 이용하는 방법에 대해 설명합니다. 
 
 ![image](https://github.com/user-attachments/assets/7adb21cb-8bd7-4fca-af71-2a8ccc536f49)
+
+### Map Reduce
+
+[How to create map-reduce branches for parallel execution](https://langchain-ai.github.io/langgraph/how-tos/map-reduce/)에 따라 Map Reduce 형태로 workflow를 생성할 수 있습니다. 상세한 내용은 [LangGraph - Controllability with Map Reduce (Youtube)](https://www.youtube.com/watch?v=JQznvlSatPQ)을 참조합니다. 
 
 
 
@@ -154,7 +162,6 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 - [GPT Newspape](https://www.youtube.com/watch?v=E7nFHaSs3q8)에서는 신문요약에 대해 설명하고 있습니다. ([github](https://github.com/rotemweiss57/gpt-newspaper/tree/master) 링크)
 
-- [AgentWrite LangGraph](https://github.com/samwit/agent_tutorials/tree/main/agent_write)는 Agent를 이용한 Write 과정에 대해 설명하고 있습니다. 상세한 설명은 [AgentWrite with LangGraph - Youtube](https://www.youtube.com/watch?v=nK9K8UPraXk)를 참고합니다.
 
 
 ## 직접 실습 해보기
