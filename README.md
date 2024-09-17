@@ -134,9 +134,7 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 ### Map Reduce
 
-[How to create map-reduce branches for parallel execution](https://langchain-ai.github.io/langgraph/how-tos/map-reduce/)에 따라 Map Reduce 형태로 workflow를 생성할 수 있습니다. 상세한 내용은 [LangGraph - Controllability with Map Reduce (Youtube)](https://www.youtube.com/watch?v=JQznvlSatPQ)을 참조합니다. 
-
-
+[Map Redue[(https://github.com/kyopark2014/langgraph-agent/blob/main/map-reduce-parallel-processing.md)에서는 Map Reduce 패턴의 병렬처리 방법에 대해 설명하고 있습니다. 
 
 ## Reference
 
