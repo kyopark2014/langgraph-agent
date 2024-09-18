@@ -1,5 +1,7 @@
 # Map Reduce 방식의 병렬처리
 
+[주의] 병렬처리한 node로 empty state가 전달되는 케이스가 발견되었습니다. 추후 버그 패치될때까지 사용을 추천하지 않습니다. 
+
 [How to create map-reduce branches for parallel execution](https://langchain-ai.github.io/langgraph/how-tos/map-reduce/)에 따라 Map Reduce 형태로 workflow를 생성할 수 있습니다. 상세한 내용은 [LangGraph - Controllability with Map Reduce (Youtube)](https://www.youtube.com/watch?v=JQznvlSatPQ)을 참조합니다. 
 
 ![image](https://github.com/user-attachments/assets/549270bb-f24f-454d-8386-17891e145526)
