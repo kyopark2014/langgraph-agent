@@ -119,9 +119,9 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 [AgentWrite LangGraph](https://github.com/samwit/agent_tutorials/tree/main/agent_write)는 Agent를 이용한 Write 과정에 대해 설명하고 있습니다. 상세한 설명은 [AgentWrite with LangGraph - Youtube](https://www.youtube.com/watch?v=nK9K8UPraXk)를 참고합니다.
 
-### Long Term Writing
+### Long Form Writing
 
-[long-term-writing.md](https://github.com/kyopark2014/langgraph-agent/blob/main/long-term-writing.md)에서는 plan and execute 패턴을 가지는 agent와 reflection을 수행하는 agent를 이용하여 instruction으로 장문의 글쓰기를 수행합니다. Multi agent 구조로 구성함으로써 복잡한 workflow를 단순하게 구현할 수 있습니다.
+[long-term-writing.md](./long-form-writing.md)에서는 plan and execute 패턴을 가지는 agent와 reflection을 수행하는 agent를 이용하여 instruction으로 장문의 글쓰기를 수행합니다. Multi agent 구조로 구성함으로써 복잡한 workflow를 단순하게 구현할 수 있습니다.
 
 <img src="https://github.com/user-attachments/assets/6007e82d-f617-48a9-b23a-38a156f4abd1" width="800">
    
