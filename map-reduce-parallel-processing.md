@@ -80,6 +80,8 @@ def continue_to_jokes(state: OverallState):
     return [Send("generate_joke", {"subject": s}) for s in state["subjects"]]
 ```
 
+best_joke 노드를 정의합니다.
+
 ```python
 class BestJoke(BaseModel):
     id: int = Field(description="Index of the best joke, starting with 0", ge=0)
