@@ -32,7 +32,7 @@ LAYOUT_WITH_LEGEND()
 
 Container(plan_node, "plan_node")
 Container(execute_node, "execute_node")
-Container(revise_answer, "revise_answer")
+Container(revise_answers, "revise_answers")
 
 Rel(Start, plan_node, "instruction")
 
@@ -42,9 +42,9 @@ Rel(Start, plan_node, "instruction")
 
 Rel(plan_node, execute_node, "plans")
 
-Rel(execute_node, revise_answer, "drafts")
+Rel(execute_node, revise_answers, "drafts")
 
-Rel(revise_answer, END, "revised_drafts")
+Rel(revise_answers, END, "revised_drafts")
 
 
 @enduml
