@@ -243,7 +243,7 @@ def store_document_for_opensearch(file_type, key):
         page_content=contents,
         metadata={
             'name': key,
-            'uri': path+parse.quote(key)
+            'url': path+parse.quote(key)
         }
     ))
     
@@ -253,7 +253,7 @@ def store_document_for_opensearch(file_type, key):
             page_content=table['body'],
             metadata={
                 'name': table['name'],
-                'uri': path+parse.quote(table['name']),
+                'url': path+parse.quote(table['name']),
             }
         ))            
     print('docs: ', docs)
@@ -292,8 +292,8 @@ def store_code_for_opensearch(file_type, key):
                         metadata={
                             'name': key,
                             # 'page':i+1,
-                            #'uri': path+doc_prefix+parse.quote(key),
-                            'uri': path+key,
+                            #'url': path+doc_prefix+parse.quote(key),
+                            'url': path+key,
                             'code': code,
                             'function_name': function_name
                         }
@@ -356,7 +356,7 @@ def store_image_for_opensearch(key):
                     metadata={
                         'name': key,
                         # 'page':i+1,
-                        'uri': path+parse.quote(key)
+                        'url': path+parse.quote(key)
                     }
                 )
             )                                                                                                            
@@ -1150,8 +1150,8 @@ def summarize_process_for_relevent_code(conn, chat, code, key, region_name):
                 page_content=summary,
                 metadata={
                     'name': key,
-                    # 'uri': path+doc_prefix+parse.quote(key),
-                    'uri': path+key,
+                    # 'url': path+doc_prefix+parse.quote(key),
+                    'url': path+key,
                     'code': code,
                     'function_name': function_name
                 }
@@ -1264,14 +1264,14 @@ def get_documentId(key, category):
                 
     return documentId
 
-def create_metadata(bucket, key, meta_prefix, s3_prefix, uri, category, documentId, ids, files):
+def create_metadata(bucket, key, meta_prefix, s3_prefix, url, category, documentId, ids, files):
     title = key
     timestamp = int(time.time())
 
     metadata = {
         "Attributes": {
             "_category": category,
-            "_source_uri": uri,
+            "_source_url": url,
             "_version": str(timestamp),
             "_language_code": "ko"
         },
@@ -1398,7 +1398,7 @@ def lambda_handler(event, context):
                 elif file_type == 'png' or file_type == 'jpg' or file_type == 'jpeg':
                     ids = store_image_for_opensearch(key)
                                                                                                          
-                create_metadata(bucket=s3_bucket, key=key, meta_prefix=meta_prefix, s3_prefix=s3_prefix, uri=path+parse.quote(key), category=category, documentId=documentId, ids=ids, files=files)
+                create_metadata(bucket=s3_bucket, key=key, meta_prefix=meta_prefix, s3_prefix=s3_prefix, url=path+parse.quote(key), category=category, documentId=documentId, ids=ids, files=files)
 
             else: # delete if the object is unsupported one for format or size
                 try:
