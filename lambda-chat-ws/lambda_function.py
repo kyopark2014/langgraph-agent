@@ -661,7 +661,11 @@ def get_parent_content(parent_doc_id):
     #print('url: ', metadata['url'])   
     #print('doc_level: ', metadata['doc_level']) 
     
-    return source['text'], metadata['name'], metadata['url']
+    url = ""
+    if "url" in metadata:
+        url = metadata['url']
+    
+    return source['text'], metadata['name'], url
 
 @tool 
 def get_book_list(keyword: str) -> str:
@@ -900,8 +904,12 @@ def search_by_opensearch(keyword: str) -> str:
         for i, document in enumerate(relevant_documents):
             #print(f'## Document(opensearch-vector) {i+1}: {document}')
             
-            excerpt = document[0].page_content        
-            url = document[0].metadata['url']            
+            excerpt = document[0].page_content
+            
+            url = ""
+            if "url" in document[0].metadata:
+                url = document[0].metadata['url']
+                
             name = document[0].metadata['name']
             
             docs.append(
@@ -933,7 +941,10 @@ def search_by_opensearch(keyword: str) -> str:
     answer = "" 
     for doc in filtered_docs:
         excerpt = doc.page_content
-        url = doc.metadata['url']
+        
+        url = ""
+        if "url" in doc.metadata:
+            url = doc.metadata['url']
         
         answer = answer + f"{excerpt}\n\n"
         
