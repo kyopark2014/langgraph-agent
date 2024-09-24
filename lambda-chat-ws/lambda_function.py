@@ -817,26 +817,32 @@ def search_by_tavily(keyword: str) -> str:
         
         search = TavilySearchResults(max_results=3)
                     
-        output = search.invoke(keyword)
-        print('tavily output: ', output)
+        try: 
+            output = search.invoke(keyword)
+            print('tavily output: ', output)
+            
+            for result in output:
+                print('result: ', result)
+                if result:
+                    content = result.get("content")
+                    url = result.get("url")
+                    
+                    reference_docs.append(
+                        Document(
+                            page_content=content,
+                            metadata={
+                                'name': 'WWW',
+                                'url': url,
+                                'from': 'tavily'
+                            },
+                        )
+                    )                
+                    answer = answer + f"{content}, URL: {url}\n"
         
-        for result in output:
-            print('result: ', result)
-            if result:
-                content = result.get("content")
-                url = result.get("url")
-                
-                reference_docs.append(
-                    Document(
-                        page_content=content,
-                        metadata={
-                            'name': 'WWW',
-                            'url': url,
-                            'from': 'tavily'
-                        },
-                    )
-                )                
-                answer = answer + f"{content}, URL: {url}\n"
+        except Exception:
+            err_msg = traceback.format_exc()
+            print('error message: ', err_msg)                    
+            # raise Exception ("Not able to request to tavily")   
         
     return answer
 
