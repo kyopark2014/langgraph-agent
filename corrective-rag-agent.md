@@ -585,5 +585,5 @@ app = workflow.compile()
 
 [Corrective RAG Process: Retrieval-Augmented Generation with Dynamic Correction](https://github.com/NirDiamant/RAG_Techniques/blob/main/all_rag_techniques/crag.ipynb)의 CRAG 구현 Flow는 아래와 같습니다.
 
-![image](https://github.com/user-attachments/assets/3c91a9ab-6a32-469a-ac00-9834e8805a9a)
+<img width="568" alt="image" src="https://github.com/user-attachments/assets/7de00888-0c2c-4f5e-a190-8974b8cf6d0d">
 
