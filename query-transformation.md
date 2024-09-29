@@ -28,8 +28,23 @@
 class StepBackQuery(BaseModel):
     step_back_question: str = Field(
         ...,
-        description="Given a specific user question about one or more of these products, write a more generic question that needs to be answered in order to answer the specific question.",
+        description="Given a specific user question about one or more of these products,
+            write a more generic question that needs to be answered in order to answer the specific question.",
     )
+```
+
+
+[query_transformations.ipynb](https://github.com/NirDiamant/RAG_Techniques/blob/main/all_rag_techniques/query_transformations.ipynb)의 step_back_template은 아래와 같습니다.
+
+```python
+step_back_template = """You are an AI assistant tasked with generating broader,
+more general queries to improve context retrieval in a RAG system.
+Given the original query, generate a step-back query
+that is more general and can help retrieve relevant background information.
+
+Original query: {original_query}
+
+Step-back query:"""
 ```
   
 
