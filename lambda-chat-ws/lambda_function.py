@@ -4339,7 +4339,7 @@ def get_reference_of_knoweledge_base(docs, path, doc_prefix):
         
         link = ""
         if "s3Location" in document.metadata["location"]:
-            link = document.metadata["location"]["s3Location"]["url"] if document.metadata["location"]["s3Location"]["url"] is not None else ""
+            link = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
             
             print('link:', link)    
             pos = link.find(f"/{doc_prefix}")
