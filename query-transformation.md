@@ -20,8 +20,10 @@
 [query_transformations.ipynb](https://github.com/NirDiamant/RAG_Techniques/blob/main/all_rag_techniques/query_transformations.ipynb)의 subquery decompsition의 template은 아래와 같습니다.
 
 ```python
-subquery_decomposition_template = """You are an AI assistant tasked with breaking down complex queries into simpler sub-queries for a RAG system.
-Given the original query, decompose it into 2-4 simpler sub-queries that, when answered together, would provide a comprehensive response to the original query.
+subquery_decomposition_template = """You are an AI assistant tasked with breaking down complex queries
+into simpler sub-queries for a RAG system.
+Given the original query, decompose it into 2-4 simpler sub-queries that,
+when answered together, would provide a comprehensive response to the original query.
 
 Original query: {original_query}
 
