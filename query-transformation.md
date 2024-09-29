@@ -6,9 +6,8 @@
 
 [RAG의 Query Transformation](https://medium.com/@krtarunsingh/advanced-rag-techniques-unlocking-the-next-level-040c205b95bc)은 여러개의 Subquery를 이용하여 RAG의 성능을 향상시키는 방법입니다. 
 
-![image](https://github.com/user-attachments/assets/ea32be3d-9d19-473e-840d-9ebf0b4cdf28)
-
- 
+<img src="https://github.com/user-attachments/assets/ea32be3d-9d19-473e-840d-9ebf0b4cdf28" width="700">
+ 
 쿼리 변환 기술은 LLM을 활용하여 사용자 입력을 변경하거나 개선함으로써 정보 검색의 품질과 관련성을 높입니다. 이러한 변환은 다양한 형태를 취할 수 있습니다: 
 
 ## 하위 쿼리 분해 (Sub-query Decompostion)
