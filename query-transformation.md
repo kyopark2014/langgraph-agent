@@ -131,6 +131,11 @@ def get_rewrite():
     return question_rewriter
 ```
 
+[crag.ipynb](https://github.com/NirDiamant/RAG_Techniques/blob/main/all_rag_techniques/crag.ipynb)의 예제는 아래와 같습니다.
+
+```python
+template="Rewrite the following query to make it more suitable for a web search:\n{query}\nRewritten query:"
+```
 
 ## Query Tansformation의 문제점
 
