@@ -55,4 +55,54 @@ rewrite_prompt = ChatPromptTemplate.from_template(template)
 Provide a better search query for web search engine to answer the given question, end the queries with ’**’.  Question {x} Answer:
 ```
 
+[query_transformations.ipynb]https://github.com/NirDiamant/RAG_Techniques/blob/main/all_rag_techniques/query_transformations.ipynb)의 rewrite는 아래와 같습니다.
+
+```python
+query_rewrite_template = """You are an AI assistant tasked with reformulating user queries to improve retrieval in a RAG system. 
+Given the original query, rewrite it to be more specific, detailed, and likely to retrieve relevant information.
+
+Original query: {original_query}
+Rewritten query:"""
+```
+
+[langgraph의 rewrite](https://github.com/kyopark2014/langgraph-agent)에서는 아래와 같은 함수를 정의해서 사용중입니다.
+
+```python
+def get_rewrite():
+    class RewriteQuestion(BaseModel):
+        """rewrited question that is well optimized for retrieval."""
+
+        question: str = Field(description="The new question is optimized to represent semantic intent and meaning of the user")
+    
+    chat = get_chat()
+    structured_llm_rewriter = chat.with_structured_output(RewriteQuestion)
+    
+    print('langMode: ', langMode)
+    
+    if langMode:
+        system = """당신은 질문 re-writer입니다. 사용자의 의도와 의미을 잘 표현할 수 있도록 질문을 한국어로 re-write하세요."""
+    else:
+        system = (
+            "You a question re-writer that converts an input question to a better version that is optimized"
+            "for web search. Look at the input and try to reason about the underlying semantic intent / meaning."
+        )
+        
+    print('system: ', system)
+        
+    re_write_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system),
+            ("human", "Question: {question}"),
+        ]
+    )
+    question_rewriter = re_write_prompt | structured_llm_rewriter
+    return question_rewriter
+```
+
+
+## Query Tansformation의 문제점
+
+1) 지연시간의 증가: subquery에 대한 RAG 조회는 병렬처리를 통해 개선 가능하지만, query의 변환에 추가적인 시간이 늘어납니다.
+2) 질문이 짧은 경우에 성능 개선이 미미함: 질문이 짧을 경우에 query변환으로 인해 얻어진 장점이 크지 않을 수 있습니다.
+
 
