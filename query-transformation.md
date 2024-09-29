@@ -33,7 +33,7 @@ class StepBackQuery(BaseModel):
 ```
   
 
-### 쿼리 재작성 (Query Rewriting)
+## 쿼리 재작성 (Query Rewriting)
 
 - 초기 쿼리를 개선하여 검색 프로세스를 향상시키기 위해 LLM을 사용합니다.
 - LangChain과 LlamaIndex 모두 이 전략을 구현하지만 접근 방식에는 차이가 있습니다. 특히 LlamaIndex는 검색 효율성을 크게 향상시키는 강력한 구현으로 주목받고 있습니다. (확인 필요)
