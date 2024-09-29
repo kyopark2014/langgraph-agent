@@ -52,7 +52,8 @@ rewrite_prompt = ChatPromptTemplate.from_template(template)
 [query_transformations.ipynb](https://github.com/NirDiamant/RAG_Techniques/blob/main/all_rag_techniques/query_transformations.ipynb)의 rewrite는 아래와 같습니다.
 
 ```python
-query_rewrite_template = """You are an AI assistant tasked with reformulating user queries to improve retrieval in a RAG system. \
+query_rewrite_template = """You are an AI assistant tasked with reformulating user queries to improve retrieval in a RAG system.
+
 Given the original query, rewrite it to be more specific, detailed, and likely to retrieve relevant information.
 
 Original query: {original_query}
