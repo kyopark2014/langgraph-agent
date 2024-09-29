@@ -11,13 +11,30 @@
 
 쿼리 변환 기술은 LLM을 활용하여 사용자 입력을 변경하거나 개선함으로써 정보 검색의 품질과 관련성을 높입니다. 이러한 변환은 다양한 형태를 취할 수 있습니다: 
 
-### 하위 쿼리 분해 (Sub-query Decompostion)
+## 하위 쿼리 분해 (Sub-query Decompostion)
 
 - 복잡한 쿼리를 간단한하고 쉬운 하위 쿼리로 분해합니다. 
 - 각 하위 쿼리를 독립적으로 처리한 후에 종합하여 포괄적인 응답을 형성합니다. 
 - LangChain과 LlamaIndex 모두 이 프로세스를 촉진하는 Multi Query Retriever 및 Sub Question Query Engine과 같은 도구를 제공
 
-### 단계별 프롬프팅 (Step-back Prompting)
+[query_transformations.ipynb](https://github.com/NirDiamant/RAG_Techniques/blob/main/all_rag_techniques/query_transformations.ipynb)의 subquery decompsition의 template은 아래와 같습니다.
+
+```python
+subquery_decomposition_template = """You are an AI assistant tasked with breaking down complex queries into simpler sub-queries for a RAG system.
+Given the original query, decompose it into 2-4 simpler sub-queries that, when answered together, would provide a comprehensive response to the original query.
+
+Original query: {original_query}
+
+example: What are the impacts of climate change on the environment?
+
+Sub-queries:
+1. What are the impacts of climate change on biodiversity?
+2. How does climate change affect the oceans?
+3. What are the effects of climate change on agriculture?
+4. What are the impacts of climate change on human health?"""
+```
+
+## 단계별 프롬프팅 (Step-back Prompting)
 
 - 복잡한 원래 쿼리에서 더 넓거나 일반적인 쿼리를 생성하기 위해 LLM을 사용합니다.
 - 구체적인 쿼리에 답변하기 위한 기반이 될 수 있는 상위 수준의 컨텍스트를 검색을 목표로 합니다.
