@@ -38,7 +38,7 @@ class StepBackQuery(BaseModel):
 - 초기 쿼리를 개선하여 검색 프로세스를 향상시키기 위해 LLM을 사용합니다.
 - LangChain과 LlamaIndex 모두 이 전략을 구현하지만 접근 방식에는 차이가 있습니다. 특히 LlamaIndex는 검색 효율성을 크게 향상시키는 강력한 구현으로 주목받고 있습니다. (확인 필요)
 
-- [langchain/cookbook/rewrite.ipynb](https://github.com/langchain-ai/langchain/blob/master/cookbook/rewrite.ipynb?ref=blog.langchain.dev)
+- [langchain/cookbook/rewrite.ipynb](https://github.com/langchain-ai/langchain/blob/master/cookbook/rewrite.ipynb?ref=blog.langchain.dev)와 [langchain-ai/rewrite](https://smith.langchain.com/hub/langchain-ai/rewrite?tab=0)의 경우에 아래와 같이 query rewrite를 수행합니다.
 
 ```python
 template = (
@@ -48,14 +48,9 @@ template = (
 )
 rewrite_prompt = ChatPromptTemplate.from_template(template)
 ```
-
-[langchain-ai/rewrite](https://smith.langchain.com/hub/langchain-ai/rewrite?tab=0)를 참조합니다.
-
-```python
-Provide a better search query for web search engine to answer the given question, end the queries with ’**’.  Question {x} Answer:
 ```
 
-[query_transformations.ipynb]https://github.com/NirDiamant/RAG_Techniques/blob/main/all_rag_techniques/query_transformations.ipynb)의 rewrite는 아래와 같습니다.
+[query_transformations.ipynb](https://github.com/NirDiamant/RAG_Techniques/blob/main/all_rag_techniques/query_transformations.ipynb)의 rewrite는 아래와 같습니다.
 
 ```python
 query_rewrite_template = """You are an AI assistant tasked with reformulating user queries to improve retrieval in a RAG system. 
