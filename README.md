@@ -136,6 +136,14 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 [Map Reduce](https://github.com/kyopark2014/langgraph-agent/blob/main/map-reduce-parallel-processing.md)에서는 Map Reduce 패턴의 병렬처리 방법에 대해 설명하고 있습니다. 
 
+### RAG with Reflection
+
+[RAG with Reflection](https://github.com/kyopark2014/rag-with-reflection/tree/main)에서는 Reflection으로 RAG의 성능을 강화합니다.
+
+### RAG with Query Transformation
+
+[RAG with Query Transformation](https://github.com/kyopark2014/rag-with-reflection/tree/main)에서는 RAG의 전처리로 rewrite와 decompse를 수행함으로써 RAG의 성능을 강화합니다.
+
 ## Reference
 
 - [reflexion-agent.md](./reflexion-agent.md)에서는 Reflexion방식의 Agent에 대해 설명합니다.
