@@ -138,11 +138,16 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 ### RAG with Reflection
 
-[RAG with Reflection](https://github.com/kyopark2014/rag-with-reflection/tree/main)에서는 Reflection으로 RAG의 성능을 강화합니다.
+[RAG with Reflection](https://github.com/kyopark2014/rag-with-reflection/tree/main?tab=readme-ov-file#rag-with-reflection)에서는 Reflection으로 RAG의 성능을 강화합니다.
+
+<img src="https://github.com/user-attachments/assets/226c1c29-ac7a-4d5d-a515-d91451cc6b81" width="400">
 
 ### RAG with Query Transformation
 
-[RAG with Query Transformation](https://github.com/kyopark2014/rag-with-reflection/tree/main)에서는 RAG의 전처리로 rewrite와 decompse를 수행함으로써 RAG의 성능을 강화합니다.
+[RAG with Query Transformation](https://github.com/kyopark2014/rag-with-reflection/tree/main?tab=readme-ov-file#query-transformation)에서는 RAG의 전처리로 rewrite와 decompse를 수행함으로써 RAG의 성능을 강화합니다.
+
+<img src="https://github.com/user-attachments/assets/e69f19d3-49e9-435c-bf5f-99fb9a78b2da" width="400">
+
 
 ## Reference
 
