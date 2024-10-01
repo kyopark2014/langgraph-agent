@@ -1179,6 +1179,94 @@ def print_doc(doc):
             
     print(f"doc: {text}, metadata:{doc.metadata}")
     
+knowledge_base_id = None
+def retrieve_from_knowledge_base(query):
+    global knowledge_base_id
+    if not knowledge_base_id:        
+        client = boto3.client('bedrock-agent')         
+        response = client.list_knowledge_bases(
+            maxResults=10
+        )
+        print('response: ', response)
+                
+        if "knowledgeBaseSummaries" in response:
+            summaries = response["knowledgeBaseSummaries"]
+            for summary in summaries:
+                if summary["name"] == knowledge_base_name:
+                    knowledge_base_id = summary["knowledgeBaseId"]
+                    print('knowledge_base_id: ', knowledge_base_id)
+                    break
+    
+    relevant_docs = []
+    if knowledge_base_id:    
+        retriever = AmazonKnowledgeBasesRetriever(
+            knowledge_base_id=knowledge_base_id, 
+            retrieval_config={"vectorSearchConfiguration": {"numberOfResults": 2}},
+        )
+        
+        relevant_docs = retriever.invoke(query)
+        print(relevant_docs)
+    
+    docs = []
+    for i, document in enumerate(relevant_docs):
+        #print(f"{i}: {document.page_content}")
+        print_doc(i, document)
+        if document.page_content:
+            excerpt = document.page_content
+        
+        score = document.metadata["score"]
+        # print('score:', score)
+        doc_prefix = "knowledge-base"
+        
+        link = ""
+        if "s3Location" in document.metadata["location"]:
+            link = document.metadata["location"]["s3Location"]["uri"] if document.metadata["location"]["s3Location"]["uri"] is not None else ""
+            
+            # print('link:', link)    
+            pos = link.find(f"/{doc_prefix}")
+            name = link[pos+len(doc_prefix)+1:]
+            encoded_name = parse.quote(name)
+            # print('name:', name)
+            link = f"{path}{doc_prefix}{encoded_name}"
+            
+        elif "webLocation" in document.metadata["location"]:
+            link = document.metadata["location"]["webLocation"]["url"] if document.metadata["location"]["webLocation"]["url"] is not None else ""
+            name = "Web Crawler"
+
+        # print('link:', link)                    
+
+        docs.append(
+            Document(
+                page_content=excerpt,
+                metadata={
+                    'name': name,
+                    'url': link,
+                    'from': 'RAG'
+                },
+            )
+        )
+    return docs
+
+def check_duplication(docs):
+    length_original = len(docs)
+    
+    contentList = []
+    updated_docs = []
+    print('length of relevant_docs:', len(docs))
+    for doc in docs:            
+        # print('excerpt: ', doc['metadata']['excerpt'])
+            if doc.page_content in contentList:
+                print('duplicated!')
+                continue
+            contentList.append(doc.page_content)
+            updated_docs.append(doc)            
+    length_updateed_docs = len(updated_docs)     
+    
+    if length_original == length_updateed_docs:
+        print('no duplication')
+    
+    return updated_docs
+        
 def grade_documents(question, documents):
     print("###### grade_documents ######")
     
@@ -4694,6 +4782,640 @@ def run_bedrock_agent(text, connectionId, requestId, userId, sessionState):
             raise Exception("unexpected event.",e)
         
     return msg+msg_contents
+
+####################### LangGraph #######################
+# RAG with Reflection
+#########################################################
+def run_rag_with_reflection(connectionId, requestId, query):   
+    MAX_REVISIONS = 1
+    class State(TypedDict):
+        query: str
+        draft: str
+        relevant_docs: List[str]
+        filtered_docs: List[str]
+        reflection : List[str]
+        sub_queries : List[str]
+        revision_number: int 
+        
+    def continue_reflection(state: State, config):
+        print("###### continue_reflection ######")
+        max_revisions = config.get("configurable", {}).get("max_revisions", MAX_REVISIONS)
+        print("max_revisions: ", max_revisions)
+                
+        if state["revision_number"] > max_revisions:
+            return "end"
+        return "continue"
+
+    def retrieve_node(state: State):
+        print("###### retrieve ######")
+        query = state['query']
+        relevant_docs = retrieve_from_knowledge_base(query)
+        
+        # print(f'q: {query}, RAG: {relevant_docs}')
+        print(f'--> query: {query}, length: {len(relevant_docs)}')
+        
+        return {
+            "relevant_docs": relevant_docs
+        }
+        
+    def parallel_grader(state: State):
+        print("###### parallel_grader ######")
+        query = state['query']
+        relevant_docs = state['relevant_docs']
+        
+        print('length of relevant_docs: ', len(relevant_docs))
+        
+        global selected_chat    
+        filtered_docs = []    
+
+        processes = []
+        parent_connections = []
+        
+        for i, doc in enumerate(relevant_docs):
+            #print(f"grading doc[{i}]: {doc.page_content}")        
+            parent_conn, child_conn = Pipe()
+            parent_connections.append(parent_conn)
+                
+            process = Process(target=grade_document_based_on_relevance, args=(child_conn, query, doc, multi_region_models, selected_chat))
+            processes.append(process)
+
+            selected_chat = selected_chat + 1
+            if selected_chat == len(multi_region_models):
+                selected_chat = 0
+        for process in processes:
+            process.start()
+                
+        for parent_conn in parent_connections:
+            doc = parent_conn.recv()
+
+            if doc is not None:
+                filtered_docs.append(doc)
+
+        for process in processes:
+            process.join()    
+        #print('filtered_docs: ', filtered_docs)
+        
+        print('length of filtered_docs: ', len(filtered_docs))
+
+        global reference_docs 
+        reference_docs += filtered_docs    
+        print('langth of reference_docs: ', len(reference_docs))    
+        
+        # duplication checker
+        reference_docs = check_duplication(reference_docs)
+        
+        return {
+            "filtered_docs": filtered_docs
+        }    
+
+    def generate_node(state: State):
+        print("###### generate ######")
+        query = state["query"]
+        filtered_docs = state["filtered_docs"]
+        print('query: ', query)
+        print('filtered_docs: ', filtered_docs)
+            
+        # RAG generation
+        rag_chain = get_reg_chain(isKorean(query))
+            
+        answer = rag_chain.invoke({"context": filtered_docs, "question": query})
+        print('answer: ', answer.content)
+                
+        return {
+            "draft": answer.content
+        }
+
+    class Reflection(BaseModel):
+        missing: str = Field(description="Critique of what is missing.")
+        advisable: str = Field(description="Critique of what is helpful for better writing")
+        superfluous: str = Field(description="Critique of what is superfluous")
+
+    class Research(BaseModel):
+        """Provide reflection and then follow up with search queries to improve the question/answer."""
+
+        reflection: Reflection = Field(description="Your reflection on the initial answer.")
+        sub_queries: list[str] = Field(
+            description="1-3 search queries for researching improvements to address the critique of your current answer."
+        )
+
+    class ReflectionKor(BaseModel):
+        missing: str = Field(description="답변에 있어야하는데 빠진 내용이나 단점")
+        advisable: str = Field(description="더 좋은 답변이 되기 위해 추가하여야 할 내용")
+        superfluous: str = Field(description="답변의 길이나 스타일에 대한 비평")
+
+    class ResearchKor(BaseModel):
+        """답변을 개선하기 위한 검색 쿼리를 제공합니다."""
+
+        reflection: ReflectionKor = Field(description="답변에 대한 평가")
+        sub_queries: list[str] = Field(
+            description="답변과 관련된 3개 이내의 검색어"
+        )
+        
+    def reflect_node(state: State):
+        print("###### reflect ######")
+        #print('state: ', state)    
+        query = state['query']
+        print('query: ', query)
+        draft = state['draft']
+        print('draft: ', draft)
+            
+        reflection = []
+        sub_queries = []
+        for attempt in range(5):
+            chat = get_chat()
+            
+            if isKorean(draft):
+                structured_llm = chat.with_structured_output(ResearchKor, include_raw=True)
+                qa = f"질문: {query}\n\n답변: {draft}"
+        
+            else:
+                structured_llm = chat.with_structured_output(Research, include_raw=True)
+                qa = f"Question: {query}\n\nAnswer: {draft}"
+            
+            info = structured_llm.invoke(qa)
+            print(f'attempt: {attempt}, info: {info}')
+                    
+            if not info['parsed'] == None:
+                parsed_info = info['parsed']
+                # print('reflection: ', parsed_info.reflection)
+                reflection = [parsed_info.reflection.missing, parsed_info.reflection.advisable]
+                sub_queries = parsed_info.sub_queries
+                    
+                print('reflection: ', parsed_info.reflection)            
+            
+                if isKorean(draft):
+                    translated_search = []
+                    for q in sub_queries:
+                        chat = get_chat()
+                        if isKorean(q):
+                            search = traslation(chat, q, "Korean", "English")
+                        else:
+                            search = traslation(chat, q, "English", "Korean")
+                        translated_search.append(search)
+                            
+                    print('translated_search: ', translated_search)
+                    sub_queries += translated_search
+
+                break
+        print('sub_queries: ', sub_queries)
+            
+        return {
+            "reflection": reflection,
+            "sub_queries": sub_queries,
+        }
+
+    def retriever(conn, query):
+        relevant_docs = retrieve_from_knowledge_base(query)    
+        print("---RETRIEVE: RELEVANT DOCUMENT---")
+        print(f'--> query: {query}, length: {len(relevant_docs)}')
+        
+        conn.send(relevant_docs)    
+        conn.close()
+        
+        return relevant_docs
+    
+    def parallel_retriever(state: State):
+        print("###### parallel_retriever ######")
+        sub_queries = state['sub_queries']
+        print('sub_queries: ', sub_queries)
+        
+        relevant_docs = []
+        processes = []
+        parent_connections = []
+        
+        for i, query in enumerate(sub_queries):
+            print(f"retrieve sub_queries[{i}]: {query}")        
+            parent_conn, child_conn = Pipe()
+            parent_connections.append(parent_conn)
+                
+            process = Process(target=retriever, args=(child_conn, query))
+            processes.append(process)
+
+        for process in processes:
+            process.start()
+                
+        for parent_conn in parent_connections:
+            docs = parent_conn.recv()
+            print('docs: ', docs)
+            
+            for doc in docs:
+                relevant_docs.append(doc)
+
+        for process in processes:
+            process.join()    
+        print('relevant_docs: ', relevant_docs)
+        
+        # duplication checker
+        relevant_docs = check_duplication(relevant_docs)
+
+        return {
+            "relevant_docs": relevant_docs
+        }
+
+    def revise_node(state: State):   
+        print("###### revise ######")
+            
+        draft = state['draft']
+        reflection = state['reflection']
+        print('draft: ', draft)
+        print('reflection: ', reflection)
+        
+        if isKorean(draft):
+            revise_template = (
+                "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."                
+                "draft을 critique과 information 사용하여 수정하십시오."
+                "최종 결과는 한국어로 작성하고 <result> tag를 붙여주세요."
+                                
+                "<draft>"
+                "{draft}"
+                "</draft>"
+                                
+                "<critique>"
+                "{reflection}"
+                "</critique>"
+
+                "<information>"
+                "{content}"
+                "</information>"
+            )
+        else:    
+            revise_template = (
+                "You are an excellent writing assistant." 
+                "Revise this draft using the critique and additional information."
+                "Provide the final answer with <result> tag."
+                                
+                "<draft>"
+                "{draft}"
+                "</draft>"
+                            
+                "<critique>"
+                "{reflection}"
+                "</critique>"
+
+                "<information>"
+                "{content}"
+                "</information>"
+            )
+                        
+        revise_prompt = ChatPromptTemplate([
+            ('human', revise_template)
+        ])
+        
+        filtered_docs = state['filtered_docs']
+        print('filtered_docs: ', filtered_docs)
+                
+        content = []   
+        if len(filtered_docs):
+            for d in filtered_docs:
+                content.append(d.page_content)        
+        print('content: ', content)
+
+        chat = get_chat()
+        reflect = revise_prompt | chat
+            
+        res = reflect.invoke(
+            {
+                "draft": draft,
+                "reflection": reflection,
+                "content": content
+            }
+        )
+        output = res.content
+        # print('output: ', output)
+            
+        revised_draft = output[output.find('<result>')+8:len(output)-9]
+        # print('revised_draft: ', revised_draft) 
+                
+        print('--> draft: ', draft)
+        print('--> reflection: ', reflection)
+        print('--> revised_draft: ', revised_draft)
+            
+        revision_number = state["revision_number"] if state.get("revision_number") is not None else 1
+                
+        return {
+            "draft": revised_draft,
+            "revision_number": revision_number + 1
+        }
+
+    def buildRagWithReflection():
+        workflow = StateGraph(State)
+
+        # Add nodes
+        workflow.add_node("retrieve_node", retrieve_node)
+        workflow.add_node("parallel_grader", parallel_grader)
+        workflow.add_node("generate_node", generate_node)
+        
+        workflow.add_node("reflect_node", reflect_node)    
+        workflow.add_node("parallel_retriever", parallel_retriever)    
+        workflow.add_node("parallel_grader_subqueries", parallel_grader)
+        workflow.add_node("revise_node", revise_node)
+
+        # Set entry point
+        workflow.set_entry_point("retrieve_node")
+        
+        workflow.add_edge("retrieve_node", "parallel_grader")
+        workflow.add_edge("parallel_grader", "generate_node")
+        
+        workflow.add_edge("generate_node", "reflect_node")
+        workflow.add_edge("reflect_node", "parallel_retriever")    
+        workflow.add_edge("parallel_retriever", "parallel_grader_subqueries")    
+        workflow.add_edge("parallel_grader_subqueries", "revise_node")
+        
+        workflow.add_conditional_edges(
+            "revise_node", 
+            continue_reflection, 
+            {
+                "end": END, 
+                "continue": "reflect_node"}
+        )
+            
+        return workflow.compile()
+
+    app = buildRagWithReflection()
+    
+    # Run the workflow
+    isTyping(connectionId, requestId)        
+    inputs = {
+        "query": query
+    }    
+    config = {
+        "recursion_limit": 50
+    }
+    
+    output = app.invoke(inputs, config)
+    print('output (run_rag_with_reflection): ', output)
+    
+    return output['draft']
+
+####################### LangGraph #######################
+# RAG with query trasnformation
+#########################################################
+
+def run_rag_with_transformation(connectionId, requestId, query):    
+    MAX_REVISIONS = 1
+    class State(TypedDict):
+        query: str
+        draft: str
+        relevant_docs: List[str]
+        filtered_docs: List[str]
+        sub_queries : List[str]
+
+    def rewrite_node(state: State):
+        print("###### rewrite ######")
+        query = state['query']
+        
+        query_rewrite_template = (
+            "You are an AI assistant tasked with reformulating user queries to improve retrieval in a RAG system."
+            "Given the original query, rewrite it to be more specific," 
+            "detailed, and likely to retrieve relevant information."
+            "Put it in <result> tags."
+
+            "Original query: {original_query}"
+            "Rewritten query:"
+        )
+        
+        rewrite_prompt = ChatPromptTemplate([
+            ('human', query_rewrite_template)
+        ])
+
+        chat = get_chat()
+        rewrite = rewrite_prompt | chat
+            
+        res = rewrite.invoke({"original_query": query})    
+        revised_query = res.content
+        
+        revised_query = revised_query[revised_query.find('<result>')+8:len(revised_query)-9] # remove <result> tag                   
+        print('revised_query: ', revised_query)
+        
+        return {
+            "query": revised_query
+        }
+
+    def decompose_node(state: State):
+        print("###### decompose ######")
+        query = state['query']
+        
+        if isKorean(query):
+            subquery_decomposition_template = (
+                "당신은 복잡한 쿼리를 RAG 시스템에 더 간단한 하위 쿼리로 분해하는 AI 어시스턴트입니다. "
+                "주어진 원래 쿼리를 1-3개의 더 간단한 하위 쿼리로 분해하세요. "
+                "최종 결과에 <result> tag를 붙여주세요."
+
+                "<query>"
+                "{original_query}"
+                "</query>"
+
+                "다음의 예제를 참조하여 쿼리를 생성합니다. 각 쿼리는 한 줄을 차지합니다:"
+                "<example>"
+                "질문: 기후 변화가 환경에 미치는 영향은 무엇입니까? "
+
+                "하위 질문:"
+                "1. 기후 변화가 환경에 미치는 주요 영향은 무엇입니까?"
+                "2. 기후 변화는 생태계에 어떤 영향을 미칩니까? "
+                "3. 기후 변화가 환경에 미치는 부정적인 영향은 무엇입니까?"
+                "</example>"
+            )
+        else:
+            subquery_decomposition_template = (
+                "You are an AI assistant tasked with breaking down complex queries into simpler sub-queries for a RAG system."
+                "Given the original query, decompose it into 1-3 simpler sub-queries."
+                "Provide the final answer with <result> tag."
+
+                "<query>"
+                "{original_query}"
+                "</query>"
+
+                "Create queries referring to the following example. Each query occupies one line."
+                "<example>"
+                "Query: What are the impacts of climate change on the environment?"
+
+                "Sub-queries:"
+                "1. What are the impacts of climate change on biodiversity?"
+                "2. How does climate change affect the oceans?"
+                "3. What are the effects of climate change on agriculture?"
+                "</example>"
+            )    
+            
+        decomposition_prompt = ChatPromptTemplate([
+            ('human', subquery_decomposition_template)
+        ])
+
+        chat = get_chat()
+        
+        decompose = decomposition_prompt | chat
+        
+        response = decompose.invoke({"original_query": query})
+        print('response: ', response.content)
+        
+        result = response.content[response.content.find('<result>')+8:len(response.content)-9]
+        print('result: ', result)
+        
+        result = result.strip().replace('\n\n', '\n')
+        decomposed_queries = result.split('\n')        
+        print('decomposed_queries: ', decomposed_queries)
+
+        sub_queries = []    
+        if len(decomposed_queries):
+            sub_queries = decomposed_queries    
+        else:
+            sub_queries = [query]
+        
+        return {
+            "sub_queries": [query] + sub_queries
+        }    
+
+    def retriever(conn, query):
+        relevant_docs = retrieve_from_knowledge_base(query)    
+        print("---RETRIEVE: RELEVANT DOCUMENT---")
+        print(f'--> query: {query}, length: {len(relevant_docs)}')
+        
+        conn.send(relevant_docs)    
+        conn.close()
+        
+        return relevant_docs
+    
+    def parallel_retriever(state: State):
+        print("###### parallel_retriever ######")
+        sub_queries = state['sub_queries']
+        print('sub_queries: ', sub_queries)
+        
+        relevant_docs = []
+        processes = []
+        parent_connections = []
+        
+        for i, query in enumerate(sub_queries):
+            print(f"retrieve sub_queries[{i}]: {query}")        
+            parent_conn, child_conn = Pipe()
+            parent_connections.append(parent_conn)
+                
+            process = Process(target=retriever, args=(child_conn, query))
+            processes.append(process)
+
+        for process in processes:
+            process.start()
+                
+        for parent_conn in parent_connections:
+            docs = parent_conn.recv()
+            print('docs: ', docs)
+            
+            for doc in docs:
+                relevant_docs.append(doc)
+
+        for process in processes:
+            process.join()    
+        print('relevant_docs: ', relevant_docs)
+        
+        # duplication checker
+        relevant_docs = check_duplication(relevant_docs)
+
+        return {
+            "relevant_docs": relevant_docs
+        }
+
+    def parallel_grader(state: State):
+        print("###### parallel_grader ######")
+        query = state['query']
+        relevant_docs = state['relevant_docs']
+        
+        print('length of relevant_docs: ', len(relevant_docs))
+        
+        global selected_chat    
+        filtered_docs = []    
+
+        processes = []
+        parent_connections = []
+        
+        for i, doc in enumerate(relevant_docs):
+            #print(f"grading doc[{i}]: {doc.page_content}")        
+            parent_conn, child_conn = Pipe()
+            parent_connections.append(parent_conn)
+                
+            process = Process(target=grade_document_based_on_relevance, args=(child_conn, query, doc, multi_region_models, selected_chat))
+            processes.append(process)
+
+            selected_chat = selected_chat + 1
+            if selected_chat == len(multi_region_models):
+                selected_chat = 0
+        for process in processes:
+            process.start()
+                
+        for parent_conn in parent_connections:
+            doc = parent_conn.recv()
+
+            if doc is not None:
+                filtered_docs.append(doc)
+
+        for process in processes:
+            process.join()    
+        #print('filtered_docs: ', filtered_docs)
+        
+        print('length of filtered_docs: ', len(filtered_docs))
+
+        global reference_docs 
+        reference_docs += filtered_docs    
+        print('langth of reference_docs: ', len(reference_docs))    
+        
+        # duplication checker
+        reference_docs = check_duplication(reference_docs)
+        
+        return {
+            "filtered_docs": filtered_docs
+        }    
+        
+    def generate_node(state: State):
+        print("###### generate ######")
+        query = state["query"]
+        filtered_docs = state["filtered_docs"]
+        print('query: ', query)
+        print('filtered_docs: ', filtered_docs)
+            
+        # RAG generation
+        rag_chain = get_reg_chain(isKorean(query))
+            
+        answer = rag_chain.invoke({"context": filtered_docs, "question": query})
+        print('answer: ', answer.content)
+                
+        return {
+            "draft": answer.content
+        }
+        
+    def buildRagWithTransformation():
+        workflow = StateGraph(State)
+
+        # Add nodes
+        workflow.add_node("rewrite_node", rewrite_node)
+        workflow.add_node("decompose_node", decompose_node)
+        workflow.add_node("parallel_retriever", parallel_retriever)
+        workflow.add_node("parallel_grader", parallel_grader)
+        workflow.add_node("generate_node", generate_node)
+        
+        # Set entry point
+        workflow.set_entry_point("rewrite_node")
+        
+        # Add edges
+        workflow.add_edge("rewrite_node", "decompose_node")
+        workflow.add_edge("decompose_node", "parallel_retriever")
+        workflow.add_edge("parallel_retriever", "parallel_grader")
+        workflow.add_edge("parallel_grader", "generate_node")    
+        workflow.add_edge("generate_node", END)
+                
+        return workflow.compile()
+    
+    app = buildRagWithTransformation()
+    
+    # Run the workflow
+    isTyping(connectionId, requestId)        
+    inputs = {
+        "query": query
+    }    
+    config = {
+        "recursion_limit": 50
+    }
+    
+    output = app.invoke(inputs, config)
+    print('output (run_rag_with_reflection): ', output)
+    
+    return output['draft']
     
 #########################################################
 def traslation(chat, text, input_language, output_language):
@@ -5245,6 +5967,7 @@ def getResponse(connectionId, jsonBody):
                     revised_question = revise_question(connectionId, requestId, chat, text)     
                     print('revised_question: ', revised_question)      
                     msg, reference = get_answer_using_knowledge_base(chat, revised_question, connectionId, requestId)
+                
                 elif convType == "prompt-flow":
                     msg = run_prompt_flow(text, connectionId, requestId)
                 elif convType == "prompt-flow-chat":
@@ -5257,6 +5980,12 @@ def getResponse(connectionId, jsonBody):
                 
                 elif convType == "bedrock-agent":
                     msg = run_bedrock_agent(text, connectionId, requestId, userId, "")
+                
+                elif convType == 'rag-with-reflection':  # rag-with-reflection
+                    msg = run_rag_with_reflection(connectionId, requestId, text)
+
+                elif convType == 'rag-with-transformation':  # rag-with-transformation
+                    msg = run_rag_with_transformation(connectionId, requestId, text)
                     
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
@@ -5266,6 +5995,8 @@ def getResponse(connectionId, jsonBody):
                 
                 else:
                     msg = general_conversation(connectionId, requestId, chat, text)  
+                    
+                    
                     
                 memory_chain.chat_memory.add_user_message(text)
                 memory_chain.chat_memory.add_ai_message(msg)
