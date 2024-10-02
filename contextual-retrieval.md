@@ -17,7 +17,6 @@ Answer only with the succinct context and nothing else."""
 ```
 
 
-## Anthropic의 Contextual Retrieval에 대해 설명해주세요.
 
 ### Anthropic의 Contextual Retrieval: 대규모 언어 모델의 지식 활용 강화
 
