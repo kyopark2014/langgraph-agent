@@ -1521,7 +1521,7 @@ def web_search(question, documents):
         )
     return documents
 
-def get_reg_chain():
+def get_reg_chain(langMode):
     if langMode:
         system = (
         """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
@@ -2156,7 +2156,7 @@ def run_corrective_rag(connectionId, requestId, query):
         documents = state["documents"]
         
         # RAG generation
-        rag_chain = get_reg_chain()
+        rag_chain = get_reg_chain(isKorean(question))
         
         generation = rag_chain.invoke({"context": documents, "question": question})
         print('generation: ', generation.content)
@@ -2266,7 +2266,7 @@ def run_self_rag(connectionId, requestId, query):
         retries = state["retries"] if state.get("retries") is not None else -1
         
         # RAG generation
-        rag_chain = get_reg_chain()
+        rag_chain = get_reg_chain(isKorean(question))
         
         generation = rag_chain.invoke({"context": documents, "question": question})
         print('generation: ', generation.content)
@@ -2460,7 +2460,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         retries = state["retries"] if state.get("retries") is not None else -1
         
         # RAG generation
-        rag_chain = get_reg_chain()
+        rag_chain = get_reg_chain(isKorean(question))
         
         generation = rag_chain.invoke({"context": documents, "question": question})
         print('generation: ', generation.content)
