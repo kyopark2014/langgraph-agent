@@ -1306,6 +1306,14 @@ def grade_documents(question, documents):
     # print('len(docments): ', len(filtered_docs))    
     return filtered_docs
 
+def print_doc(i, doc):
+    if len(doc.page_content)>=100:
+        text = doc.page_content[:100]
+    else:
+        text = doc.page_content
+            
+    print(f"{i}: {text}, metadata:{doc.metadata}")
+    
 def get_references_for_agent(docs):
     reference = "\n\nFrom\n"
     for i, doc in enumerate(docs):
@@ -3740,7 +3748,7 @@ Remember to only output the paragraph you write, without repeating the already w
     print('output: ', output)
     
     return output['final_doc']
-
+    
 ####################### LangGraph #######################
 # Long form Writing Agent
 #########################################################
