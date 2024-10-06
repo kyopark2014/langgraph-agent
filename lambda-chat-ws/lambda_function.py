@@ -1171,13 +1171,13 @@ def web_search_using_parallel_processing(qurles):
     
     return content
 
-def print_doc(doc):
+def print_doc(i, doc):
     if len(doc.page_content)>=100:
         text = doc.page_content[:100]
     else:
         text = doc.page_content
             
-    print(f"doc: {text}, metadata:{doc.metadata}")
+    print(f"{i}: {text}, metadata:{doc.metadata}")
     
 knowledge_base_id = None
 def retrieve_from_knowledge_base(query):
@@ -1279,9 +1279,9 @@ def grade_documents(question, documents):
         # Score each doc    
         chat = get_chat()
         retrieval_grader = get_retrieval_grader(chat)
-        for doc in documents:
+        for i, doc in enumerate(documents):
             # print('doc: ', doc)
-            print_doc(doc)
+            print_doc(i, doc)
             
             score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
             print("score: ", score)
@@ -6003,8 +6003,6 @@ def getResponse(connectionId, jsonBody):
                 
                 else:
                     msg = general_conversation(connectionId, requestId, chat, text)  
-                    
-                    
                     
                 memory_chain.chat_memory.add_user_message(text)
                 memory_chain.chat_memory.add_ai_message(msg)
