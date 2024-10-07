@@ -4716,7 +4716,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId, sessionState):
         client_runtime = boto3.client('bedrock-agent-runtime')
         try:
             if sessionState:
-                response =  client_runtime.invoke_agent( 
+                response = client_runtime.invoke_agent( 
                     agentAliasId=agent_alias_id,
                     agentId=agent_id,
                     inputText=text, 
@@ -4725,7 +4725,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId, sessionState):
                     sessionState=sessionState
                 )
             else:
-                response =  client_runtime.invoke_agent( 
+                response = client_runtime.invoke_agent( 
                     agentAliasId=agent_alias_id,
                     agentId=agent_id,
                     inputText=text, 
@@ -6048,7 +6048,7 @@ def getResponse(connectionId, jsonBody):
                                 "name": object,
                                 "source": {
                                     "s3Location": {
-                                        "url": s3Location
+                                        "uri": s3Location
                                     },
                                     "sourceType": 'S3'
                                 },
