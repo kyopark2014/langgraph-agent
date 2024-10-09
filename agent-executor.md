@@ -138,7 +138,41 @@ for event in app.stream({"messages": inputs}, stream_mode="values"):
     event["messages"][-1].pretty_print()
 ```
 
-## Agent Executor From Scratch
+## 실행 결과
+
+"Amazon의 생성형 AI 서비스의 종류와 생성형 AI를 위해 데이터를 수집하는 방법을 설명해주세요."와 같은 질문은 내부에 2가지 질문이 있습니다. 이때의 결과는 아래와 같습니다.
+
+![noname](https://github.com/user-attachments/assets/8640fdba-f053-4b70-bab9-8c6f85b04103)
+
+LangSmith로 동작을 확인하면 아래와 같이 반복적으로 검색을 수행합니다.
+
+![image](https://github.com/user-attachments/assets/f22c56ea-ace3-4b6c-9e3b-7ce1f03c48c5)
+
+RAG를 검색한 내용은 아래와 같습니다.
+
+```text
+"input": "{'keyword': 'Amazon generative AI services'}"
+"input": "{'keyword': 'Amazon generative AI services list'}"
+"input": "{'keyword': 'Amazon generative AI services list and features'}"
+"input": "{'keyword': 'list of Amazon generative AI services and their features'}"
+```
+
+웹검색은 아래 키워드로 수행되었습니다.
+
+```python
+"input": "list of Amazon generative AI services and features"
+"input": "list of AWS generative AI services"
+"input": "how to collect and analyze data for generative AI on AWS"
+"input": "list of AWS generative AI services"
+"input": "list of Amazon AWS generative AI services and their features"
+"input": "how to collect and prepare data for generative AI models on AWS"
+"input": "how to collect and prepare data for generative AI models on AWS in detail"
+"input": "step by step guide to collect and prepare data for generative AI models on AWS"
+"input": "step by step guide to collect and prepare data for generative AI models using AWS services"
+```
+
+
+## Agent Executor From Scratch 
 
 LangGraph에서는 [ReAct 방식의 chat agent](https://github.com/langchain-ai/langgraph/blob/main/examples/chat_agent_executor_with_function_calling/base.ipynb)를 제공하고 있습니다. 그런데 이 example에서 사용하는 ReAct Prompt 방식은 LangChain Agent와 같은 방식으로 RAG와 같이 context가 길어질 경우에 제대로 동작못하는 경우가 있었습니다. 따라서 가능한 LangGraph만으로 구성할 것을 추천 드립니다. 아래는 참고용 셈플 입니다. 
 
