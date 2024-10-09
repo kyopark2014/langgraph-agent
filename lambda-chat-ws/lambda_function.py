@@ -1701,6 +1701,8 @@ def init_enhanced_search():
         chain = prompt | model
                 
         response = chain.invoke(question)
+        print('call_model response: ', response.tool_calls)
+        
         return {"messages": [response]}
 
     def buildChatAgent():
@@ -1800,6 +1802,8 @@ def run_agent_executor(connectionId, requestId, query):
         chain = prompt | model
             
         response = chain.invoke(state["messages"])
+        print('call_model response: ', response.tool_calls)
+        
         return {"messages": [response]}
 
     def buildChatAgent():
