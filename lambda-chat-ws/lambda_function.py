@@ -871,12 +871,10 @@ def search_by_opensearch(keyword: str) -> str:
         embedding_function = bedrock_embedding,
         opensearch_url=opensearch_url,
         http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
-    ) 
-    
-    answer = ""
+    )     
     top_k = 2
     
-    docs = [] 
+    relevant_docs = [] 
     if enalbeParentDocumentRetrival == 'true': # parent/child chunking
         relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, keyword, top_k)
                         
@@ -890,7 +888,7 @@ def search_by_opensearch(keyword: str) -> str:
             excerpt, name, url = get_parent_content(parent_doc_id) # use pareant document
             #print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, url: {url}, content: {excerpt}")
             
-            docs.append(
+            relevant_docs.append(
                 Document(
                     page_content=excerpt,
                     metadata={
@@ -918,7 +916,7 @@ def search_by_opensearch(keyword: str) -> str:
                 
             name = document[0].metadata['name']
             
-            docs.append(
+            relevant_docs.append(
                 Document(
                     page_content=excerpt,
                     metadata={
@@ -930,11 +928,11 @@ def search_by_opensearch(keyword: str) -> str:
             )
     
     if enableHybridSearch == 'true':
-        docs = docs + lexical_search_for_tool(keyword, top_k)
+        relevant_docs = relevant_docs + lexical_search_for_tool(keyword, top_k)
     
-    print('doc length: ', len(docs))
+    print('relevant_docs length: ', len(relevant_docs))
                 
-    filtered_docs = grade_documents(keyword, docs)
+    filtered_docs = grade_documents(keyword, relevant_docs)
         
     for i, doc in enumerate(filtered_docs):
         if len(doc.page_content)>=100:
@@ -944,17 +942,13 @@ def search_by_opensearch(keyword: str) -> str:
             
         print(f"filtered doc[{i}]: {text}, metadata:{doc.metadata}")
        
-    answer = "" 
+    relevant_docs = "" 
     for doc in filtered_docs:
-        excerpt = doc.page_content
+        content = doc.page_content
         
-        url = ""
-        if "url" in doc.metadata:
-            url = doc.metadata['url']
+        relevant_docs = relevant_docs + f"{content}\n\n"
         
-        answer = answer + f"{excerpt}\n\n"
-        
-    return answer
+    return relevant_docs
 
 def get_documents_from_opensearch(vectorstore_opensearch, query, top_k):
     result = vectorstore_opensearch.similarity_search_with_score(
