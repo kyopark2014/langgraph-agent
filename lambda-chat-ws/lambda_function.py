@@ -3747,7 +3747,7 @@ Do not output any other content. As this is an ongoing work, omit open-ended con
         num_steps = int(state['num_steps'])
         num_steps += 1
         
-        update_state_message("planning...", config)
+        update_state_message("writing...", config)
         
         plan = plan.strip().replace('\n\n', '\n')
         planning_steps = plan.split('\n')        
@@ -3970,14 +3970,35 @@ def run_long_form_writing_agent(connectionId, requestId, query):
     def revise_draft(state: ReflectionState, config):   
         print("###### revise_answer ######")
         
-        update_state_message("revising...", config)
-        
+                
         draft = state['draft']
         search_queries = state['search_queries']
         reflection = state['reflection']
         print('draft: ', draft)
         print('search_queries: ', search_queries)
         print('reflection: ', reflection)
+                            
+        # web search
+        update_state_message("web searching...", config)
+        
+        filtered_docs = []          
+        for q in search_queries:
+            docs = tavily_search(q, 4)
+            print(f'q: {q}, WEB: {docs}')
+            
+            if len(docs):
+                filtered_docs += grade_documents(q, docs)
+                
+        print('filtered_docs: ', filtered_docs)
+        
+        content = []   
+        if len(filtered_docs):
+            for d in filtered_docs:
+                content.append(d.page_content)
+            
+        print('content: ', content)
+        
+        update_state_message("revising...", config)
         
         if isKorean(draft):
             revise_template = (
@@ -4020,25 +4041,6 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         revise_prompt = ChatPromptTemplate([
             ('human', revise_template)
         ])
-                    
-        # web search
-        filtered_docs = []  
-        
-        for q in search_queries:
-            docs = tavily_search(q, 4)
-            print(f'q: {q}, WEB: {docs}')
-            
-            if len(docs):
-                filtered_docs += grade_documents(q, docs)
-                
-        print('filtered_docs: ', filtered_docs)
-        
-        content = []   
-        if len(filtered_docs):
-            for d in filtered_docs:
-                content.append(d.page_content)
-            
-        print('content: ', content)
 
         chat = get_chat()
         reflect = revise_prompt | chat
@@ -4537,7 +4539,7 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
     chain = prompt | chat
     
     try: 
-        isTyping(connectionId, requestId, "")  
+        isTyping(connectionId, requestId, "retriving...")  
         stream = chain.invoke(
             {
                 "context": context,
