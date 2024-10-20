@@ -1654,9 +1654,9 @@ def update_state_message(msg:str, config):
     print('config: ', config)
     
     requestId = config.get("configurable", {}).get("requestId", "")
-    connection = config.get("configurable", {}).get("connectionId", "")
+    connectionId = config.get("configurable", {}).get("connectionId", "")
     
-    isTyping(connection, requestId, msg)
+    isTyping(connectionId, requestId, msg)
     
 def init_enhanced_search():
     chat = get_chat() 
@@ -3969,8 +3969,6 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
     def revise_draft(state: ReflectionState, config):   
         print("###### revise_answer ######")
-        
-                
         draft = state['draft']
         search_queries = state['search_queries']
         reflection = state['reflection']
@@ -4302,16 +4300,10 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "drafts": drafts
         }
 
-    def reflect_draft(conn, reflection_app, idx, draft):     
+    def reflect_draft(conn, reflection_app, config, idx, draft):     
         inputs = {
             "draft": draft
-        }    
-        config = {
-            "recursion_limit": 50,
-            "max_revisions": MAX_REVISIONS,
-            "requestId": requestId,
-            "connectionId": connectionId
-        }
+        }            
         output = reflection_app.invoke(inputs, config)
         
         result = {
@@ -4322,19 +4314,31 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         conn.send(result)    
         conn.close()
         
-    def reflect_drafts_using_parallel_processing(drafts):
+    def reflect_drafts_using_parallel_processing(drafts, config):
         revised_drafts = drafts
         
         processes = []
         parent_connections = []
         
         reflection_app = buildReflection()
-                
+        
+        requestId = config.get("configurable", {}).get("requestId", "")
+        print('requestId: ', requestId)
+        connectionId = config.get("configurable", {}).get("connectionId", "")
+        print('connectionId: ', connectionId)
+        
         for idx, draft in enumerate(drafts):
             parent_conn, child_conn = Pipe()
             parent_connections.append(parent_conn)
             
-            process = Process(target=reflect_draft, args=(child_conn, reflection_app, idx, draft))
+            app_config = {
+                "recursion_limit": 50,
+                "max_revisions": MAX_REVISIONS,
+                "requestId":requestId,
+                "connectionId": connectionId,
+                "idx": idx
+            }
+            process = Process(target=reflect_draft, args=(child_conn, reflection_app, app_config, idx, draft))
             processes.append(process)
             
         for process in processes:
@@ -4411,9 +4415,11 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         drafts = state["drafts"]        
         print('drafts: ', drafts)
         
+        update_state_message("revising...", config)
+        
         # reflection
         if multi_region == 'enable':  # parallel processing
-            final_doc = reflect_drafts_using_parallel_processing(drafts)
+            final_doc = reflect_drafts_using_parallel_processing(drafts, config)
         else:
             reflection_app = buildReflection()
                 
