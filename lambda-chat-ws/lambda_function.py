@@ -3923,7 +3923,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         draft = state['draft']
         print('draft: ', draft)
         
-        update_state_message("reflecting...", config)
+        idx = config.get("configurable", {}).get("idx")
+        update_state_message(f"reflecting... (search_queries-{idx})", config)
     
         reflection = []
         search_queries = []
@@ -3979,7 +3980,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         print('reflection: ', reflection)
                             
         # web search
-        update_state_message("web searching...", config)
+        idx = config.get("configurable", {}).get("idx")
+        update_state_message(f"revising... (retrieve-{idx})", config)
         
         filtered_docs = []          
         for q in search_queries:
@@ -3994,11 +3996,10 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         content = []   
         if len(filtered_docs):
             for d in filtered_docs:
-                content.append(d.page_content)
-            
+                content.append(d.page_content)            
         print('content: ', content)
         
-        update_state_message("revising...", config)
+        update_state_message(f"revising... (generate-{idx})", config)
         
         if isKorean(draft):
             revise_template = (
