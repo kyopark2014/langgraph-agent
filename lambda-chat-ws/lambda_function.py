@@ -579,7 +579,7 @@ def general_conversation(connectionId, requestId, chat, query):
                 
     chain = prompt | chat    
     try: 
-        isTyping(connectionId, requestId)  
+        isTyping(connectionId, requestId, "")  
         stream = chain.invoke(
             {
                 "history": history,
@@ -1649,6 +1649,15 @@ def get_hallucination_grader():
 # define tools
 tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
 
+def update_state_message(msg:str, config):
+    print(msg)
+    print('config: ', config)
+    
+    requestId = config.get("configurable", {}).get("requestId", "")
+    connection = config.get("configurable", {}).get("connectionId", "")
+    
+    isTyping(connection, requestId, msg)
+    
 def init_enhanced_search():
     chat = get_chat() 
 
@@ -1669,9 +1678,11 @@ def init_enhanced_search():
         else:                
             return "continue"
 
-    def call_model(state: State):
+    def call_model(state: State, config):
         question = state["messages"]
         print('question: ', question)
+        
+        update_state_message("thinking...", config)
             
         if isKorean(question[0].content)==True:
             system = (
@@ -1699,6 +1710,13 @@ def init_enhanced_search():
         response = chain.invoke(question)
         print('call_model response: ', response.tool_calls)
         
+        # state messag
+        if response.tool_calls:
+            toolinfo = response.tool_calls[-1]            
+            if toolinfo['type'] == 'tool_call':
+                print('tool name: ', toolinfo['name'])                    
+                update_state_message(f"calling... {toolinfo['name']}", config)
+        
         return {"messages": [response]}
 
     def buildChatAgent():
@@ -1723,10 +1741,9 @@ def init_enhanced_search():
 
 app_enhanced_search = init_enhanced_search()
 
-def enhanced_search(query):
+def enhanced_search(query, config):
     print("###### enhanced_search ######")
     inputs = [HumanMessage(content=query)]
-    config = {"recursion_limit": 50}
         
     result = app_enhanced_search.invoke({"messages": inputs}, config)   
     print('result: ', result)
@@ -1766,9 +1783,11 @@ def run_agent_executor(connectionId, requestId, query):
         else:                
             return "continue"
 
-    def call_model(state: State):
+    def call_model(state: State, config):
         print("###### call_model ######")
         print('state: ', state["messages"])
+        
+        update_state_message("thinking...", config)
         
         if isKorean(state["messages"][0].content)==True:
             system = (
@@ -1800,6 +1819,13 @@ def run_agent_executor(connectionId, requestId, query):
         response = chain.invoke(state["messages"])
         print('call_model response: ', response.tool_calls)
         
+        # state messag
+        if response.tool_calls:
+            toolinfo = response.tool_calls[-1]            
+            if toolinfo['type'] == 'tool_call':
+                print('tool name: ', toolinfo['name'])                    
+                update_state_message(f"calling... {toolinfo['name']}", config)
+        
         return {"messages": [response]}
 
     def buildChatAgent():
@@ -1822,10 +1848,14 @@ def run_agent_executor(connectionId, requestId, query):
 
     app = buildChatAgent()
         
-    isTyping(connectionId, requestId)
+    isTyping(connectionId, requestId, "")
     
     inputs = [HumanMessage(content=query)]
-    config = {"recursion_limit": 50}
+    config = {
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
+    }
     
     message = ""
     for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
@@ -1942,10 +1972,14 @@ def run_agent_executor2(connectionId, requestId, query):
 
     app = buildAgentExecutor()
         
-    isTyping(connectionId, requestId)
+    isTyping(connectionId, requestId, "")
     
     inputs = [HumanMessage(content=query)]
-    config = {"recursion_limit": 50}
+    config = {
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
+    }
     
     message = ""
     for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
@@ -1967,8 +2001,10 @@ def run_reflection_agent(connectionId, requestId, query):
         # messages: Annotated[Sequence[BaseMessage], operator.add]
         messages: Annotated[list, add_messages]
 
-    def generation_node(state: State):    
-        print("###### generation ######")        
+    def generation_node(state: State, config):    
+        print("###### generation ######")      
+        update_state_message("generating...", config)
+          
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -1988,9 +2024,11 @@ def run_reflection_agent(connectionId, requestId, query):
         response = chain.invoke(state["messages"])
         return {"messages": [response]}
 
-    def reflection_node(state: State):
+    def reflection_node(state: State, config):
         print("###### reflection ######")
         messages = state["messages"]
+        
+        update_state_message("reflecting...", config)
         
         reflection_prompt = ChatPromptTemplate.from_messages(
             [
@@ -2046,10 +2084,14 @@ def run_reflection_agent(connectionId, requestId, query):
 
     app = buildReflectionAgent()
 
-    isTyping(connectionId, requestId)
+    isTyping(connectionId, requestId, "")
     
     inputs = [HumanMessage(content=query)]
-    config = {"recursion_limit": 50}
+    config = {
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
+    }
     
     msg = ""
     
@@ -2095,10 +2137,12 @@ def run_corrective_rag(connectionId, requestId, query):
         
         return {"documents": docs, "question": question}
 
-    def grade_documents_node(state: State):
+    def grade_documents_node(state: State, config):
         print("###### grade_documents ######")
         question = state["question"]
         documents = state["documents"]
+        
+        update_state_message("grading...", config)
         
         # Score each doc
         filtered_docs = []
@@ -2150,10 +2194,12 @@ def run_corrective_rag(connectionId, requestId, query):
             print("---DECISION: GENERATE---")
             return "generate"
 
-    def generate_node(state: State):
+    def generate_node(state: State, config):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
+        
+        update_state_message("generating...", config)
         
         # RAG generation
         rag_chain = get_reg_chain(isKorean(question))
@@ -2163,10 +2209,12 @@ def run_corrective_rag(connectionId, requestId, query):
             
         return {"documents": documents, "question": question, "generation": generation}
 
-    def rewrite_node(state: State):
+    def rewrite_node(state: State, config):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
+        
+        update_state_message("rewriting...", config)
 
         # Prompt
         question_rewriter = get_rewrite()
@@ -2176,10 +2224,12 @@ def run_corrective_rag(connectionId, requestId, query):
 
         return {"question": better_question.question, "documents": documents}
 
-    def web_search_node(state: State):
+    def web_search_node(state: State, config):
         print("###### web_search ######")
         question = state["question"]
         documents = state["documents"]
+        
+        update_state_message("web searching...", config)
 
         documents = web_search(question, documents)
             
@@ -2217,10 +2267,14 @@ def run_corrective_rag(connectionId, requestId, query):
     global langMode
     langMode = isKorean(query)
             
-    isTyping(connectionId, requestId)
+    isTyping(connectionId, requestId, "")
     
     inputs = {"question": query}
-    config = {"recursion_limit": 50}
+    config = {
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
+    }
     
     for output in app.stream(inputs, config):   
         for key, value in output.items():
@@ -2250,20 +2304,24 @@ def run_self_rag(connectionId, requestId, query):
         count: int # number of retrieval
         documents : List[str]
     
-    def retrieve_node(state: State):
+    def retrieve_node(state: State, config):
         print('state: ', state)
         print("###### retrieve ######")
         question = state["question"]
+        
+        update_state_message("retrieving...", config)
         
         docs = retrieve(question)
         
         return {"documents": docs, "question": question}
     
-    def generate_node(state: State):
+    def generate_node(state: State, config):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
         retries = state["retries"] if state.get("retries") is not None else -1
+        
+        update_state_message("generating...", config)
         
         # RAG generation
         rag_chain = get_reg_chain(isKorean(question))
@@ -2273,11 +2331,13 @@ def run_self_rag(connectionId, requestId, query):
         
         return {"documents": documents, "question": question, "generation": generation, "retries": retries + 1}
             
-    def grade_documents_node(state: State):
+    def grade_documents_node(state: State, config):
         print("###### grade_documents ######")
         question = state["question"]
         documents = state["documents"]
         count = state["count"] if state.get("count") is not None else -1
+        
+        update_state_message("grading...", config)
         
         if multi_region == 'enable':  # parallel processing
             print("start grading...")
@@ -2326,10 +2386,12 @@ def run_self_rag(connectionId, requestId, query):
             print("---DECISION: GENERATE---")
             return "document"
 
-    def rewrite_node(state: State):
+    def rewrite_node(state: State, config):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
+        
+        update_state_message("rewriting...", config)
 
         # Prompt
         question_rewriter = get_rewrite()
@@ -2344,6 +2406,8 @@ def run_self_rag(connectionId, requestId, query):
         question = state["question"]
         documents = state["documents"]
         generation = state["generation"]
+        
+        update_state_message("grading...", config)
         
         retries = state["retries"] if state.get("retries") is not None else -1
         max_retries = config.get("configurable", {}).get("max_retries", MAX_RETRIES)
@@ -2417,10 +2481,14 @@ def run_self_rag(connectionId, requestId, query):
     global langMode
     langMode = isKorean(query)
     
-    isTyping(connectionId, requestId)
+    isTyping(connectionId, requestId, "")
     
     inputs = {"question": query}
-    config = {"recursion_limit": 50}
+    config = {
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
+    }
     
     for output in app.stream(inputs, config):   
         for key, value in output.items():
@@ -2445,19 +2513,23 @@ def run_self_corrective_rag(connectionId, requestId, query):
         retries: int
         web_fallback: bool
 
-    def retrieve_node(state: State):
+    def retrieve_node(state: State, config):
         print("###### retrieve ######")
         question = state["question"]
+        
+        update_state_message("retrieving...", config)
         
         docs = retrieve(question)
         
         return {"documents": docs, "question": question, "web_fallback": True}
 
-    def generate_node(state: State):
+    def generate_node(state: State, config):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
         retries = state["retries"] if state.get("retries") is not None else -1
+        
+        update_state_message("generating...", config)
         
         # RAG generation
         rag_chain = get_reg_chain(isKorean(question))
@@ -2470,11 +2542,13 @@ def run_self_corrective_rag(connectionId, requestId, query):
         
         return {"retries": retries + 1, "candidate_answer": generation.content}
 
-    def rewrite_node(state: State):
+    def rewrite_node(state: State, config):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
 
+        update_state_message("rewriting...", config)
+        
         # Prompt
         question_rewriter = get_rewrite()
         
@@ -2489,6 +2563,8 @@ def run_self_corrective_rag(connectionId, requestId, query):
         documents = state["documents"]
         generation = state["candidate_answer"]
         web_fallback = state["web_fallback"]
+        
+        update_state_message("grading...", config)
         
         retries = state["retries"] if state.get("retries") is not None else -1
         max_retries = config.get("configurable", {}).get("max_retries", MAX_RETRIES)
@@ -2524,10 +2600,12 @@ def run_self_corrective_rag(connectionId, requestId, query):
             print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION (Not Answer)---")
             return "rewrite" if retries < max_retries else "websearch"
 
-    def web_search_node(state: State):
+    def web_search_node(state: State, config):
         print("###### web_search ######")
         question = state["question"]
         documents = state["documents"]
+        
+        update_state_message("web searching...", config)
 
         documents = web_search(question, documents)
             
@@ -2573,10 +2651,14 @@ def run_self_corrective_rag(connectionId, requestId, query):
     global langMode
     langMode = isKorean(query)
     
-    isTyping(connectionId, requestId)
+    isTyping(connectionId, requestId, "")
     
     inputs = {"question": query}
-    config = {"recursion_limit": 50}
+    config = {
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
+    }
     
     for output in app.stream(inputs, config):   
         for key, value in output.items():
@@ -2626,9 +2708,11 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         past_steps: Annotated[List[Tuple], operator.add]
         response: str
 
-    def plan_node(state: State):
+    def plan_node(state: State, config):
         print("###### plan ######")
         print('input: ', state["input"])
+        
+        update_state_message("planning...", config)
         
         inputs = [HumanMessage(content=state["input"])]
 
@@ -2654,11 +2738,13 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         print('parsing_error: ', info['parsing_error'])
         return {"plan": []}          
 
-    def execute_node(state: State):
+    def execute_node(state: State, config):
         print("###### execute ######")
         print('input: ', state["input"])
         plan = state["plan"]
         print('plan: ', plan) 
+        
+        update_state_message("executing...", config)
         
         plan_str = "\n".join(f"{i+1}. {step}" for i, step in enumerate(plan))
         #print("plan_str: ", plan_str)
@@ -2733,8 +2819,10 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         
         return replanner
 
-    def replan_node(state: State):
+    def replan_node(state: State, config):
         print('#### replan ####')
+        
+        update_state_message("replanning...", config)
         
         replanner = get_replanner()
         output = replanner.invoke(state)
@@ -2790,10 +2878,14 @@ def run_plan_and_exeucute(connectionId, requestId, query):
 
     app = buildPlanAndExecute()    
     
-    isTyping(connectionId, requestId)
+    isTyping(connectionId, requestId, "")
     
     inputs = {"input": query}
-    config = {"recursion_limit": 50}
+    config = {
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
+    }
     
     for output in app.stream(inputs, config):   
         for key, value in output.items():
@@ -2856,9 +2948,11 @@ def run_essay_writer(connectionId, requestId, query):
         planner = planner_prompt | chat
         return planner
         
-    def plan(state: State):
+    def plan(state: State, config):
         print("###### plan ######")
         print('task: ', state["task"])
+        
+        update_state_message("planning...", config)
             
         task = [HumanMessage(content=state["task"])]
 
@@ -2895,6 +2989,8 @@ def run_essay_writer(connectionId, requestId, query):
         print("###### research_plan ######")
         task = state['task']
         print('task: ', task)
+        
+        update_state_message("researching...", config)
         
         if langMode:
             system = (
@@ -2955,11 +3051,13 @@ def run_essay_writer(connectionId, requestId, query):
             "content": content,
         }
         
-    def generation(state: State):    
+    def generation(state: State, config):    
         print("###### generation ######")
         print('content: ', state['content'])
         print('task: ', state['task'])
         print('plan: ', state['plan'])
+        
+        update_state_message("generating...", config)
                             
         content = "\n\n".join(state['content'] or [])
         
@@ -3009,8 +3107,11 @@ Utilize all the information below as needed:
             "revision_number": revision_number + 1
         }
 
-    def reflection(state: State):    
+    def reflection(state: State, config):    
         print("###### reflection ######")
+        
+        update_state_message("reflecting...", config)
+        
         if langMode:
             system = (
                 "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
@@ -3043,8 +3144,11 @@ Utilize all the information below as needed:
             "revision_number": int(state['revision_number'])
         }
     
-    def research_critique(state: State):
+    def research_critique(state: State, config):
         print("###### research_critique ######")
+        
+        update_state_message("research critiquing...", config)
+        
         if langMode:
             system = (
                 "당신은 요청된 수정 사항을 만들 때 사용할 수 있는 정보를 제공하는 연구원입니다."
@@ -3101,7 +3205,11 @@ Utilize all the information below as needed:
         }
     
     MAX_REVISIONS = 2
-    config = {"recursion_limit": 50}
+    config = {
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
+    }
     
     def should_continue(state, config):
         print("###### should_continue ######")
@@ -3142,12 +3250,14 @@ Utilize all the information below as needed:
     
     app = buildEasyWriter()    
     
-    isTyping(connectionId, requestId)
+    isTyping(connectionId, requestId, "")
     
     inputs = {"task": query}
     config = {
         "recursion_limit": 50,
-        "max_revisions": 2
+        "max_revisions": 2,
+        "requestId": requestId,
+        "connectionId": connectionId
     }
     
     for output in app.stream(inputs, config):   
@@ -3171,12 +3281,14 @@ def run_knowledge_guru(connectionId, requestId, query):
         reflection: list
         search_queries: list
             
-    def generate(state: State):    
+    def generate(state: State, config):    
         print("###### generate ######")
         print('state: ', state["messages"])
         print('task: ', state['messages'][0].content)
         
-        draft = enhanced_search(state['messages'][0].content)  
+        update_state_message("generating...", config)
+        
+        draft = enhanced_search(state['messages'][0].content, config)  
         print('draft: ', draft)
         
         return {
@@ -3196,10 +3308,12 @@ def run_knowledge_guru(connectionId, requestId, query):
             description="1-3 search queries for researching improvements to address the critique of your current answer."
         )
     
-    def reflect(state: State):
+    def reflect(state: State, config):
         print("###### reflect ######")
         print('state: ', state["messages"])    
         print('draft: ', state["messages"][-1].content)
+        
+        update_state_message("reflecting...", config)
     
         reflection = []
         search_queries = []
@@ -3226,8 +3340,11 @@ def run_knowledge_guru(connectionId, requestId, query):
             "search_queries": search_queries
         }
 
-    def revise_answer(state: State):   
+    def revise_answer(state: State, config):   
         print("###### revise_answer ######")
+        
+        update_state_message("revising...", config)
+        
         system = """Revise your previous answer using the new information. 
 You should use the previous critique to add important information to your answer. provide the final answer with <result> tag. 
 <critique>
@@ -3248,7 +3365,7 @@ You should use the previous critique to add important information to your answer
         content = []        
         if useEnhancedSearch:
             for q in state["search_queries"]:
-                response = enhanced_search(q)
+                response = enhanced_search(q, config)
                 print(f'q: {q}, response: {response}')
                 content.append(response)                   
         else:
@@ -3322,11 +3439,13 @@ You should use the previous critique to add important information to your answer
     
     app = buildKnowledgeGuru()
         
-    isTyping(connectionId, requestId)    
+    isTyping(connectionId, requestId, "")    
     inputs = [HumanMessage(content=query)]
     config = {
         "recursion_limit": 50,
-        "max_revisions": MAX_REVISIONS
+        "max_revisions": MAX_REVISIONS,
+        "requestId": requestId,
+        "connectionId": connectionId
     }
     
     for output in app.stream({"messages": inputs}, config):   
@@ -3354,7 +3473,7 @@ def run_multi_agent_tool(connectionId, requestId, query):
     def agent_node(state: State, agent, name):
         print(f"###### agent_node:{name} ######")        
         print('state: ', state)
-    
+        
         response = agent.invoke(state["messages"])
         print('response: ', response)
         if isinstance(response, ToolMessage):
@@ -3545,10 +3664,12 @@ def run_multi_agent_tool(connectionId, requestId, query):
     
     app = buildMultiAgent()
         
-    isTyping(connectionId, requestId)    
+    isTyping(connectionId, requestId, "")    
     inputs = [HumanMessage(content=query)]
     config = {
-        "recursion_limit": 50
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
     }
     
     value = ""
@@ -3576,9 +3697,11 @@ def run_writing_agent(connectionId, requestId, query):
         write_steps : List[str]
         word_count : int
     
-    def planning_node(state: State):
+    def planning_node(state: State, config):
         """take the initial prompt and write a plan to make a long doc"""
         print("---PLANNING THE WRITING---")
+        
+        update_state_message("planning...", config)
         
         initial_prompt = state['initial_prompt']
         num_steps = int(state['num_steps'])
@@ -3616,13 +3739,15 @@ Do not output any other content. As this is an ongoing work, omit open-ended con
         words = text.split()
         return len(words)
     
-    def writing_node(state: State):
+    def writing_node(state: State, config):
         """take the initial prompt and write a plan to make a long doc"""
         print("---WRITING THE DOC---")
         initial_instruction = state['initial_prompt']
         plan = state['plan']
         num_steps = int(state['num_steps'])
         num_steps += 1
+        
+        update_state_message("planning...", config)
         
         plan = plan.strip().replace('\n\n', '\n')
         planning_steps = plan.split('\n')        
@@ -3689,7 +3814,7 @@ Remember to only output the paragraph you write, without repeating the already w
 
         return {"final_doc": final_doc, "word_count": word_count, "num_steps":num_steps}            
     
-    def saving_node(state: State):
+    def saving_node(state: State, config):
         """take the finished long doc and save it to local disk as a .md file   """
         print("---SAVING THE DOC---")
 
@@ -3698,6 +3823,8 @@ Remember to only output the paragraph you write, without repeating the already w
         word_count = state['word_count']
         num_steps = int(state['num_steps'])
         num_steps += 1
+        
+        update_state_message("saving...", config)
 
         final_doc += f"\n\nTotal word count: {word_count}"
 
@@ -3734,14 +3861,16 @@ Remember to only output the paragraph you write, without repeating the already w
     #Finally tackle where you think the show was going in future seasons had it not been cancelled."
 
     # Run the workflow
-    isTyping(connectionId, requestId)    
+    isTyping(connectionId, requestId, "")    
     
     inputs = {
         "initial_prompt": query,
         "num_steps": 0
     }    
     config = {
-        "recursion_limit": 50
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
     }
     
     output = app.invoke(inputs, config)
@@ -3787,10 +3916,12 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             description="현재 글과 관련된 3개 이내의 검색어"
         )    
         
-    def reflect_node(state: ReflectionState):
+    def reflect_node(state: ReflectionState, config):
         print("###### reflect ######")
         draft = state['draft']
         print('draft: ', draft)
+        
+        update_state_message("reflecting...", config)
     
         reflection = []
         search_queries = []
@@ -3836,8 +3967,10 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "revision_number": revision_number + 1
         }
         
-    def revise_draft(state: ReflectionState):   
+    def revise_draft(state: ReflectionState, config):   
         print("###### revise_answer ######")
+        
+        update_state_message("revising...", config)
         
         draft = state['draft']
         search_queries = state['search_queries']
@@ -3979,10 +4112,12 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         final_doc : str
         word_count : int
             
-    def plan_node(state: State):
+    def plan_node(state: State, config):
         print("###### plan ######")
         instruction = state["instruction"]
         print('subject: ', instruction)
+        
+        update_state_message("planning...", config)
         
         if isKorean(instruction):
             planner_template = (
@@ -4047,12 +4182,14 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "planning_steps": planning_steps
         }
         
-    def execute_node(state: State):
+    def execute_node(state: State, config):
         print("###### write (execute) ######")        
         instruction = state["instruction"]
         planning_steps = state["planning_steps"]
         print('instruction: ', instruction)
         print('planning_steps: ', planning_steps)
+        
+        update_state_message("executing...", config)
         
         if isKorean(instruction):
             write_template = (
@@ -4169,7 +4306,9 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         }    
         config = {
             "recursion_limit": 50,
-            "max_revisions": MAX_REVISIONS
+            "max_revisions": MAX_REVISIONS,
+            "requestId": requestId,
+            "connectionId": connectionId
         }
         output = reflection_app.invoke(inputs, config)
         
@@ -4265,7 +4404,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 </html>"""        
         return html
 
-    def revise_answer(state: State):
+    def revise_answer(state: State, config):
         print("###### revise ######")
         drafts = state["drafts"]        
         print('drafts: ', drafts)
@@ -4281,10 +4420,6 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 inputs = {
                     "draft": draft
                 }    
-                config = {
-                    "recursion_limit": 50,
-                    "max_revisions": 1
-                }
                 output = reflection_app.invoke(inputs, config)
                 
                 final_doc += output['revised_draft'] + '\n\n'
@@ -4357,12 +4492,14 @@ def run_long_form_writing_agent(connectionId, requestId, query):
     app = buildLongformWriting()
     
     # Run the workflow
-    isTyping(connectionId, requestId)        
+    isTyping(connectionId, requestId, "")        
     inputs = {
         "instruction": query
     }    
     config = {
-        "recursion_limit": 50
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
     }
     
     output = app.invoke(inputs, config)
@@ -4400,7 +4537,7 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
     chain = prompt | chat
     
     try: 
-        isTyping(connectionId, requestId)  
+        isTyping(connectionId, requestId, "")  
         stream = chain.invoke(
             {
                 "context": context,
@@ -4552,7 +4689,7 @@ def run_prompt_flow(text, connectionId, requestId):
                     break
         
         # invoke_flow
-        isTyping(connectionId, requestId)  
+        isTyping(connectionId, requestId, "")  
         
         client_runtime = boto3.client('bedrock-agent-runtime')
         response = client_runtime.invoke_flow(
@@ -4629,7 +4766,7 @@ def run_RAG_prompt_flow(text, connectionId, requestId):
                 break
     
     # invoke_flow
-    isTyping(connectionId, requestId)  
+    isTyping(connectionId, requestId, "")  
     
     client_runtime = boto3.client('bedrock-agent-runtime')
     response = client_runtime.invoke_flow(
@@ -4711,7 +4848,7 @@ def run_bedrock_agent(text, connectionId, requestId, userId, sessionState):
         sessionId[userId] = str(uuid.uuid4())
         
     msg = msg_contents = ""
-    isTyping(connectionId, requestId)  
+    isTyping(connectionId, requestId, "")  
     if agent_alias_id and agent_id:
         client_runtime = boto3.client('bedrock-agent-runtime')
         try:
@@ -4814,9 +4951,12 @@ def run_rag_with_reflection(connectionId, requestId, query):
             return "end"
         return "continue"
 
-    def retrieve_node(state: State):
+    def retrieve_node(state: State, config):
         print("###### retrieve ######")
         query = state['query']
+        
+        update_state_message("retrieving...", config)
+        
         relevant_docs = retrieve_from_knowledge_base(query)
         
         # print(f'q: {query}, RAG: {relevant_docs}')
@@ -4826,10 +4966,12 @@ def run_rag_with_reflection(connectionId, requestId, query):
             "relevant_docs": relevant_docs
         }
         
-    def parallel_grader(state: State):
+    def parallel_grader(state: State, config):
         print("###### parallel_grader ######")
         query = state['query']
         relevant_docs = state['relevant_docs']
+        
+        update_state_message("grading...", config)
         
         print('length of relevant_docs: ', len(relevant_docs))
         
@@ -4876,12 +5018,14 @@ def run_rag_with_reflection(connectionId, requestId, query):
             "filtered_docs": filtered_docs
         }    
 
-    def generate_node(state: State):
+    def generate_node(state: State, config):
         print("###### generate ######")
         query = state["query"]
         filtered_docs = state["filtered_docs"]
         print('query: ', query)
         print('filtered_docs: ', filtered_docs)
+        
+        update_state_message("generating...", config)
             
         # RAG generation
         rag_chain = get_reg_chain(isKorean(query))
@@ -4919,13 +5063,15 @@ def run_rag_with_reflection(connectionId, requestId, query):
             description="답변과 관련된 3개 이내의 검색어"
         )
         
-    def reflect_node(state: State):
+    def reflect_node(state: State, config):
         print("###### reflect ######")
         #print('state: ', state)    
         query = state['query']
         print('query: ', query)
         draft = state['draft']
         print('draft: ', draft)
+        
+        update_state_message("reflecting...", config)
             
         reflection = []
         sub_queries = []
@@ -4982,10 +5128,12 @@ def run_rag_with_reflection(connectionId, requestId, query):
         
         return relevant_docs
     
-    def parallel_retriever(state: State):
+    def parallel_retriever(state: State, config):
         print("###### parallel_retriever ######")
         sub_queries = state['sub_queries']
         print('sub_queries: ', sub_queries)
+        
+        update_state_message("retrieving...", config)
         
         relevant_docs = []
         processes = []
@@ -5020,13 +5168,15 @@ def run_rag_with_reflection(connectionId, requestId, query):
             "relevant_docs": relevant_docs
         }
 
-    def revise_node(state: State):   
+    def revise_node(state: State, config):   
         print("###### revise ######")
             
         draft = state['draft']
         reflection = state['reflection']
         print('draft: ', draft)
         print('reflection: ', reflection)
+        
+        update_state_message("revising...", config)
         
         if isKorean(draft):
             revise_template = (
@@ -5142,12 +5292,14 @@ def run_rag_with_reflection(connectionId, requestId, query):
     app = buildRagWithReflection()
     
     # Run the workflow
-    isTyping(connectionId, requestId)        
+    isTyping(connectionId, requestId, "")        
     inputs = {
         "query": query
     }    
     config = {
-        "recursion_limit": 50
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
     }
     
     output = app.invoke(inputs, config)
@@ -5168,9 +5320,11 @@ def run_rag_with_transformation(connectionId, requestId, query):
         filtered_docs: List[str]
         sub_queries : List[str]
 
-    def rewrite_node(state: State):
+    def rewrite_node(state: State, config):
         print("###### rewrite ######")
         query = state['query']
+        
+        update_state_message("rewriting...", config)
         
         query_rewrite_template = (
             "You are an AI assistant tasked with reformulating user queries to improve retrieval in a RAG system."
@@ -5199,9 +5353,11 @@ def run_rag_with_transformation(connectionId, requestId, query):
             "query": revised_query
         }
 
-    def decompose_node(state: State):
+    def decompose_node(state: State, config):
         print("###### decompose ######")
         query = state['query']
+        
+        update_state_message("decomposing...", config)
         
         if isKorean(query):
             subquery_decomposition_template = (
@@ -5282,10 +5438,12 @@ def run_rag_with_transformation(connectionId, requestId, query):
         
         return relevant_docs
     
-    def parallel_retriever(state: State):
+    def parallel_retriever(state: State, config):
         print("###### parallel_retriever ######")
         sub_queries = state['sub_queries']
         print('sub_queries: ', sub_queries)
+        
+        update_state_message("retrieving...", config)
         
         relevant_docs = []
         processes = []
@@ -5320,10 +5478,12 @@ def run_rag_with_transformation(connectionId, requestId, query):
             "relevant_docs": relevant_docs
         }
 
-    def parallel_grader(state: State):
+    def parallel_grader(state: State, config):
         print("###### parallel_grader ######")
         query = state['query']
         relevant_docs = state['relevant_docs']
+        
+        update_state_message("grading...", config)
         
         print('length of relevant_docs: ', len(relevant_docs))
         
@@ -5370,12 +5530,14 @@ def run_rag_with_transformation(connectionId, requestId, query):
             "filtered_docs": filtered_docs
         }    
         
-    def generate_node(state: State):
+    def generate_node(state: State, config):
         print("###### generate ######")
         query = state["query"]
         filtered_docs = state["filtered_docs"]
         print('query: ', query)
         print('filtered_docs: ', filtered_docs)
+        
+        update_state_message("generating...", config)
             
         # RAG generation
         rag_chain = get_reg_chain(isKorean(query))
@@ -5412,12 +5574,14 @@ def run_rag_with_transformation(connectionId, requestId, query):
     app = buildRagWithTransformation()
     
     # Run the workflow
-    isTyping(connectionId, requestId)        
+    isTyping(connectionId, requestId, "")        
     inputs = {
         "query": query
     }    
     config = {
-        "recursion_limit": 50
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
     }
     
     output = app.invoke(inputs, config)
@@ -5561,10 +5725,12 @@ def revise_question(connectionId, requestId, chat, query):
     return revised_question    
     # return revised_question.replace("\n"," ")
 
-def isTyping(connectionId, requestId):    
+def isTyping(connectionId, requestId, msg):    
+    if not msg:
+        msg = "typing a message..."
     msg_proceeding = {
         'request_id': requestId,
-        'msg': 'Proceeding...',
+        'msg': msg,
         'status': 'istyping'
     }
     #print('result: ', json.dumps(result))
@@ -6011,7 +6177,7 @@ def getResponse(connectionId, jsonBody):
                     reference = get_references_for_agent(reference_docs)
                                         
         elif type == 'document':
-            isTyping(connectionId, requestId)
+            isTyping(connectionId, requestId, "")
             
             object = body
             file_type = object[object.rfind('.')+1:len(object)]            
