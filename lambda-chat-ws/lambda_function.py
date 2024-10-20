@@ -3788,6 +3788,8 @@ Remember to only output the paragraph you write, without repeating the already w
             return
         
         for idx, step in enumerate(planning_steps):
+            update_state_message(f"writing... (step: {idx+1}/{len(planning_steps)})", config)
+            
             # Invoke the write_chain
             chat = get_chat()
             write_chain = write_prompt | chat
@@ -4270,6 +4272,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             return
         
         for idx, step in enumerate(planning_steps):
+            update_state_message(f"executing... (step: {idx+1}/{len(planning_steps)})", config)
+            
             # Invoke the write_chain
             chat = get_chat()
             write_chain = write_prompt | chat
