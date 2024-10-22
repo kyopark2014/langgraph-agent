@@ -688,7 +688,7 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
         )
         
         for i, document in enumerate(relevant_documents):
-            # print(f'## Document(opensearch-vector) {i+1}: {document}')
+            print(f'## Document(opensearch-vector) {i+1}: {json.dumps(document)}')
             
             name = document[0].metadata['name']
             url = document[0].metadata['url']
@@ -728,6 +728,8 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
     return msg
 
 def get_documents_from_opensearch(vectorstore_opensearch, query, top_k):
+    print("###### get_documents_from_opensearch ######")
+    
     result = vectorstore_opensearch.similarity_search_with_score(
         query = query,
         k = top_k*2,  
@@ -6145,6 +6147,8 @@ def summary_of_code(chat, code, mode):
     return summary
 
 def revise_question(connectionId, requestId, chat, query):    
+    print("###### revise_question ######")
+    
     global history_length, token_counter_history    
     history_length = token_counter_history = 0
     
