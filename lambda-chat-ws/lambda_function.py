@@ -706,6 +706,12 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
                     },
                 )
             )
+            
+    if enableHybridSearch == 'true':
+        relevant_docs_from_lexical = lexical_search(text, top_k)    
+        print(f'## Document(opensearch-lexical) {i+1}: {json.dumps(relevant_docs_from_lexical)}')
+
+        relevant_docs += relevant_docs_from_lexical
 
     isTyping(connectionId, requestId, "grading...")
     
@@ -1049,7 +1055,7 @@ def search_by_opensearch(keyword: str) -> str:
             )
     
     if enableHybridSearch == 'true':
-        relevant_docs = relevant_docs + lexical_search_for_tool(keyword, top_k)
+        relevant_docs = relevant_docs + lexical_search(keyword, top_k)
     
     print('relevant_docs length: ', len(relevant_docs))
                 
@@ -1071,7 +1077,7 @@ def search_by_opensearch(keyword: str) -> str:
         
     return relevant_docs
 
-def lexical_search_for_tool(query, top_k):
+def lexical_search(query, top_k):
     # lexical search (keyword)
     min_match = 0
     
@@ -1865,7 +1871,7 @@ def run_agent_executor(connectionId, requestId, query):
 
     def call_model(state: State, config):
         print("###### call_model ######")
-        print('state: ', state["messages"])
+        # print('state: ', state["messages"])
         
         update_state_message("thinking...", config)
         
