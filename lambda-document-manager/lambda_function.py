@@ -55,6 +55,7 @@ supportedFormat = json.loads(os.environ.get('supportedFormat'))
 print('supportedFormat: ', supportedFormat)
 
 enableHybridSearch = os.environ.get('enableHybridSearch')
+vectorIndexName = os.environ.get('vectorIndexName')
 
 enableImageExtraction = 'true'
 enablePageImageExraction = 'true'
@@ -216,7 +217,7 @@ def get_embedding():
 
 bedrock_embeddings = get_embedding()
 
-index_name = 'idx-rag'
+index_name = vectorIndexName
 vectorstore = OpenSearchVectorSearch(
     index_name=index_name,  
     is_aoss = False,

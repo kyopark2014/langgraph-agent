@@ -40,6 +40,7 @@ const enalbeParentDocumentRetrival = 'true';
 const prompt_flow_name = 'aws-bot'
 const rag_prompt_flow_name = 'rag-prompt-flow'
 const knowledge_base_name = 'aws-rag'
+const vectorIndexName = projectName
 
 const claude3_sonnet = [
   {
@@ -594,7 +595,8 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
         enableHybridSearch: enableHybridSearch,
         prompt_flow_name: prompt_flow_name,
         rag_prompt_flow_name: rag_prompt_flow_name,
-        knowledge_base_name: knowledge_base_name
+        knowledge_base_name: knowledge_base_name,
+        vectorIndexName: vectorIndexName
       }
     });     
     lambdaChatWebsocket.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));  
@@ -724,7 +726,8 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
           LLM_embedding: JSON.stringify(titan_embedding_v2),
           enableParallelSummary: enableParallelSummary,
           enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
-          enableHybridSearch: enableHybridSearch
+          enableHybridSearch: enableHybridSearch,
+          vectorIndexName: vectorIndexName
         }
       });         
       s3Bucket.grantReadWrite(lambdDocumentManager[i]); // permission for s3

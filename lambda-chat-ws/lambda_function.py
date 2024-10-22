@@ -69,6 +69,8 @@ enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
 enableHybridSearch = os.environ.get('enableHybridSearch')
 useParrelWebSearch = True
 useEnhancedSearch = True
+vectorIndexName = os.environ.get('vectorIndexName')
+index_name = vectorIndexName
 
 prompt_flow_name = os.environ.get('prompt_flow_name')
 rag_prompt_flow_name = os.environ.get('rag_prompt_flow_name')
@@ -247,6 +249,36 @@ def tavily_search(query, k):
 
 # result = tavily_search('what is LangChain', 2)
 # print('search result: ', result)
+
+os_client = OpenSearch(
+    hosts = [{
+        'host': opensearch_url.replace("https://", ""), 
+        'port': 443
+    }],
+    http_compress = True,
+    http_auth=(opensearch_account, opensearch_passwd),
+    use_ssl = True,
+    verify_certs = True,
+    ssl_assert_hostname = False,
+    ssl_show_warn = False,
+)
+
+def reflash_opensearch_index():
+    #########################
+    # opensearch index (reflash)
+    #########################
+    print(f"deleting opensearch index... {index_name}") 
+    
+    try: # create index
+        response = os_client.indices.delete(
+            index_name
+        )
+        print('opensearch index was deleted:', response)
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                
+        #raise Exception ("Not able to create the index")        
+    return 
     
 # websocket
 connection_url = os.environ.get('connection_url')
@@ -495,7 +527,7 @@ def get_summary(chat, docs):
     human = "<article>{text}</article>"
     
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-    print('prompt: ', prompt)
+    # print('prompt: ', prompt)
     
     chain = prompt | chat    
     try: 
@@ -572,10 +604,10 @@ def general_conversation(connectionId, requestId, chat, query):
     human = "{input}"
     
     prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
-    print('prompt: ', prompt)
+    # print('prompt: ', prompt)
     
     history = memory_chain.load_memory_variables({})["chat_history"]
-    print('memory_chain: ', history)
+    # print('memory_chain: ', history)
                 
     chain = prompt | chat    
     try: 
@@ -727,22 +759,9 @@ def get_documents_from_opensearch(vectorstore_opensearch, query, top_k):
     
     return relevant_documents
 
-os_client = OpenSearch(
-    hosts = [{
-        'host': opensearch_url.replace("https://", ""), 
-        'port': 443
-    }],
-    http_compress = True,
-    http_auth=(opensearch_account, opensearch_passwd),
-    use_ssl = True,
-    verify_certs = True,
-    ssl_assert_hostname = False,
-    ssl_show_warn = False,
-)
-
 def get_parent_content(parent_doc_id):
     response = os_client.get(
-        index="idx-rag", 
+        index=index_name, 
         id = parent_doc_id
     )
     
@@ -1109,7 +1128,7 @@ def lexical_search_for_tool(query, top_k):
 
     response = os_client.search(
         body=query,
-        index="idx-*", # all
+        index=index_name
     )
     # print('lexical query result: ', json.dumps(response))
         
@@ -1536,7 +1555,7 @@ def retrieve(question):
 
         response = os_client.search(
             body=query,
-            index="idx-*", # all
+            index=index_name
         )
         # print('lexical query result: ', json.dumps(response))
         
@@ -4639,7 +4658,7 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
     human = "{input}"
     
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-    print('prompt: ', prompt)
+    # print('prompt: ', prompt)
                    
     chain = prompt | chat
     
@@ -6106,7 +6125,7 @@ def summary_of_code(chat, code, mode):
     human = "<article>{code}</article>"
     
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-    print('prompt: ', prompt)
+    # print('prompt: ', prompt)
     
     chain = prompt | chat    
     try: 
@@ -6151,10 +6170,10 @@ def revise_question(connectionId, requestId, chat, query):
         </question>"""
             
     prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
-    print('prompt: ', prompt)
+    # print('prompt: ', prompt)
     
     history = memory_chain.load_memory_variables({})["chat_history"]
-    print('memory_chain: ', history)
+    # print('memory_chain: ', history)
                 
     chain = prompt | chat    
     try: 
@@ -6167,7 +6186,7 @@ def revise_question(connectionId, requestId, chat, query):
         generated_question = result.content
         
         revised_question = generated_question[generated_question.find('<result>')+8:len(generated_question)-9] # remove <result> tag                   
-        print('revised_question: ', revised_question)
+        # print('revised_question: ', revised_question)
         
     except Exception:
         err_msg = traceback.format_exc()
@@ -6351,7 +6370,7 @@ def translate_text(chat, text):
     human = "<article>{text}</article>"
     
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-    print('prompt: ', prompt)
+    # print('prompt: ', prompt)
     
     if isKorean(text)==False :
         input_language = "English"
@@ -6391,7 +6410,7 @@ def check_grammer(chat, text):
     human = "<article>{text}</article>"
     
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-    print('prompt: ', prompt)
+    # print('prompt: ', prompt)
     
     chain = prompt | chat    
     try: 
@@ -6563,13 +6582,21 @@ def getResponse(connectionId, jsonBody):
                     
                 print('initiate the chat memory!')
                 msg  = "The chat memory was intialized in this session."
+            
+            elif type == 'text' and body[:21] == 'reflash current index':
+                # reflash index
+                isTyping(connectionId, requestId, "")
+                reflash_opensearch_index()
+                msg = "The index was reflashed in OpenSearch."
+                sendResultMessage(connectionId, requestId, msg)
+                
             else:            
                 if convType == 'normal':      # normal
                     msg = general_conversation(connectionId, requestId, chat, text)
                     
                 elif convType == 'rag-opensearch':   # RAG - Vector
                     revised_question = revise_question(connectionId, requestId, chat, text)     
-                    print('revised_question: ', revised_question)                      
+                    print('revised_question: ', revised_question)
                     msg = get_answer_using_opensearch(chat, revised_question, connectionId, requestId)                    
 
                 elif convType == 'agent-executor':
