@@ -603,6 +603,98 @@ def general_conversation(connectionId, requestId, chat, query):
     
     return msg
 
+def get_answer_using_opensearch(chat, text, connectionId, requestId):    
+    global reference_docs
+    
+    msg = ""
+    top_k = 4
+    relevant_docs = []
+    
+    bedrock_embedding = get_embedding()
+       
+    vectorstore_opensearch = OpenSearchVectorSearch(
+        index_name = "idx-*", # all
+        is_aoss = False,
+        ef_search = 1024, # 512(default)
+        m=48,
+        #engine="faiss",  # default: nmslib
+        embedding_function = bedrock_embedding,
+        opensearch_url=opensearch_url,
+        http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
+    )  
+    
+    isTyping(connectionId, requestId, "retrieving...")
+    
+    if multi_region == 'enable':  # parallel processing
+        relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, text, top_k)
+                        
+        for i, document in enumerate(relevant_documents):
+            # print(f'## Document(opensearch-vector) {i+1}: {document}')
+            
+            parent_doc_id = document[0].metadata['parent_doc_id']
+            doc_level = document[0].metadata['doc_level']
+            #print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
+            
+            content, name, url = get_parent_content(parent_doc_id) # use pareant document
+            #print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, url: {url}, content: {content}")
+            
+            relevant_docs.append(
+                Document(
+                    page_content=content,
+                    metadata={
+                        'name': name,
+                        'url': url,
+                        'doc_level': doc_level,
+                        'from': 'vector'
+                    },
+                )
+            )
+    else: 
+        relevant_documents = vectorstore_opensearch.similarity_search_with_score(
+            query = text,
+            k = top_k
+        )
+        
+        for i, document in enumerate(relevant_documents):
+            # print(f'## Document(opensearch-vector) {i+1}: {document}')
+            
+            name = document[0].metadata['name']
+            url = document[0].metadata['url']
+            content = document[0].page_content
+                   
+            relevant_docs.append(
+                Document(
+                    page_content=content,
+                    metadata={
+                        'name': name,
+                        'url': url,
+                        'from': 'vector'
+                    },
+                )
+            )
+
+    isTyping(connectionId, requestId, "grading...")
+    
+    filtered_docs = grade_documents(text, relevant_docs) # grading
+    
+    filtered_docs = check_duplication(filtered_docs) # check duplication
+            
+    relevant_context = ""
+    for i, document in enumerate(filtered_docs):
+        # print(f"{i}: {document}")
+        if document.page_content:
+            content = document.page_content
+            
+        relevant_context = relevant_context + content + "\n\n"
+        
+    # print('relevant_context: ', relevant_context)
+
+    msg = query_using_RAG_context(connectionId, requestId, chat, relevant_context, text)
+    
+    reference_docs += filtered_docs
+           
+    return msg
+
 def get_documents_from_opensearch(vectorstore_opensearch, query, top_k):
     result = vectorstore_opensearch.similarity_search_with_score(
         query = query,
@@ -5601,6 +5693,371 @@ def run_rag_with_transformation(connectionId, requestId, query):
     print('output (run_rag_with_reflection): ', output)
     
     return output['draft']
+
+####################### LangGraph #######################
+# RAG with query trasnformation
+#########################################################
+from typing import Any, Optional, cast
+from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import InjectedToolArg
+from dataclasses import dataclass, field, fields
+from langchain_core.runnables import RunnableConfig, ensure_config
+from langchain_core.messages import AnyMessage
+from langgraph.prebuilt import InjectedState
+
+def run_enrichment_agent(connectionId, requestId, query):
+    class InputState:
+        """Input state defines the interface between the graph and the user (external API)."""
+        topic: str
+        "The topic for which the agent is tasked to gather information."
+
+        extraction_schema: dict[str, Any]
+        "The json schema defines the information the agent is tasked with filling out."
+
+        info: Optional[dict[str, Any]] = field(default=None)
+        "The info state tracks the current extracted data for the given topic, conforming to the provided schema. This is primarily populated by the agent."
+
+    class State(InputState):
+        messages: Annotated[List[BaseMessage], add_messages] = field(default_factory=list)
+        loop_step: Annotated[int, operator.add] = field(default=0)
+
+    class OutputState:
+        info: dict[str, Any]
+
+    MAIN_PROMPT = (
+        "You are doing web research on behalf of a user. You are trying to figure out this information:"
+
+        "<info>"
+        "{info}"
+        "</info>"
+
+        "You have access to the following tools:"
+        "- `Search`: call a search tool and get back some results"
+        "- `ScrapeWebsite`: scrape a website and get relevant notes about the given request. This will update the notes above."
+        "- `Info`: call this when you are done and have gathered all the relevant info"
+
+        "Here is the information you have about the topic you are researching:"
+        "Topic: {topic}"
+    )
+
+    class Configuration:
+        """The configuration for the agent."""
+        prompt: str = field(
+            default=MAIN_PROMPT,
+            metadata={
+                "description": "The main prompt template to use for the agent's interactions."
+                "Expects two f-string arguments: {info} and {topic}."
+            },
+        )
+        max_search_results: int = field(
+            default=10,
+            metadata={
+                "description": "The maximum number of search results to return for each search query."
+            },
+        )
+        max_info_tool_calls: int = field(
+            default=3,
+            metadata={
+                "description": "The maximum number of times the Info tool can be called during a single interaction."
+            },
+        )
+        max_loops: int = field(
+            default=6,
+            metadata={
+                "description": "The maximum number of interaction loops allowed before the agent terminates."
+            },
+        )
+
+    def get_message_text(msg: AnyMessage) -> str:
+        """Get the text content of a message."""
+        content = msg.content
+        if isinstance(content, str):
+            return content
+        elif isinstance(content, dict):
+            return content.get("text", "")
+        else:
+            txts = [c if isinstance(c, str) else (c.get("text") or "") for c in content]
+            return "".join(txts).strip()
+
+    def search(query: str, config):
+        configuration = Configuration.from_runnable_config(config)
+
+        wrapped = TavilySearchResults(max_results=configuration.max_search_results)
+
+        #result = await wrapped.ainvoke({"query": query})
+        result = ""
+
+        return cast(list[dict[str, Any]], result)
+
+    _INFO_PROMPT = (
+        "You are doing web research on behalf of a user. You are trying to find out this information:"
+
+        "<info>"
+        "{info}"
+        "</info>"
+
+        "You just scraped the following website: {url}"
+
+        "Based on the website content below, jot down some notes about the website."
+
+        "<Website content>"
+        "{content}"
+        "</Website content>"
+    )
+
+    def scrape_website(url: str, state: Annotated[State, InjectedState], config):
+        #async with aiohttp.ClientSession() as session:
+        #    async with session.get(url) as response:
+        #        content = await response.text()
+
+        #p = _INFO_PROMPT.format(
+        #    info=json.dumps(state.extraction_schema, indent=2),
+        #    url=url,
+        #    content=content[:40_000],
+        #)
+        #chat = get_chat()
+        #result = await chat.ainvoke(p)
+        
+        #return str(result.content)
+        return ""
+
+    def call_agent_model(state: State, config):
+        """Call the primary Language Model (LLM) to decide on the next research action.
+
+        This asynchronous function performs the following steps:
+        1. Initializes configuration and sets up the 'Info' tool, which is the user-defined extraction schema.
+        2. Prepares the prompt and message history for the LLM.
+        3. Initializes and configures the LLM with available tools.
+        4. Invokes the LLM and processes its response.
+        5. Handles the LLM's decision to either continue research or submit final info.
+        """
+        configuration = Configuration.from_runnable_config(config)
+
+        info_tool = {
+            "name": "Info",
+            "description": "Call this when you have gathered all the relevant info",
+            "parameters": state.extraction_schema,
+        }
+
+        p = configuration.prompt.format(
+            info=json.dumps(state.extraction_schema, indent=2), topic=state.topic
+        )
+        messages = [HumanMessage(content=p)] + state.messages
+        print('messages: ', messages)
+        
+        chat = get_chat()
+        model = chat.bind_tools([scrape_website, search, info_tool], tool_choice="any")
+
+        result = model.invoke(messages)
+        
+        #response = cast(AIMessage, await model.ainvoke(messages))
+        response = cast(AIMessage, result)
+        print('response: ', response)
+
+        info = None
+
+        if response.tool_calls:
+            for tool_call in response.tool_calls:
+                if tool_call["name"] == "Info":
+                    info = tool_call["args"]
+                    break
+
+        if info is not None:
+            response.tool_calls = [
+                next(tc for tc in response.tool_calls if tc["name"] == "Info")
+            ]
+
+        response_messages: List[BaseMessage] = [response]
+        if not response.tool_calls:  # If LLM didn't respect the tool_choice
+            response_messages.append(
+                HumanMessage(content="Please respond by calling one of the provided tools.")
+            )
+
+        return {
+            "messages": response_messages,
+            "info": info,
+            # Add 1 to the step count
+            "loop_step": 1,
+        }
+
+    class InfoIsSatisfactory(BaseModel):
+        """Validate whether the current extracted info is satisfactory and complete."""
+
+        reason: List[str] = Field(
+            description="First, provide reasoning for why this is either good or bad as a final result. Must include at least 3 reasons."
+        )
+        is_satisfactory: bool = Field(
+            description="After providing your reasoning, provide a value indicating whether the result is satisfactory. If not, you will continue researching."
+        )
+        improvement_instructions: Optional[str] = Field(
+            description="If the result is not satisfactory, provide clear and specific instructions on what needs to be improved or added to make the information satisfactory."
+            " This should include details on missing information, areas that need more depth, or specific aspects to focus on in further research.",
+            default=None,
+        )
+
+    def reflect(state: State, config):
+        """Validate the quality of the data enrichment agent's output.
+        This asynchronous function performs the following steps:
+        1. Prepares the initial prompt using the main prompt template.
+        2. Constructs a message history for the model.
+        3. Prepares a checker prompt to evaluate the presumed info.
+        4. Initializes and configures a language model with structured output.
+        5. Invokes the model to assess the quality of the gathered information.
+        6. Processes the model's response and determines if the info is satisfactory.
+        """
+        p = MAIN_PROMPT.format(
+            info=json.dumps(state.extraction_schema, indent=2), topic=state.topic
+        )
+
+        last_message = state.messages[-1]
+        if not isinstance(last_message, AIMessage):
+            raise ValueError(
+                f"{reflect.__name__} expects the last message in the state to be an AI message with tool calls."
+                f" Got: {type(last_message)}"
+            )
+        messages = [HumanMessage(content=p)] + state.messages[:-1]
+
+        presumed_info = state.info
+
+        checker_prompt = (
+            "I am thinking of calling the info tool with the info below."
+            "Is this good? Give your reasoning as well."
+            "You can encourage the Assistant to look at specific URLs if that seems relevant, or do more searches."
+            "If you don't think it is good, you should be very specific about what could be improved."
+
+            "{presumed_info}"
+        )
+        
+        p1 = checker_prompt.format(presumed_info=json.dumps(presumed_info or {}, indent=2))
+        
+        messages.append(HumanMessage(content=p1))
+        
+        for attempt in range(5):
+            chat = get_chat()
+        
+            structured_llm = chat.with_structured_output(InfoIsSatisfactory)
+        
+            info = structured_llm.invoke(messages)
+            print(f'attempt: {attempt}, info: {info}')
+        
+            if not info['parsed'] == None:
+                parsed_info = info['parsed']
+        
+                if parsed_info.is_satisfactory and presumed_info:
+                    return {
+                        "info": presumed_info,
+                        "messages": [
+                            ToolMessage(
+                                tool_call_id=last_message.tool_calls[0]["id"],
+                                content="\n".join(parsed_info.reason),
+                                name="Info",
+                                additional_kwargs={"artifact": parsed_info.model_dump()},
+                                status="success",
+                            )
+                        ],
+                    }
+                else:
+                    return {
+                        "messages": [
+                            ToolMessage(
+                                tool_call_id=last_message.tool_calls[0]["id"],
+                                content=f"Unsatisfactory response:\n{parsed_info.improvement_instructions}",
+                                name="Info",
+                                additional_kwargs={"artifact": parsed_info.model_dump()},
+                                status="error",
+                            )
+                        ]
+                    }
+        
+    def route_after_agent(state: State):
+        last_message = state.messages[-1]
+
+        if not isinstance(last_message, AIMessage):
+            return "call_agent_model"
+        if last_message.tool_calls and last_message.tool_calls[0]["name"] == "Info":
+            return "reflect"
+        else:
+            return "tools"
+    
+    MAX_LOOPS = 1
+    def route_after_checker(state: State, config):
+        last_message = state.messages[-1]
+        
+        max_loops = config.get("configurable", {}).get("max_loops", MAX_LOOPS)
+
+        if state.loop_step < max_loops:
+            if not state.info:
+                return "continue"
+            if not isinstance(last_message, ToolMessage):
+                raise ValueError(
+                    f"{route_after_checker.__name__} expected a tool messages. Received: {type(last_message)}."
+                )
+            if last_message.status == "error":
+                return "continue"
+            return "end"
+        else:
+            return "end"
+
+    tools = [search, scrape_website]
+    tool_node = ToolNode(tools)
+    
+    def buildEnrichmentAgent():
+        workflow = StateGraph(
+            State, input=InputState, output=OutputState, config_schema=Configuration
+        )
+        workflow.add_node("call_agent_model", call_agent_model)
+        workflow.add_node("reflect", reflect)
+        workflow.add_node("tools", tool_node)
+        
+        workflow.add_edge(START, "call_agent_model")
+        workflow.add_conditional_edges(
+            "call_agent_model", 
+            route_after_agent,
+            {
+                "reflect": "reflect",
+                "tools": "tools",
+                "call_agent_model": "call_agent_model"
+            }
+        )
+        
+        workflow.add_edge("tools", "call_agent_model")
+        
+        workflow.add_conditional_edges(
+            "reflect", 
+            route_after_checker,
+            {
+                "end": END,
+                "continue": "call_agent_model"
+            }
+        )
+
+        graph = workflow.compile()        
+        graph.name = "ResearchTopic"
+                
+        return workflow.compile()
+    
+    app = buildEnrichmentAgent()
+    
+    isTyping(connectionId, requestId, "")
+    
+    inputs = [HumanMessage(content=query)]
+    config = {
+        "recursion_limit": 50,
+        "max_loops": 1,
+        "requestId": requestId,
+        "connectionId": connectionId
+    }
+    
+    message = ""
+    for event in app.stream({"messages": inputs}, config, stream_mode="values"):   
+        # print('event: ', event)
+        
+        message = event["messages"][-1]
+        # print('message: ', message)
+
+    msg = readStreamMsg(connectionId, requestId, message.content)
+    
+    return msg
     
 #########################################################
 def traslation(chat, text, input_language, output_language):
@@ -6105,7 +6562,12 @@ def getResponse(connectionId, jsonBody):
                 msg  = "The chat memory was intialized in this session."
             else:            
                 if convType == 'normal':      # normal
-                    msg = general_conversation(connectionId, requestId, chat, text)                  
+                    msg = general_conversation(connectionId, requestId, chat, text)
+                    
+                elif convType == 'rag-opensearch':   # RAG - Vector
+                    revised_question = revise_question(connectionId, requestId, chat, text)     
+                    print('revised_question: ', revised_question)                      
+                    msg = get_answer_using_opensearch(chat, revised_question, connectionId, requestId)                    
 
                 elif convType == 'agent-executor':
                     msg = run_agent_executor(connectionId, requestId, text)
