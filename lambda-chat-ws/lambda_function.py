@@ -662,7 +662,7 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
         relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, text, top_k)
                         
         for i, document in enumerate(relevant_documents):
-            print(f'## Document(opensearch-vector) {i+1}: {json.dumps(document)}')
+            print(f'## Document(opensearch-vector) {i+1}: {document}')
             
             parent_doc_id = document[0].metadata['parent_doc_id']
             doc_level = document[0].metadata['doc_level']
@@ -690,7 +690,7 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
         )
         
         for i, document in enumerate(relevant_documents):
-            print(f'## Document(opensearch-vector) {i+1}: {json.dumps(document)}')
+            print(f'## Document(opensearch-vector) {i+1}: {document}')
             
             name = document[0].metadata['name']
             url = document[0].metadata['url']
@@ -709,7 +709,9 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
             
     if enableHybridSearch == 'true':
         relevant_docs_from_lexical = lexical_search(text, top_k)    
-        print(f'## Document(opensearch-lexical) {i+1}: {json.dumps(relevant_docs_from_lexical)}')
+        
+        for i, document in enumerate(relevant_docs_from_lexical):
+            print(f'## Document(opensearch-lexical) {i+1}: {document}')
 
         relevant_docs += relevant_docs_from_lexical
 
