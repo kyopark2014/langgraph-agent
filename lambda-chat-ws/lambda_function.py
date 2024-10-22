@@ -656,12 +656,13 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
     )  
     
     isTyping(connectionId, requestId, "retrieving...")
+    print('multi_region: ', multi_region)
     
     if multi_region == 'enable':  # parallel processing
         relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, text, top_k)
                         
         for i, document in enumerate(relevant_documents):
-            # print(f'## Document(opensearch-vector) {i+1}: {document}')
+            print(f'## Document(opensearch-vector) {i+1}: {json.dumps(document)}')
             
             parent_doc_id = document[0].metadata['parent_doc_id']
             doc_level = document[0].metadata['doc_level']
@@ -682,6 +683,7 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
                 )
             )
     else: 
+        print("###### similarity_search_with_score ######")
         relevant_documents = vectorstore_opensearch.similarity_search_with_score(
             query = text,
             k = top_k
