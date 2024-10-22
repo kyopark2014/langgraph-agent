@@ -137,7 +137,7 @@ multi_region_models = [   # claude sonnet 3.0
         "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
     }
 ]
-multi_region = 'disable'
+multi_region = 'enable'
 
 reference_docs = []
 # api key to get weather information in agent
