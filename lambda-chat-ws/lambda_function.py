@@ -4617,6 +4617,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 ##############################################################
 
 def query_using_RAG_context(connectionId, requestId, chat, context, revised_question):    
+    isTyping(connectionId, requestId, "generating...")  
+                
     if isKorean(revised_question)==True:
         system = (
             """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
@@ -4642,7 +4644,6 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
     chain = prompt | chat
     
     try: 
-        isTyping(connectionId, requestId, "retriving...")  
         stream = chain.invoke(
             {
                 "context": context,
@@ -6127,6 +6128,8 @@ def summary_of_code(chat, code, mode):
 def revise_question(connectionId, requestId, chat, query):    
     global history_length, token_counter_history    
     history_length = token_counter_history = 0
+    
+    isTyping(connectionId, requestId, "revising...")
         
     if isKorean(query)==True :      
         system = (
