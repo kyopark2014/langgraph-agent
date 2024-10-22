@@ -758,8 +758,13 @@ def get_documents_from_opensearch(vectorstore_opensearch, query, top_k):
                     if len(relevant_documents)>=top_k:
                         break
                                 
-    # print('lexical query result: ', json.dumps(response))
-    print('relevant_documents: ', relevant_documents)
+    # print('relevant_documents: ', relevant_documents)    
+    for i, doc in enumerate(relevant_documents):
+        if len(doc[0].page_content)>=100:
+            text = doc[0].page_content[:100]
+        else:
+            text = doc[0].page_content            
+        print(f"--> vector search doc[{i}]: {text}, metadata:{doc[0].metadata}")
     
     return relevant_documents
 
@@ -1065,46 +1070,6 @@ def search_by_opensearch(keyword: str) -> str:
         relevant_docs = relevant_docs + f"{content}\n\n"
         
     return relevant_docs
-
-def get_documents_from_opensearch(vectorstore_opensearch, query, top_k):
-    result = vectorstore_opensearch.similarity_search_with_score(
-        query = query,
-        k = top_k*2,  
-        search_type="script_scoring",
-        pre_filter={"term": {"metadata.doc_level": "child"}}
-    )
-    # print('result: ', result)
-                
-    relevant_documents = []
-    docList = []
-    for re in result:
-        if 'parent_doc_id' in re[0].metadata:
-            parent_doc_id = re[0].metadata['parent_doc_id']
-            doc_level = re[0].metadata['doc_level']
-            print(f"doc_level: {doc_level}, parent_doc_id: {parent_doc_id}")
-                        
-            if doc_level == 'child':
-                if parent_doc_id in docList:
-                    print('duplicated!')
-                else:
-                    relevant_documents.append(re)
-                    docList.append(parent_doc_id)
-                        
-                    if len(relevant_documents)>=top_k:
-                        break                                
-    # print('lexical query result: ', json.dumps(response))
-    
-    for i, doc in enumerate(relevant_documents):
-        #print('doc: ', doc[0])
-        #print('doc content: ', doc[0].page_content)
-        
-        if len(doc[0].page_content)>=100:
-            text = doc[0].page_content[:100]
-        else:
-            text = doc[0].page_content            
-        print(f"--> vector search doc[{i}]: {text}, metadata:{doc[0].metadata}")        
-
-    return relevant_documents
 
 def lexical_search_for_tool(query, top_k):
     # lexical search (keyword)
@@ -1491,7 +1456,7 @@ def retrieve(question):
         relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, question, top_k)
 
         for i, document in enumerate(relevant_documents):
-            print(f'## Document(opensearch-vector) {i+1}: {document}')
+            print(f'## Document(opensearch-vector) {i+1}: {json.dumps(document)}')
             
             parent_doc_id = document[0].metadata['parent_doc_id']
             doc_level = document[0].metadata['doc_level']
