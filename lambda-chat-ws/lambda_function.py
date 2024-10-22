@@ -6566,7 +6566,7 @@ def getResponse(connectionId, jsonBody):
                     msg = general_conversation(connectionId, requestId, chat, text)
                     
                 elif convType == 'rag-opensearch':   # RAG - Vector
-                    msg = get_answer_using_opensearch(chat, revised_question, connectionId, requestId)                    
+                    msg = get_answer_using_opensearch(chat, text, connectionId, requestId)                    
 
                 elif convType == 'rag-opensearch-chat':   # RAG - Vector
                     revised_question = revise_question(connectionId, requestId, chat, text)     
