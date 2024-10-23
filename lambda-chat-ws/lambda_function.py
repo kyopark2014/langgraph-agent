@@ -1339,11 +1339,11 @@ def check_duplication(docs):
     print('length of relevant_docs:', len(docs))
     for doc in docs:            
         # print('excerpt: ', doc['metadata']['excerpt'])
-            if doc.page_content in contentList:
-                print('duplicated!')
-                continue
-            contentList.append(doc.page_content)
-            updated_docs.append(doc)            
+        if doc.page_content in contentList:
+            print('duplicated!')
+            continue
+        contentList.append(doc.page_content)
+        updated_docs.append(doc)            
     length_updateed_docs = len(updated_docs)     
     
     if length_original == length_updateed_docs:
@@ -6546,6 +6546,7 @@ def getResponse(connectionId, jsonBody):
         
         msg += f"current model: {modelId}"
         print('model lists: ', msg)    
+        sendResultMessage(connectionId, requestId, msg)
     else:             
         if type == 'text':
             text = body
@@ -6561,6 +6562,7 @@ def getResponse(connectionId, jsonBody):
                     
                 print('initiate the chat memory!')
                 msg  = "The chat memory was intialized in this session."
+                sendResultMessage(connectionId, requestId, msg)
             
             elif type == 'text' and body[:21] == 'reflash current index':
                 # reflash index

@@ -541,7 +541,6 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
     });
     opensearch_url = 'https://'+domain.domainEndpoint;
 
-
     const apiInvokePolicy = new iam.PolicyStatement({ 
       // resources: ['arn:aws:execute-api:*:*:*'],
       resources: ['*'],
