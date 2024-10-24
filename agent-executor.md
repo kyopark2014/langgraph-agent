@@ -34,6 +34,54 @@ model = chatModel.bind_tools(tools)
 tool_node = ToolNode(tools)
 ```
 
+여기에서 tool중에 search_by_opensearch의 간단한 예는 아래와 같습니다. 
+
+```python
+@tool    
+def search_by_opensearch(keyword: str) -> str:
+    """
+    Search information of company by keyword and then return the result as a string.
+    keyword: search keyword
+    return: the technical information of keyword
+    """    
+    bedrock_embedding = get_embedding()
+        
+    vectorstore_opensearch = OpenSearchVectorSearch(
+        index_name = index_name,
+        embedding_function = bedrock_embedding,
+        opensearch_url=opensearch_url,
+        http_auth=(opensearch_account, opensearch_passwd)
+    ) 
+    
+    top_k = 2    
+    relevant_docs = [] 
+    relevant_documents = vectorstore_opensearch.similarity_search_with_score(
+        query = keyword,
+        k = top_k
+    )
+
+    for i, document in enumerate(relevant_documents):
+        excerpt = document[0].page_content
+        url = document[0].metadata['url']                
+        name = document[0].metadata['name']
+            
+        relevant_docs.append(
+            Document(
+                page_content=excerpt,
+                metadata={
+                    'name': name,
+                    'url': url,
+                    'from': 'vector'
+                },
+            )
+        )
+                    
+    filtered_docs = grade_documents(keyword, relevant_docs)  # grading    
+            
+    return filtered_docs
+```
+
+
 state를 위한 ChatAgentState을 정의하고 node와 conditional edge를 구성합니다.
 
 ```python
@@ -142,6 +190,8 @@ inputs = [HumanMessage(content="강남역 맛집 알려줘")]
 for event in app.stream({"messages": inputs}, stream_mode="values"):    
     event["messages"][-1].pretty_print()
 ```
+
+
 
 ## 실행 결과
 
