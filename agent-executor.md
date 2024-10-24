@@ -43,10 +43,10 @@ tool_node = ToolNode(tools)
 @tool    
 def search_by_opensearch(keyword: str) -> str:
     """
-    Search information of company by keyword and then return the result as a string.
+    Search technical information by keyword and then return the result as a string.
     keyword: search keyword
     return: the technical information of keyword
-    """    
+    """        
     bedrock_embedding = get_embedding()
         
     vectorstore_opensearch = OpenSearchVectorSearch(
