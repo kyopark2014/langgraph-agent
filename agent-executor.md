@@ -72,7 +72,7 @@ state를 위한 ChatAgentState을 정의하고 node와 conditional edge를 구�
 class ChatAgentState(TypedDict):
     messages: Annotated[list, add_messages]
 
-def should_continue(state: ChatAgentState) -> Literal["continue", "end"]:
+def should_continue(state: State) -> Literal["continue", "end"]:
     messages = state["messages"]    
     # print('(should_continue) messages: ', messages)
     
@@ -82,32 +82,22 @@ def should_continue(state: ChatAgentState) -> Literal["continue", "end"]:
     else:                
         return "continue"
 
-def call_model(state: ChatAgentState):
+def call_model(state: State, config):
     question = state["messages"]
-    print('question: ', question)
-    
-    if isKorean(question[0].content)==True:
-        system = (
-            "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
-            "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-            "모르는 질문을 받으면 솔직히 모른다고 말합니다."
-        )
-    else: 
-        system = (
-            "You are a conversational AI designed to answer in a friendly way to a question."
-            "If you don't know the answer, just say that you don't know, don't try to make up an answer."
-            "You will be acting as a thoughtful advisor."                
-        )
-
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", system),
-            MessagesPlaceholder(variable_name="messages"),
-        ]
+    system = (
+        "Assistant는 질문에 답변하기 위한 정보를 수집하는 연구원입니다."
+        "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+        "Assistant는 모르는 질문을 받으면 솔직히 모른다고 말합니다."
     )
+                
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system),
+        MessagesPlaceholder(variable_name="messages"),
+    ])
     chain = prompt | model
-        
+                
     response = chain.invoke(question)
+        
     return {"messages": [response]}
 ```
 
