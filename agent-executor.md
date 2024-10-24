@@ -53,32 +53,13 @@ def search_by_opensearch(keyword: str) -> str:
         http_auth=(opensearch_account, opensearch_passwd)
     ) 
     
-    top_k = 2    
-    relevant_docs = [] 
+    top_k = 4    
     relevant_documents = vectorstore_opensearch.similarity_search_with_score(
         query = keyword,
         k = top_k
     )
 
-    for i, document in enumerate(relevant_documents):
-        excerpt = document[0].page_content
-        url = document[0].metadata['url']                
-        name = document[0].metadata['name']
-            
-        relevant_docs.append(
-            Document(
-                page_content=excerpt,
-                metadata={
-                    'name': name,
-                    'url': url,
-                    'from': 'vector'
-                },
-            )
-        )
-                    
-    filtered_docs = grade_documents(keyword, relevant_docs)  # grading    
-            
-    return filtered_docs
+    return relevant_documents
 ```
 
 
