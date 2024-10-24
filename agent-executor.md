@@ -20,10 +20,13 @@ Tool을 정의하고 chat model에 bind 합니다. 또한 tool들을 실행하�
 ```python
 import operator
 from typing import Annotated, Sequence, TypedDict
-
+from langgraph.graph.message import add_messages
 from langchain_core.messages import BaseMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.prebuilt import ToolNode
+
+class State(TypedDict):
+messages: Annotated[list, add_messages]
 
 tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
 
