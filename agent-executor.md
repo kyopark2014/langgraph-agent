@@ -1,10 +1,15 @@
-# Agentic RAG (Agent Executor)
+# Tool Execution Agent
 
 ReAct는 LLM을 다양한 데이터 소스와 실행 가능한 프로그램과 결합할 수 있기 때문에 매우 효과적이지만, agent에 대한 유연성이나 투명성이 부족하여 구체적으로 어떻게 작동하는지 알수 없는 경우가 많습니다. LangGraph와 같이 agent를 그래프로 구성하면, 반복적인 ReAct와 유사한 루프를 생성할 수 있으며, 사용자 정의하기가 훨씬 쉬워집니다. 따라서 더 결정론적인 흐름(deterministic flow)와 계층적 의사 결정(hierarchical decision-making)을 추가할 수 있으며 [더 많은 유연성과 투명성으로 구축](https://www.pinecone.io/learn/langgraph-research-agent/)할 수 있습니다. 
 
 <img src="https://github.com/user-attachments/assets/703b86dd-8e6a-4673-adac-048baf94d35b" width="500">
 
-아래와 같이 LangGraph Agent를 Serverless Architecture로 구현하여 적절한 Tool을 실행할 수 있습니다. 상세한 코드는 [agent-executor.ipynb](./agent/agent-executor.ipynb)을 참조합니다. Agent로 tools를 실행하는 Excueter의 동작은 아래와 같습니다. 
+상세한 코드는 [agent-executor.ipynb](./agent/agent-executor.ipynb)을 참조합니다. Agent로 tools를 실행하는 Excueter의 동작은 아래와 같습니다. 
+
+
+동작 flow를 activty diagram으로 그리면 아래와 같습니다.
+
+![image](https://github.com/user-attachments/assets/668a48b6-2b14-4434-b60d-107e6ff49e5a)
 
 ## Chat Agent Executor
 
