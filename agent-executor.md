@@ -94,6 +94,8 @@ def call_model(state: State, config):
         ("system", system),
         MessagesPlaceholder(variable_name="messages"),
     ])
+
+    model = chat.bind_tools(tools)
     chain = prompt | model
                 
     response = chain.invoke(question)
