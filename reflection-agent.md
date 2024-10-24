@@ -4,7 +4,7 @@ Reflection은 Agent을 포함한 AI 시스템의 품질과 성공률을 높이�
 
 ## Reflection 동작 
 
-[LangChain - Reflection](https://github.com/langchain-ai/langgraph/blob/main/examples/reflection/reflection.ipynb)에서는 아래와 같이 Reflection의 동작을 설명하고 있습니다. 사용자의 요청이 Generate에 전달되면 초기 응답을 생성합니다. Reflect는 초기 응답으로 Reflections을 생성하고 이를 N번 반복한 이후에 응답을 사용자에게 전달합니다. 
+[LangChain - Reflection](https://github.com/langchain-ai/langgraph/blob/main/docs/docs/tutorials/reflection/reflection.ipynb)에서는 아래와 같이 Reflection의 동작을 설명하고 있습니다. 사용자의 요청이 Generate에 전달되면 초기 응답을 생성합니다. Reflect는 초기 응답으로 Reflections을 생성하고 이를 N번 반복한 이후에 응답을 사용자에게 전달합니다. 
 
 ![image](https://github.com/user-attachments/assets/2a77a177-5be9-4a7d-97a8-4d5a19f9709e)
 
