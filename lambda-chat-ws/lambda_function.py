@@ -637,6 +637,7 @@ def general_conversation(connectionId, requestId, chat, query):
 
 def get_answer_using_opensearch(chat, text, connectionId, requestId):    
     global reference_docs
+    print('the number of reference_docs (start): ', len(reference_docs))
     
     msg = ""
     top_k = 4
@@ -722,7 +723,7 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
     filtered_docs = grade_documents(text, relevant_docs) # grading
     
     filtered_docs = check_duplication(filtered_docs) # check duplication
-    # print('the number of filtered_docs: ', len(filtered_docs))
+    print('the number of filtered_docs: ', len(filtered_docs))
             
     relevant_context = ""
     for i, document in enumerate(filtered_docs):
@@ -736,6 +737,8 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
 
     msg = query_using_RAG_context(connectionId, requestId, chat, relevant_context, text)
     
+    print('the number of reference_docs (case): ', len(reference_docs))
+    print('the number of filtered_docs (case): ', len(filtered_docs))
     reference_docs += filtered_docs
     print('the number of reference_docs: ', len(reference_docs))
            
