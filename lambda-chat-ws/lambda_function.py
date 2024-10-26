@@ -2944,7 +2944,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         else:
             return "continue"    
         
-    def final_answer_node(state: State) -> str:
+    def final_answer(state: State) -> str:
         print('#### final_answer ####')
         
         context = state['info']
@@ -3003,7 +3003,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         workflow.add_node("planner", plan_node)
         workflow.add_node("executor", execute_node)
         workflow.add_node("replaner", replan_node)
-        workflow.add_node("final_answer", final_answer_node)
+        workflow.add_node("final_answer", final_answer)
         
         workflow.set_entry_point("planner")
         workflow.add_edge("planner", "executor")
@@ -3036,8 +3036,10 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             print(f"Finished: {key}")
             #print("value: ", value)            
     print('value: ', value)
+    
+    readStreamMsg(connectionId, requestId, value["answer"].content)
         
-    return value["answer"]
+    return value["answer"].content
 
 ####################### LangGraph #######################
 # Essay Writer
