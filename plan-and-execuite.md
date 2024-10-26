@@ -12,10 +12,44 @@ LangGraph은 stateful하고 multi-actor 애플리케이션을 만들 수 있도�
 
 이때의 activity diagram은 아래와 같습니다.
 
-![image](https://github.com/user-attachments/assets/a96b1848-c58e-4a5c-a741-0b541a94f5e6)
+![image](https://github.com/user-attachments/assets/04b2168d-8bd6-481e-8b9c-5282562118cc)
 
 
 ## 상세 구현
+
+Plan and execute의 State 클래스와 workflow는 아래와 같습니다. Plan 노드에서 생성된 inft 
+
+```python
+class State(TypedDict):
+    input: str
+    plan: list[str]
+    past_steps: Annotated[List[Tuple], operator.add]
+    info: Annotated[List[Tuple], operator.add]
+    answer: str
+
+def buildPlanAndExecute():
+    workflow = StateGraph(State)
+    workflow.add_node("planner", plan_node)
+    workflow.add_node("executor", execute_node)
+    workflow.add_node("replaner", replan_node)
+    workflow.add_node("final_answer", final_answer)
+    
+    workflow.set_entry_point("planner")
+    workflow.add_edge("planner", "executor")
+    workflow.add_edge("executor", "replaner")
+    workflow.add_conditional_edges(
+        "replaner",
+        should_end,
+        {
+            "continue": "executor",
+            "end": "final_answer",
+        },
+    )
+    workflow.add_edge("final_answer", END)
+
+    return workflow.compile()
+```
+
 
 Plan을 생성하는 Prompt를 준비합니다. 
 
