@@ -1863,7 +1863,7 @@ def run_agent_executor(connectionId, requestId, query):
     def should_continue(state: State) -> Literal["continue", "end"]:
         print("###### should_continue ######")
         messages = state["messages"]    
-        # print('(should_continue) messages: ', messages)
+        print('(should_continue) messages: ', messages)
         
         last_message = messages[-1]
         if not last_message.tool_calls:
