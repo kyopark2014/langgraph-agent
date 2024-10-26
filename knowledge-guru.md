@@ -238,6 +238,43 @@ You should use the previous critique to add important information to your answer
     }
 ```
 
+상기 revise를 간단히 정리하면 아래와 같습니다. 
+
+```python
+system = (
+    "Revise your previous answer using the new information."
+    "You should use the previous critique to add important information to your answer. provide the final answer with <result> tag."
+    "<critique>"
+    "{reflection}"
+    "</critique>"
+
+    "<information>"
+    "{content}"
+    "</information>"
+)
+            
+reflection_prompt = ChatPromptTemplate.from_messages([
+    ("system", system),
+    MessagesPlaceholder(variable_name="messages")
+])
+    
+reflect = reflection_prompt | chat
+        
+res = reflect.invoke({
+    "messages": translated,
+    "reflection": state["reflection"],
+    "content": content
+})    
+                        
+response = HumanMessage(content=res.content[res.content.find('<result>')+8:len(res.content)-9])
+revision_number = state["revision_number"] if state.get("revision_number") is not None else 1
+return {
+    "messages": [response], 
+    "revision_number": revision_number + 1
+}
+```
+
+
 max_revisions만큼 반복합니다. 
 
 ```python
