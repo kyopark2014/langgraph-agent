@@ -2768,7 +2768,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         past_steps: Annotated[List[Tuple], operator.add]
         info: list[str]
         response: str
-        final_answer: str
+        answer: str
 
     class Plan(BaseModel):
         """List of steps as a json format"""
@@ -2996,7 +2996,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             err_msg = traceback.format_exc()
             print('error message: ', err_msg)      
             
-        return {"final_answer": output}  
+        return {"answer": output}  
 
     def buildPlanAndExecute():
         workflow = StateGraph(State)
@@ -3038,9 +3038,9 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             
     print('value: ', value)
         
-    readStreamMsg(connectionId, requestId, value["final_answer"])
+    readStreamMsg(connectionId, requestId, value["answer"])
     
-    return value["final_answer"]
+    return value["answer"]
 
 ####################### LangGraph #######################
 # Essay Writer
