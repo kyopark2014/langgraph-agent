@@ -2766,7 +2766,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         input: str
         plan: list[str]
         past_steps: Annotated[List[Tuple], operator.add]
-        info: list[str]
+        info: Annotated[List[Tuple], operator.add]
         response: str
         answer: str
 
@@ -2863,27 +2863,16 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         print('task: ', task)
         print('executor output: ', output)
         
-        if "info" in state:
-            info = state['info']
-            info.append(output)
-        else:
-            info = [output]
-        print('info: ', info)
-        
-        if "past_steps" in state:
-            past_steps = state['past_steps']
-            past_steps.append(task)
-        else:
-            past_steps = [task]
-        print('past_steps: ', past_steps)
+        print('past_steps: ', state['past_steps'])        
+        print('info: ', state['info'])
         
         # print('plan: ', state["plan"])
         # print('past_steps: ', task)        
         return {
             "input": state["input"],
             "plan": state["plan"],
-            "info": info,
-            "past_steps": past_steps,
+            "info": [output],
+            "past_steps": [task],
         }
 
     class Response(BaseModel):
