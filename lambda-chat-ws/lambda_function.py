@@ -2972,12 +2972,16 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         ])
         chain = prompt | chat
         
-        response = chain.invoke({"messages": [request]})
-        result = response.content
-        output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
-        
-        print('task: ', task)
-        print('executor output: ', output)
+        try:
+            response = chain.invoke({"messages": [request]})
+            result = response.content
+            output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
+            
+            print('task: ', task)
+            print('executor output: ', output)
+        except Exception:
+            err_msg = traceback.format_exc()
+            print('error message: ', err_msg)      
         
         if 'info' in state:
             context = state['info']
