@@ -706,10 +706,12 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
                     },
                 )
             )
+    print('the number of docs (vector search): ', len(relevant_docs))
             
     if enableHybridSearch == 'true':
         relevant_docs_from_lexical = lexical_search(text, top_k)    
         
+        print('the number of docs (lexical search): ', len(relevant_docs_from_lexical))
         for i, document in enumerate(relevant_docs_from_lexical):
             print(f'## Document(opensearch-lexical) {i+1}: {document}')
 
@@ -2764,6 +2766,13 @@ def run_self_corrective_rag(connectionId, requestId, query):
 # Plan and Execute
 #########################################################
 def run_plan_and_exeucute(connectionId, requestId, query):
+    class State(TypedDict):
+        input: str
+        plan: list[str]
+        past_steps: Annotated[List[Tuple], operator.add]
+        
+        response: str
+
     class Plan(BaseModel):
         """List of steps as a json format"""
 
@@ -2789,13 +2798,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         
         planner = planner_prompt | chat
         return planner
-
-    class State(TypedDict):
-        input: str
-        plan: list[str]
-        past_steps: Annotated[List[Tuple], operator.add]
-        response: str
-
+    
     def plan_node(state: State, config):
         print("###### plan ######")
         print('input: ', state["input"])
