@@ -2955,9 +2955,9 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         
         if isKorean(query)==True:
             system = (
+                "Assistant의 이름은 서연이고, 질문에 대해 친절하게 답변하는 도우미입니다."
                 "다음의 <context> tag안의 참고자료를 이용하여 질문에 대한 답변합니다."
-                "답변의 이유를 명확하게 설명합니다."
-                "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+                "답변의 이유를 풀어서 명확하게 설명합니다."
                 
                 "<context>"
                 "{context}"
