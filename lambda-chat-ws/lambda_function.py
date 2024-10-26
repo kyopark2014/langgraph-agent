@@ -2932,7 +2932,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             if isinstance(result.action, Response):
                 return {
                     "response": result.action.response,
-                    "info": result.action.response
+                    "info": [result.action.response]
                 }
             else:
                 return {"plan": result.action.steps}
