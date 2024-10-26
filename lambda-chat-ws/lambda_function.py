@@ -2946,50 +2946,8 @@ def run_plan_and_exeucute(connectionId, requestId, query):
     def final_answer(state: State) -> str:
         print('#### final_answer ####')
         
-        # get response for the last plan
-        plan = state["plan"]
-        print('plan: ', plan) 
-        
-        plan_str = "\n".join(f"{i+1}. {step}" for i, step in enumerate(plan))
-        #print("plan_str: ", plan_str)
-        
-        task = plan[0]
-        task_formatted = f"""For the following plan:{plan_str}\n\nYou are tasked with executing step {1}, {task}."""
-        # print("request: ", task_formatted)     
-        request = HumanMessage(content=task_formatted)
-        
-        chat = get_chat()
-        prompt = ChatPromptTemplate.from_messages([
-            (
-                "system", (
-                    "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
-                    "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-                    "모르는 질문을 받으면 솔직히 모른다고 말합니다."
-                    "결과는 <result> tag를 붙여주세요."
-                )
-            ),
-            MessagesPlaceholder(variable_name="messages"),
-        ])
-        chain = prompt | chat
-        
-        try:
-            response = chain.invoke({"messages": [request]})
-            result = response.content
-            output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
-            
-            print('task: ', task)
-            print('executor output: ', output)
-        except Exception:
-            err_msg = traceback.format_exc()
-            print('error message: ', err_msg)      
-        
-        if 'info' in state:
-            context = state['info']
-            context.append(output)
-        else:
-            context = [output]
-        
         # get final answer
+        context = state['info']
         print('context: ', context)
         
         query = state['input']
