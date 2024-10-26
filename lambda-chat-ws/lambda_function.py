@@ -645,7 +645,7 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
     bedrock_embedding = get_embedding()
        
     vectorstore_opensearch = OpenSearchVectorSearch(
-        index_name = "idx-*", # all
+        index_name = index_name,
         is_aoss = False,
         ef_search = 1024, # 512(default)
         m=48,
@@ -778,7 +778,7 @@ def get_documents_from_opensearch(vectorstore_opensearch, query, top_k):
 
 def get_parent_content(parent_doc_id):
     response = os_client.get(
-        index=index_name, 
+        index = index_name, 
         id = parent_doc_id
     )
     
@@ -992,7 +992,7 @@ def search_by_opensearch(keyword: str) -> str:
     bedrock_embedding = get_embedding()
         
     vectorstore_opensearch = OpenSearchVectorSearch(
-        index_name = "idx-*", # all
+        index_name = index_name,
         is_aoss = False,
         ef_search = 1024, # 512(default)
         m=48,
@@ -1448,7 +1448,7 @@ def retrieve(question):
     bedrock_embedding = get_embedding()
         
     vectorstore_opensearch = OpenSearchVectorSearch(
-        index_name = "idx-*", # all
+        index_name = index_name,
         is_aoss = False,
         ef_search = 1024, # 512(default)
         m=48,
