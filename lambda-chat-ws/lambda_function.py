@@ -2849,7 +2849,6 @@ def run_plan_and_exeucute(connectionId, requestId, query):
                     "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
                     "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
                     "모르는 질문을 받으면 솔직히 모른다고 말합니다."
-                    # "최종 답변에는 조사한 내용을 반드시 포함합니다."
                     "결과는 <result> tag를 붙여주세요."
                 )
             ),
@@ -2958,6 +2957,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
                 "Assistant의 이름은 서연이고, 질문에 대해 친절하게 답변하는 도우미입니다."
                 "다음의 <context> tag안의 참고자료를 이용하여 질문에 대한 답변합니다."
                 "답변의 이유를 풀어서 명확하게 설명합니다."
+                "결과는 <result> tag를 붙여주세요."
                 
                 "<context>"
                 "{context}"
@@ -2969,6 +2969,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
                 "Provide a concise answer to the question at the end."
                 "Explains clearly the reason for the answer."
                 "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+                "Put it in <result> tags."
                 
                 "<context>"
                 "{context}"
@@ -2984,12 +2985,14 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         chain = prompt | chat
         
         try: 
-            output = chain.invoke(
+            response = chain.invoke(
                 {
                     "context": context,
                     "input": query,
                 }
             )
+            result = response.content
+            output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
             print('output: ', output)
             
         except Exception:
