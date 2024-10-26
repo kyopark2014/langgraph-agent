@@ -1737,7 +1737,7 @@ tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, se
 
 def update_state_message(msg:str, config):
     print(msg)
-    print('config: ', config)
+    # print('config: ', config)
     
     requestId = config.get("configurable", {}).get("requestId", "")
     connectionId = config.get("configurable", {}).get("connectionId", "")
@@ -2868,7 +2868,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         return {
             "input": state["input"],
             "plan": state["plan"],
-            "info": output,
+            "info": state["info"]+[output],
             "past_steps": [task],
         }
 
