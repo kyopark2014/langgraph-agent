@@ -2767,7 +2767,6 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         plan: list[str]
         past_steps: Annotated[List[Tuple], operator.add]
         info: Annotated[List[Tuple], operator.add]
-        response: str
         answer: str
 
     class Plan(BaseModel):
@@ -2928,10 +2927,10 @@ def run_plan_and_exeucute(connectionId, requestId, query):
                 break
                     
         if result == None:
-            return {"response": "답을 찾지 못하였습니다. 다시 해주세요."}
+            return {"info": "답을 찾지 못하였습니다. 다시 해주세요."}
         else:
             if isinstance(result.action, Response):
-                return {"response": result.action.response}
+                return {"info": result.action.response}
             else:
                 return {"plan": result.action.steps}
         
