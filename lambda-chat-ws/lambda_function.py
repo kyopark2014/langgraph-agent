@@ -3034,12 +3034,9 @@ def run_plan_and_exeucute(connectionId, requestId, query):
     for output in app.stream(inputs, config):   
         for key, value in output.items():
             print(f"Finished: {key}")
-            #print("value: ", value)
-            
+            #print("value: ", value)            
     print('value: ', value)
         
-    readStreamMsg(connectionId, requestId, value["answer"])
-    
     return value["answer"]
 
 ####################### LangGraph #######################
