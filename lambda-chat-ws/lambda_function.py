@@ -2927,10 +2927,13 @@ def run_plan_and_exeucute(connectionId, requestId, query):
                 break
                     
         if result == None:
-            return {"info": "답을 찾지 못하였습니다. 다시 해주세요."}
+            return {"response": "답을 찾지 못하였습니다. 다시 해주세요."}
         else:
             if isinstance(result.action, Response):
-                return {"info": result.action.response}
+                return {
+                    "response": result.action.response,
+                    "info": result.action.response
+                }
             else:
                 return {"plan": result.action.steps}
         
