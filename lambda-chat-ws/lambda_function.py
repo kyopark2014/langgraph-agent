@@ -722,6 +722,7 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
     filtered_docs = grade_documents(text, relevant_docs) # grading
     
     filtered_docs = check_duplication(filtered_docs) # check duplication
+    print('the number of filtered_docs: ', len(filtered_docs))
             
     relevant_context = ""
     for i, document in enumerate(filtered_docs):
@@ -1400,7 +1401,7 @@ def print_doc(i, doc):
             
     print(f"{i}: {text}, metadata:{doc.metadata}")
     
-def get_references_for_agent(docs):
+def get_references(docs):
     reference = "\n\nFrom\n"
     for i, doc in enumerate(docs):
         page = ""
@@ -1437,7 +1438,7 @@ def get_references_for_agent(docs):
         #excerpt = excerpt.replace('"', '')        
         #excerpt = ''.join(c for c in excerpt if c not in '"')
         excerpt = re.sub('"', '', excerpt)
-        print('excerpt(quotation removed): ', excerpt)
+        # print('excerpt(quotation removed): ', excerpt)
         
         if page:                
             reference = reference + f"{i+1}. {page}page in <a href={url} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
@@ -6666,7 +6667,7 @@ def getResponse(connectionId, jsonBody):
                 memory_chain.chat_memory.add_ai_message(msg)
                 
                 if reference_docs:
-                    reference = get_references_for_agent(reference_docs)
+                    reference = get_references(reference_docs)
                                         
         elif type == 'document':
             isTyping(connectionId, requestId, "")
