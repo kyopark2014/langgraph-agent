@@ -2868,6 +2868,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             info.append(output)
         else:
             info = [output]
+        print('info: ', info)
         
         # print('plan: ', state["plan"])
         # print('past_steps: ', task)        
