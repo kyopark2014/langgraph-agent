@@ -2870,13 +2870,20 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             info = [output]
         print('info: ', info)
         
+        if "past_steps" in state:
+            past_steps = state['past_steps']
+            past_steps.append(task)
+        else:
+            past_steps = [task]
+        print('past_steps: ', past_steps)
+        
         # print('plan: ', state["plan"])
         # print('past_steps: ', task)        
         return {
             "input": state["input"],
             "plan": state["plan"],
             "info": info,
-            "past_steps": [task],
+            "past_steps": past_steps,
         }
 
     class Response(BaseModel):
