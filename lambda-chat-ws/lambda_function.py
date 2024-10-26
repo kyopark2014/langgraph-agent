@@ -2913,7 +2913,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         
         replanner = get_replanner()
         output = replanner.invoke(state)
-        print('replanner output: ', output.content)
+        # print('replanner output: ', output.content)
         
         result = None
         for attempt in range(5):
@@ -2924,7 +2924,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             
             if not info['parsed'] == None:
                 result = info['parsed']
-                print('act output: ', result)            
+                print('replanner output: ', result.steps)            
                 break
                     
         if result == None:
