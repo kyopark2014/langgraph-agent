@@ -2839,7 +2839,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         
         task = plan[0]
         task_formatted = f"""For the following plan:{plan_str}\n\nYou are tasked with executing step {1}, {task}."""
-        print("request: ", task_formatted)     
+        # print("request: ", task_formatted)     
         request = HumanMessage(content=task_formatted)
         
         chat = get_chat()
@@ -3040,9 +3040,9 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             #print("value: ", value)            
     print('value: ', value)
     
-    readStreamMsg(connectionId, requestId, value["answer"].content)
+    readStreamMsg(connectionId, requestId, value["answer"])
         
-    return value["answer"].content
+    return value["answer"]
 
 ####################### LangGraph #######################
 # Essay Writer
