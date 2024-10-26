@@ -2768,6 +2768,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         past_steps: Annotated[List[Tuple], operator.add]
         info: list[str]
         response: str
+        final_answer: str
 
     class Plan(BaseModel):
         """List of steps as a json format"""
@@ -2857,25 +2858,18 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         chain = prompt | chat
         
         response = chain.invoke({"messages": [request]})
-        print("response: ", response)
-        
         result = response.content
-        print("result: ", result)
         output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
         
         print('task: ', task)
         print('executor output: ', output)
         
-        
-        
-        
-        
         # print('plan: ', state["plan"])
-        # print('past_steps: ', task)
-        
+        # print('past_steps: ', task)        
         return {
             "input": state["input"],
             "plan": state["plan"],
+            "info": output,
             "past_steps": [task],
         }
 
@@ -2949,12 +2943,67 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             return "end"
         else:
             return "continue"    
+        
+    def final_answer(state: State) -> str:
+        print('#### final_answer ####')
+        
+        context = state['info']
+        print('context: ', context)
+        
+        query = state['input']
+        print('query: ', query)
+        
+        if isKorean(query)==True:
+            system = (
+                "다음의 <context> tag안의 참고자료를 이용하여 질문에 대한 답변합니다."
+                "답변의 이유를 명확하게 설명합니다."
+                "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+                
+                "<context>"
+                "{context}"
+                "</context>"
+            )
+        else: 
+            system = (
+                "Here is pieces of context, contained in <context> tags."
+                "Provide a concise answer to the question at the end."
+                "Explains clearly the reason for the answer."
+                "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+                
+                "<context>"
+                "{context}"
+                "</context>"
+            )
+    
+        human = "{input}"
+        
+        prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+        # print('prompt: ', prompt)
+                    
+        chat = get_chat()
+        chain = prompt | chat
+        
+        try: 
+            output = chain.invoke(
+                {
+                    "context": context,
+                    "input": query,
+                }
+            )
+            print('output: ', output)
+            
+        except Exception:
+            err_msg = traceback.format_exc()
+            print('error message: ', err_msg)      
+            
+        return {"final_answer": output}  
 
     def buildPlanAndExecute():
         workflow = StateGraph(State)
         workflow.add_node("planner", plan_node)
         workflow.add_node("executor", execute_node)
         workflow.add_node("replaner", replan_node)
+        workflow.add_node("final_answer", final_answer)
         
         workflow.set_entry_point("planner")
         workflow.add_edge("planner", "executor")
@@ -2964,9 +3013,10 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             should_end,
             {
                 "continue": "executor",
-                "end": END,
+                "end": "final_answer",
             },
         )
+        workflow.add_edge("final_answer", END)
 
         return workflow.compile()
 
@@ -2988,9 +3038,9 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             
     print('value: ', value)
         
-    readStreamMsg(connectionId, requestId, value["response"])
+    readStreamMsg(connectionId, requestId, value["final_answer"])
     
-    return value["response"]
+    return value["final_answer"]
 
 ####################### LangGraph #######################
 # Essay Writer
