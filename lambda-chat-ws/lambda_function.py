@@ -2863,12 +2863,15 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         print('task: ', task)
         print('executor output: ', output)
         
+        info = state['info']
+        info.append(output)
+        
         # print('plan: ', state["plan"])
         # print('past_steps: ', task)        
         return {
             "input": state["input"],
             "plan": state["plan"],
-            "info": state["info"]+[output],
+            "info": info,
             "past_steps": [task],
         }
 
