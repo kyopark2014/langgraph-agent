@@ -2766,7 +2766,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         input: str
         plan: list[str]
         past_steps: Annotated[List[Tuple], operator.add]
-        
+        info: list[str]
         response: str
 
     class Plan(BaseModel):
@@ -2842,26 +2842,33 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         request = HumanMessage(content=task_formatted)
         
         chat = get_chat()
-        prompt = ChatPromptTemplate.from_messages(
-        [
+        prompt = ChatPromptTemplate.from_messages([
             (
                 "system", (
                     "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
                     "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
                     "모르는 질문을 받으면 솔직히 모른다고 말합니다."
-                    "최종 답변에는 조사한 내용을 반드시 포함합니다."
+                    # "최종 답변에는 조사한 내용을 반드시 포함합니다."
+                    "결과는 <result> tag를 붙여주세요."
                 )
             ),
             MessagesPlaceholder(variable_name="messages"),
-        ]
-        )
+        ])
         chain = prompt | chat
         
-        agent_response = chain.invoke({"messages": [request]})
-        #print("agent_response: ", agent_response)
+        response = chain.invoke({"messages": [request]})
+        print("response: ", response)
+        
+        result = response.content
+        print("result: ", result)
+        output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
         
         print('task: ', task)
-        print('executor output: ', agent_response.content)
+        print('executor output: ', output)
+        
+        
+        
+        
         
         # print('plan: ', state["plan"])
         # print('past_steps: ', task)
