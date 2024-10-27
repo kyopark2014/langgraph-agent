@@ -354,7 +354,7 @@ def final_answer(state: State) -> str:
 
 Plan and execute 패턴으로 "How many r's are there in "strawberry"?" 문제를 풀어 보았습니다. 이 문제는 OpenAI community에 나왔던 유명한 문제입니다. Tokenizer의 특징으로 two로 답을 하지만, [Incorrect count of ‘r’ characters in the word “strawberry“](https://community.openai.com/t/incorrect-count-of-r-characters-in-the-word-strawberry/829618)에서는 "Veryfy with code"로 문제를 해결하기도 했습니다.
 
-로그로 확인해보면 아래와 같이 총 15번의 plan을 재생성한 후에 최종 값인 '3'을 얻을 수 있었습니다. 
+로그로 확인해보면 아래와 같이 총 15번의 plan/execution을 수행하여 최종 값인 '3'을 얻을 수 있었습니다. 
 
 ![image](https://github.com/user-attachments/assets/d015742c-e44d-4033-ad11-3d7f423a1d2d)
 
