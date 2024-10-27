@@ -329,7 +329,7 @@ def final_answer(state: State) -> str:
 
 "토끼와 거북이중에 누가 더 빠르지?"라고 질문하고 결과를 확인합니다. 
 
-![image](https://github.com/user-attachments/assets/89a0f2a2-b7b4-4648-af8b-db24e82710df)
+![image](https://github.com/user-attachments/assets/d88255fc-f194-4812-b049-80f700f70b7d)
 
 이때의 LangSmith 로그는 아래와 같습니다.
 
