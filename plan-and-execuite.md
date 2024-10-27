@@ -318,6 +318,16 @@ def final_answer(state: State) -> str:
 
 ![image](https://github.com/user-attachments/assets/0bdae5d2-0a9a-4221-b253-b29bd0ebc260)
 
+"토끼와 거북이중에 누가 더 빠르지?"라고 질문하고 결과를 확인합니다. 
+
+![image](https://github.com/user-attachments/assets/d88255fc-f194-4812-b049-80f700f70b7d)
+
+이때의 LangSmith 로그는 아래와 같습니다.
+
+![image](https://github.com/user-attachments/assets/a949b540-9e8c-4de9-a350-fdb5bc6cefc9)
+
+
+
 
 "닭이 먼저인지 달걀이 먼저인지 알려줘."로 질문합니다.
 
@@ -327,12 +337,16 @@ def final_answer(state: State) -> str:
 
 ![image](https://github.com/user-attachments/assets/35b5e9e1-9f3c-4b5e-8f8c-8ae2ed08d711)
 
-"토끼와 거북이중에 누가 더 빠르지?"라고 질문하고 결과를 확인합니다. 
+이때, plan draft는 아래와 같습니다.
 
-![image](https://github.com/user-attachments/assets/d88255fc-f194-4812-b049-80f700f70b7d)
-
-이때의 LangSmith 로그는 아래와 같습니다.
-
-![image](https://github.com/user-attachments/assets/a949b540-9e8c-4de9-a350-fdb5bc6cefc9)
-
+```java
+  "plan": [
+    "1. 생명의 기원에 대한 과학적 증거를 검토합니다. 화석 기록과 진화론적 증거를 살펴봅니다.",
+    "2. 현재 지구상에 존재하는 조류의 기원과 진화 과정을 추적합니다.",
+    "3. 달걀을 낳는 조류의 기원을 파악합니다. 달걀을 낳기 전 조상이 있었는지 확인합니다.",
+    "4. 달걀을 낳는 조류의 조상이 달걀을 낳지 않았다면, 그 조상이 먼저 존재했다는 것을 의미합니다. 따라서 닭이 먼저였습니다.",
+    "5. 반대로 달걀을 낳는 조류의 조상도 달걀을 낳았다면, 달걀이 먼저 존재했다는 의미입니다.",
+    "6. 과학적 증거를 종합하여 닭과 달걀 중 어느 것이 먼저 존재했는지 결론을 내립니다."
+  ]
+```
 
