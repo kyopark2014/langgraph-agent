@@ -17,7 +17,7 @@ LangGraph은 stateful하고 multi-actor 애플리케이션을 만들 수 있도�
 
 ## 상세 구현
 
-Plan and execute의 State 클래스와 workflow는 아래와 같습니다. Plan 노드에서 생성된 inft 
+Plan and execute의 State 클래스와 workflow는 아래와 같습니다. Plan 노드에서 생성된 draft 형태의 plan은 매 plan이 실행될때마다 업데이트 되고 이때 얻어진 결과는 info에 array로 저장됩니다. 
 
 ```python
 class State(TypedDict):
@@ -50,14 +50,22 @@ def buildPlanAndExecute():
     return workflow.compile()
 ```
 
-
-Plan을 생성하는 Prompt를 준비합니다. 
+Plan 노드는 아래와 같습니다.
 
 ```python
+class Plan(BaseModel):
+    """List of steps as a json format"""
+
+    steps: List[str] = Field(
+        description="different steps to follow, should be in sorted order"
+    )
+
 def get_planner():
-    system = """For the given objective, come up with a simple step by step plan. \
-This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
-The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."""
+    system = (
+        "For the given objective, come up with a simple step by step plan."
+        "This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps."
+        "The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps."
+    )
         
     planner_prompt = ChatPromptTemplate.from_messages(
         [
@@ -71,116 +79,71 @@ The result of the final step should be the final answer. Make sure that each ste
     planner = planner_prompt | chat
     return planner
 
-inputs = [HumanMessage(content=state["input"])]
-planner = get_planner()
-response = planner.invoke({"messages": inputs})
-print('response.content: ', response.content)
-```
-
-아래와 같이 plan을 생성하고 추출할 수 있습니다.
-
-```python
-class Plan(BaseModel):
-    """List of steps as a json format"""
-
-    steps: List[str] = Field(
-        description="different steps to follow, should be in sorted order"
-    )
-
-chat = get_chat()
-structured_llm = chat.with_structured_output(Plan, include_raw=True)
-info = structured_llm.invoke(response.content)
-
-parsed_info = info['parsed']
-print('steps: ', parsed_info.steps)
-```
-
-상기 내용을 적용한 plan() 함수는 아래와 같습니다.
-
-```python
-class PlanExecuteState(TypedDict):
-    input: str
-    plan: list[str]
-    past_steps: Annotated[List[Tuple], operator.add]
-    response: str
-
-def plan(state: PlanExecuteState):
+def plan_node(state: State, config):
     print("###### plan ######")
-    print('input: ', state["input"])
     
     inputs = [HumanMessage(content=state["input"])]
 
     planner = get_planner()
     response = planner.invoke({"messages": inputs})
-    print('response.content: ', response.content)
     
-    chat = get_chat()
-    structured_llm = chat.with_structured_output(Plan, include_raw=True)
-    info = structured_llm.invoke(response.content)
-    print('info: ', info)
+    for attempt in range(5):
+        chat = get_chat()
+        structured_llm = chat.with_structured_output(Plan, include_raw=True)
+        info = structured_llm.invoke(response.content)
+        
+        if not info['parsed'] == None:
+            parsed_info = info['parsed']
+            return {
+                "input": state["input"],
+                "plan": parsed_info.steps
+            }
     
-    if not info['parsed'] == None:
-        parsed_info = info['parsed']
-        # print('parsed_info: ', parsed_info)        
-        print('steps: ', parsed_info.steps)
-        
-        return {
-            "input": state["input"],
-            "plan": parsed_info.steps
-        }
-    else:
-        print('parsing_error: ', info['parsing_error'])
-        
-        return {"plan": []}
+    print('parsing_error: ', info['parsing_error'])
+    return {"plan": []}          
 ```
 
-Plan을 실행하기 위한 execution() 함수는 아래와 같습니다.
+
+Plan을 실행하기 위한 execution 노드는 아래와 같습니다.
 
 ```python
-def execute(state: PlanExecuteState):
+def execute_node(state: State, config):
     print("###### execute ######")
-    print('input: ', state["input"])
     plan = state["plan"]
-    print('plan: ', plan) 
     
     plan_str = "\n".join(f"{i+1}. {step}" for i, step in enumerate(plan))
-    #print("plan_str: ", plan_str)
     
     task = plan[0]
     task_formatted = f"""For the following plan:{plan_str}\n\nYou are tasked with executing step {1}, {task}."""
-    print("request: ", task_formatted)     
     request = HumanMessage(content=task_formatted)
     
     chat = get_chat()
-    prompt = ChatPromptTemplate.from_messages(
-    [
-        ("system",
-            "다음의 Human과 Assistant의 친근한 이전 대화입니다."
-            "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-            "Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.",
+    prompt = ChatPromptTemplate.from_messages([
+        (
+            "system", (
+                "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
+                "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+                "모르는 질문을 받으면 솔직히 모른다고 말합니다."
+                "결과는 <result> tag를 붙여주세요."
+            )
         ),
         MessagesPlaceholder(variable_name="messages"),
-    ]
-    )
+    ])
     chain = prompt | chat
     
-    agent_response = chain.invoke({"messages": [request]})
-    #print("agent_response: ", agent_response)
-    
-    print('task: ', task)
-    print('executor output: ', agent_response.content)
-    
-    # print('plan: ', state["plan"])
-    # print('past_steps: ', task)
+    response = chain.invoke({"messages": [request]})
+    result = response.content
+    output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
     
     return {
         "input": state["input"],
         "plan": state["plan"],
+        "info": [output],
         "past_steps": [task],
     }
 ```
 
-아래와 같이 replan() 함수를 정의합니다.
+아래와 같이 replan 노드를 정의합니다.
 
 ```python
 class Response(BaseModel):
@@ -196,47 +159,61 @@ class Act(BaseModel):
     
 def get_replanner():
     replanner_prompt = ChatPromptTemplate.from_template(
-    """For the given objective, come up with a simple step by step plan. \
-This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
-The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.
+        "For the given objective, come up with a simple step by step plan."
+        "This plan should involve individual tasks, that if executed correctly will yield the correct answer."
+        "Do not add any superfluous steps."
+        "The result of the final step should be the final answer."
+        "Make sure that each step has all the information needed - do not skip steps."
 
-Your objective was this:
-{input}
+        "Your objective was this:"
+        "{input}"
 
-Your original plan was this:
-{plan}
+        "Your original plan was this:"
+        "{plan}"
 
-You have currently done the follow steps:
-{past_steps}
+        "You have currently done the follow steps:"
+        "{past_steps}"
 
-Update your plan accordingly. If no more steps are needed and you can return to the user, then respond with that. \
-Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.""")
-       
+        "Update your plan accordingly."
+        "If no more steps are needed and you can return to the user, then respond with that."
+        "Otherwise, fill out the plan."
+        "Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan."
+    )
+    
     chat = get_chat()
     replanner = replanner_prompt | chat
-     
+    
     return replanner
 
-def replan(state: PlanExecuteState):
+def replan_node(state: State, config):
     print('#### replan ####')
+    
+    update_state_message("replanning...", config)
     
     replanner = get_replanner()
     output = replanner.invoke(state)
     print('replanner output: ', output.content)
     
-    chat = get_chat()
-    structured_llm = chat.with_structured_output(Act, include_raw=True)    
-    info = structured_llm.invoke(output.content)
-    # print('info: ', info)
-    
-    result = info['parsed']
-    print('act output: ', result)
-    
+    result = None
+    for attempt in range(5):
+        chat = get_chat()
+        structured_llm = chat.with_structured_output(Act, include_raw=True)    
+        info = structured_llm.invoke(output.content)
+        print(f'attempt: {attempt}, info: {info}')
+        
+        if not info['parsed'] == None:
+            result = info['parsed']
+            print('act output: ', result)
+            break
+                
     if result == None:
         return {"response": "답을 찾지 못하였습니다. 다시 해주세요."}
     else:
         if isinstance(result.action, Response):
-            return {"response": result.action.response}
+            return {
+                "response": result.action.response,
+                "info": [result.action.response]
+            }
         else:
             return {"plan": result.action.steps}
 ```
@@ -244,61 +221,72 @@ def replan(state: PlanExecuteState):
 반복 동작을 위해 should_end() 을 정의합니다.
 
 ```python
-def should_end(state: PlanExecuteState) -> Literal["continue", "end"]:
+def should_end(state: State) -> Literal["continue", "end"]:
     print('#### should_end ####')
     print('state: ', state)
     if "response" in state and state["response"]:
         return "end"
     else:
-        return "continue"
+        return "continue"    
 ```
 
-아래와 같이 workflow를 정의합니다.
+최종 답변을 생성합니다. 
 
 ```python
-def buildPlanAndExecute():
-    workflow = StateGraph(PlanExecuteState)
-    workflow.add_node("planner", plan)
-    workflow.add_node("executor", execute)
-    workflow.add_node("replaner", replan)
+def final_answer(state: State) -> str:
+    print('#### final_answer ####')
     
-    workflow.set_entry_point("planner")
-    workflow.add_edge("planner", "executor")
-    workflow.add_edge("executor", "replaner")
-    workflow.add_conditional_edges(
-        "replaner",
-        should_end,
-        {
-            "continue": "executor",
-            "end": END,
-        },
-    )
-
-    return workflow.compile()
-
-plan_and_execute_app = buildPlanAndExecute()
-
-def run_plan_and_exeucute(connectionId, requestId, app, query):
-    isTyping(connectionId, requestId)
+    context = state['info']
+    query = state['input']
     
-    inputs = {"input": query}
-    config = {"recursion_limit": 50}
-    
-    for output in app.stream(inputs, config):   
-        for key, value in output.items():
-            print(f"Finished: {key}")
-            #print("value: ", value)
+    if isKorean(query)==True:
+        system = (
+            "Assistant의 이름은 서연이고, 질문에 대해 친절하게 답변하는 도우미입니다."
+            "다음의 <context> tag안의 참고자료를 이용하여 질문에 대한 답변합니다."
+            "답변의 이유를 풀어서 명확하게 설명합니다."
+            "결과는 <result> tag를 붙여주세요."
             
-    print('value: ', value)
-        
-    readStreamMsg(connectionId, requestId, value["response"])
+            "<context>"
+            "{context}"
+            "</context>"
+        )
+    else: 
+        system = (
+            "Here is pieces of context, contained in <context> tags."
+            "Provide a concise answer to the question at the end."
+            "Explains clearly the reason for the answer."
+            "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+            "Put it in <result> tags."
+            
+            "<context>"
+            "{context}"
+            "</context>"
+        )
+
+    human = "{input}"
     
-    return value["response"]
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+                
+    chat = get_chat()
+    chain = prompt | chat
+    
+    try: 
+        response = chain.invoke(
+            {
+                "context": context,
+                "input": query,
+            }
+        )
+        result = response.content
+        output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
+        print('output: ', output)
+        
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)      
+        
+    return {"answer": output}  
 ```
-
-이렇게 정의한 graph는 아래와 같습니다.
-
-![image](https://github.com/kyopark2014/llm-agent/assets/52392004/3a311023-53d7-464a-b4a0-655c558bc058)
 
 
 
@@ -308,36 +296,34 @@ def run_plan_and_exeucute(connectionId, requestId, app, query):
 
 "내 고양이 두 마리가 있다. 그중 한 마리는 다리가 하나 없다. 다른 한 마리는 고양이가 정상적으로 가져야 할 다리 수를 가지고 있다. 전체적으로 보았을 때, 내 고양이들은 다리가 몇 개나 있을까? "
 
-<img width="857" alt="image" src="https://github.com/user-attachments/assets/6449bf02-a3f4-42d0-8103-b294fe60c729">
+![image](https://github.com/user-attachments/assets/9c7d9765-6148-4666-9318-677d7dd568e4)
 
 
 "I have two pet cats. One of them is missing a leg. The other one has a normal number of legs for a cat to have. In total, how many legs do my cats have?"
 
-<img width="863" alt="image" src="https://github.com/user-attachments/assets/d29321fc-ddc1-484e-8c9d-c4ce34598eb0">
+![image](https://github.com/user-attachments/assets/c8d9807e-15a4-424c-999f-4b92e8799a76)
 
-조금 생각이 필요한 문제를 주더라도 답변을 찾아가는 것을 로그로 확인할 수 있습니다. 그런데 아래와 같이 중간 결과없이 최종 결과를 답변하고 있어서 개선이 필요합니다. (개선 방법 고민중)
 
-<img width="867" alt="image" src="https://github.com/user-attachments/assets/e7d4ee6d-ceb9-4782-9088-178024692977">
+"저는 초등학교 4학년이에요. 의사가 되려면 어떻게 해야하나요?"로 질문합니다.
 
-![image](https://github.com/user-attachments/assets/05c2784a-814e-4062-b771-7760c42c2974)
+![image](https://github.com/user-attachments/assets/aaf828cc-6618-4978-8473-03892b6a9ef1)
+
+
 
 아래와 같이 "넌센스 큐즈니 너무 고민하지 말고 대답해봐. 아빼 개구리는 깨굴깨굴 울고 엄마 개구리는 가굴가굴 울고 있는데, 아기 개구리는 어떻게 울까?"라고 질문을 했을때에 결과는 아래와 같습니다.
 
-![image](https://github.com/user-attachments/assets/78bb277d-9adc-46e8-bb88-03b8dc34fb0f)
+![image](https://github.com/user-attachments/assets/d018433c-a4ff-413d-88f5-159c50ca5f23)
 
-이때, LamgSmith의 로그를 보면 아래와 같습니다.
+(45+23x2+345)/2 로 수학문제를 내고 결과를 확인합니다. 
 
-![image](https://github.com/user-attachments/assets/71b22451-7dfa-436b-9c9e-da122feaaf40)
+![image](https://github.com/user-attachments/assets/0bdae5d2-0a9a-4221-b253-b29bd0ebc260)
 
-```text
-1. 아빠 개구리의 울음소리 패턴을 파악합니다: '깨굴깨굴'
-2. 엄마 개구리의 울음소리 패턴을 파악합니다: '가굴가굴'
-3. 아빠와 엄마의 울음소리 패턴을 비교하여 공통점과 차이점을 찾습니다
-4. 공통점: 두 번 반복되는 발음 패턴
-5. 차이점: 아빠는 '깨'를, 엄마는 '가'를 발음함
-6. 아기 개구리의 울음소리는 아빠와 엄마의 울음소리 패턴을 따르되, 아기 개구리 나름의 발음으로 바꾼다고 가정합니다
-7. 아기 개구리 나름의 발음은 '애'라고 가정합니다
-8. 따라서 아기 개구리의 울음소리는 '애굴애굴'이 됩니다
-```
 
-나름 의미있는 유추이지만 아기 개구리는 울지 못합니다. 
+"닭이 먼저인지 달걀이 먼저인지 알려줘."로 질문합니다.
+
+![image](https://github.com/user-attachments/assets/7b117a51-47ad-4eaf-b2ae-67fd1fe486f8)
+
+이때의 동작을 LangSmith로 확인하면 아래와 같습니다.
+
+![image](https://github.com/user-attachments/assets/35b5e9e1-9f3c-4b5e-8f8c-8ae2ed08d711)
+
