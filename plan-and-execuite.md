@@ -350,3 +350,243 @@ def final_answer(state: State) -> str:
   ]
 ```
 
+### How many r's in Strawberry?
+
+Plan and execute 패턴으로 "How many r's are there in "strawberry"?" 문제를 풀어 보았습니다. 이 문제는 OpenAI community에 나왔던 유명한 문제입니다. Tokenizer의 특징으로 two로 답을 하지만, [Incorrect count of ‘r’ characters in the word “strawberry“](https://community.openai.com/t/incorrect-count-of-r-characters-in-the-word-strawberry/829618)에서는 "Veryfy with code"로 문제를 해결하기도 했습니다.
+
+![image](https://github.com/user-attachments/assets/d015742c-e44d-4033-ad11-3d7f423a1d2d)
+
+로그를 베이스로 내용을 보면, plan and execute를 통해 결국 code를 활용하여 'r'의 숫자를 count하고 있습니다. 
+
+#### 실행 1 (Plan Draft의 생성)
+
+```python
+Step 1: Write down the word "strawberry".
+Step 2: Scan the word from left to right, counting the number of times the letter 'r' appears.
+Step 3: Keep a running count of the number of 'r's found.
+Step 4: After scanning the entire word, the final count is the number of 'r's in the word.
+
+executor output:
+strawberry
+```
+
+#### 실행 2 (Replan후 실행 결과)
+
+```python
+'1. Write a function that takes a word as input', 
+'2. Initialize a counter variable to 0', 
+'3. Loop through each character in the word',
+"4. If the character is 'r', increment the counter", 
+'5. After the loop ends, return the final counter value', 
+"6. Call the function with the user's word and print the result"
+
+executor output:
+def count_r(word):
+```
+
+#### 실행 3
+
+```python
+'2. Initialize a counter variable to 0',
+'3. Loop through each character in the word',
+"4. If the character is 'r', increment the counter",
+'5. After the loop ends, return the final counter value',
+'6. Call the function with the word "strawberry" and print the result'
+
+executor output:  
+counter = 0
+```
+
+#### 실행 4
+
+```python
+'1. Define a function that takes a word as input',
+'2. Initialize a counter to 0',
+"3. Loop through each character in the word 'strawberry'",
+"4. If the character is 'r', increment the counter",
+'5. After the loop ends, return the final counter value',
+"6. Call the function with the word 'strawberry' and print the result"
+
+executor output:  
+def count_r(word):
+```
+
+#### 실행 5
+
+```python
+'3. Initialize a counter variable to 0',
+"4. Loop through each character in the word 'strawberry'",
+"5. If the character is 'r', increment the counter",
+'6. After the loop ends, return the final counter value',
+'7. Define a function that takes a word as input and follows the above steps',
+"8. Call the function with the word 'strawberry' and print the result"
+
+executor output:  
+counter = 0
+```
+
+#### 실행 6
+
+```python
+'1. Define a function that takes a word as input',
+'2. Initialize a counter to 0',
+'3. Loop through each character in the input word',
+"4. If the character is 'r', increment the counter",
+'5. After the loop ends, return the final counter value',
+"6. Call the function with the word 'strawberry'",
+'7. Print the result'
+
+executor output:  
+def count_r(word):
+```
+
+#### 실행 7
+
+```python
+'3. Loop through each character in the input word',
+"4. If the character is 'r', increment the counter",
+'5. After the loop ends, return the final counter value',
+"6. Call the function with the word 'strawberry'",
+'7. Print the result']
+
+executor output: 
+word = "strawberry"
+for char in word:
+# 각 문자에 대한 작업을 여기에 추가
+print(char)
+```
+
+#### 실행 8
+
+```python
+'4. Create a function that takes a string as input',
+'5. Initialize a counter to 0',
+'6. Loop through each character in the string',
+"7. If the character is 'r', increment the counter",
+'8. After the loop ends, return the final counter value',
+"9. Call the function with the word 'strawberry'",
+'10. Print the result'
+
+executor output: 
+def count_r(string):
+```
+
+#### 실행 9 
+
+```python
+'5. Initialize a counter to 0',
+'6. Loop through each character in the string',
+"7. If the character is 'r', increment the counter",
+'8. After the loop ends, return the final counter value',
+"9. Call the function with the word 'strawberry'",
+'10. Print the result']
+
+executor output: 
+counter = 0
+```
+
+#### 실행 10
+
+```python
+'6. Loop through each character in the string',
+"7. If the character is 'r', increment the counter",
+'8. After the loop ends, return the final counter value',
+"9. Call the function with the word 'strawberry'",
+'10. Print the result'
+
+executor output: 
+for char in 'strawberry':
+print(char)
+Output:
+s
+t
+r
+a
+w
+b
+e
+r
+r
+y
+```
+
+#### 실행 11 
+
+```python
+"1. Iterate through each character in the word 'strawberry'",
+'2. Initialize a counter to 0',
+"3. If the current character is 'r', increment the counter",
+'4. After the loop ends, return the final counter value',
+"5. Call the function with the word 'strawberry'",
+'6. Print the result'
+
+executor output: 
+1. Iterate through each character in the word 'strawberry'
+executor output:  
+for char in 'strawberry':
+# 각 문자에 대한 작업을 여기에 작성합니다.
+print(char)
+# 출력:
+# s
+# t
+# r
+# a
+# w
+# b
+# e
+# r
+# r
+# y
+```
+
+#### 실행 12
+
+```python
+'2. Initialize a counter to 0',
+"3. If the current character is 'r', increment the counter",
+'4. After the loop ends, return the final counter value',
+"5. Call the function with the word 'strawberry'",
+'6. Print the result'
+
+executor output: 
+counter = 0
+```
+
+#### 실행 13 
+
+```python
+'1. Initialize a counter to 0',
+"2. Loop through each character in the word 'strawberry'",
+"3. If the current character is 'r', increment the counter",
+'4. After the loop ends, return the final counter value',
+"5. Call the function with the word 'strawberry'",
+'6. Print the result']
+
+executor output: 
+counter = 0
+```
+
+#### 실행 14 
+
+```python
+'1. Initialize a counter to 0',
+"2. Loop through each character in the string 'strawberry'",
+"3. If the current character is 'r', increment the counter",
+'4. After the loop ends, return the final counter value'
+
+executor output: 
+counter = 0
+```
+
+#### 실행 15
+
+```python
+"1. If the current character is 'r', increment the counter",
+'2. After the loop ends, return the final counter value'
+
+executor output: 
+1. 문자열의 각 문자를 하나씩 확인합니다.
+2. 현재 문자가 'r'이면 카운터를 1 증가시킵니다.
+3. 문자열의 모든 문자를 확인할 때까지 1, 2번 과정을 반복합니다.
+```
+
