@@ -356,7 +356,7 @@ Plan and execute 패턴으로 "How many r's are there in "strawberry"?" 문제�
 
 ![image](https://github.com/user-attachments/assets/d015742c-e44d-4033-ad11-3d7f423a1d2d)
 
-로그를 베이스로 내용을 보면, plan and execute를 통해 결국 code를 활용하여 'r'의 숫자를 count하고 있습니다. 
+로그로 확인해보면 전체 15번의 plan을 생성한 후에 최종 값인 '3'을 얻을 수 있었습니다. 
 
 #### 실행 1 (Plan Draft의 생성)
 
