@@ -591,3 +591,8 @@ executor output:
 3. 문자열의 모든 문자를 확인할 때까지 1, 2번 과정을 반복합니다.
 ```
 
+
+아래는 "AWS를 이용하여 1000만명이 접속할 수 있는 생성형 AI chatbot을 만들고 싶어요. 어떻게 architecture를 잡는것이 좋을까요?"에 대한 답변입니다. 모두 22번의 replan을 거쳐서 아래와 같은 답이 생성되었습니다. 
+
+![noname](https://github.com/user-attachments/assets/d039c0a0-78d5-4124-af08-0b539be58a68)
+
