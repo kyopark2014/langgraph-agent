@@ -35,7 +35,7 @@ const enableHybridSearch = 'true';
 const enableParallelSummary = 'true';
 const supportedFormat = JSON.stringify(["pdf", "txt", "csv", "pptx", "ppt", "docx", "doc", "xlsx", "py", "js", "md", "jpeg", "jpg", "png"]);  
 const separated_chat_history = 'true';
-const enalbeParentDocumentRetrival = 'true';
+const enableParentDocumentRetrival = 'true';
 
 const prompt_flow_name = 'aws-bot'
 const rag_prompt_flow_name = 'rag-prompt-flow'
@@ -610,7 +610,7 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
         debugMessageMode: debugMessageMode,
         projectName: projectName,
         separated_chat_history: separated_chat_history,
-        enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
+        enableParentDocumentRetrival: enableParentDocumentRetrival,
         enableHybridSearch: enableHybridSearch,
         prompt_flow_name: prompt_flow_name,
         rag_prompt_flow_name: rag_prompt_flow_name,
@@ -744,7 +744,7 @@ export class CdkLanggraphAgentStack extends cdk.Stack {
           LLM_for_multimodal:JSON.stringify(LLM_for_multimodal),
           LLM_embedding: JSON.stringify(titan_embedding_v2),
           enableParallelSummary: enableParallelSummary,
-          enalbeParentDocumentRetrival: enalbeParentDocumentRetrival,
+          enableParentDocumentRetrival: enableParentDocumentRetrival,
           enableHybridSearch: enableHybridSearch,
           vectorIndexName: vectorIndexName
         }

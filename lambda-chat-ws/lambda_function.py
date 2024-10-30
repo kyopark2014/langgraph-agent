@@ -65,7 +65,7 @@ selected_chat = 0
 selected_multimodal = 0
 selected_embedding = 0
 separated_chat_history = os.environ.get('separated_chat_history')
-enalbeParentDocumentRetrival = os.environ.get('enalbeParentDocumentRetrival')
+enableParentDocumentRetrival = os.environ.get('enableParentDocumentRetrival')
 enableHybridSearch = os.environ.get('enableHybridSearch')
 useParrelWebSearch = True
 useEnhancedSearch = True
@@ -263,9 +263,9 @@ os_client = OpenSearch(
     ssl_show_warn = False,
 )
 
-def reflash_opensearch_index():
+def reflesh_opensearch_index():
     #########################
-    # opensearch index (reflash)
+    # opensearch index (reflesh)
     #########################
     print(f"deleting opensearch index... {index_name}") 
     
@@ -1002,7 +1002,7 @@ def search_by_opensearch(keyword: str) -> str:
     top_k = 2
     
     relevant_docs = [] 
-    if enalbeParentDocumentRetrival == 'true': # parent/child chunking
+    if enableParentDocumentRetrival == 'true': # parent/child chunking
         relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, keyword, top_k)
                         
         for i, document in enumerate(relevant_documents):
@@ -1458,7 +1458,7 @@ def retrieve(question):
     
     top_k = 4
     docs = []    
-    if enalbeParentDocumentRetrival == 'true':
+    if enableParentDocumentRetrival == 'true':
         relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, question, top_k)
 
         for i, document in enumerate(relevant_documents):
@@ -2884,21 +2884,26 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         
     def get_replanner():
         replanner_prompt = ChatPromptTemplate.from_template(
-        """For the given objective, come up with a simple step by step plan. \
-    This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps. \
-    The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.
+            "For the given objective, come up with a simple step by step plan."
+            "This plan should involve individual tasks, that if executed correctly will yield the correct answer."
+            "Do not add any superfluous steps."
+            "The result of the final step should be the final answer."
+            "Make sure that each step has all the information needed - do not skip steps."
 
-    Your objective was this:
-    {input}
+            "Your objective was this:"
+            "{input}"
 
-    Your original plan was this:
-    {plan}
+            "Your original plan was this:"
+            "{plan}"
 
-    You have currently done the follow steps:
-    {past_steps}
+            "You have currently done the follow steps:"
+            "{past_steps}"
 
-    Update your plan accordingly. If no more steps are needed and you can return to the user, then respond with that. \
-    Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.""")
+            "Update your plan accordingly."
+            "If no more steps are needed and you can return to the user, then respond with that."
+            "Otherwise, fill out the plan."
+            "Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan."
+        )
         
         chat = get_chat()
         replanner = replanner_prompt | chat
@@ -6625,11 +6630,11 @@ def getResponse(connectionId, jsonBody):
                 msg  = "The chat memory was intialized in this session."
                 sendResultMessage(connectionId, requestId, msg)
             
-            elif type == 'text' and body[:21] == 'reflash current index':
-                # reflash index
+            elif type == 'text' and body[:21] == 'reflesh current index':
+                # reflesh index
                 isTyping(connectionId, requestId, "")
-                reflash_opensearch_index()
-                msg = "The index was reflashed in OpenSearch."
+                reflesh_opensearch_index()
+                msg = "The index was refleshed in OpenSearch."
                 sendResultMessage(connectionId, requestId, msg)
                 
             else:            
