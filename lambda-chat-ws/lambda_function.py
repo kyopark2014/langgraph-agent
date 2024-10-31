@@ -1506,61 +1506,8 @@ def retrieve(question):
             )    
     
     if enableHybridSearch=='true':
-        # lexical search (keyword)
-        min_match = 0
-        query = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {
-                            "match": {
-                                "text": {
-                                    "query": question,
-                                    "minimum_should_match": f'{min_match}%',
-                                    "operator":  "or",
-                                }
-                            }
-                        },
-                    ],
-                    "filter": [
-                    ]
-                }
-            }
-        }
-
-        response = os_client.search(
-            body=query,
-            index=index_name
-        )
-        # print('lexical query result: ', json.dumps(response))
-        
-        for i, document in enumerate(response['hits']['hits']):
-            if i>=top_k: 
-                break
-                    
-            excerpt = document['_source']['text']
-            #print(f'## Document(opensearch-keyword) {i+1}: {excerpt}')
-
-            name = document['_source']['metadata']['name']
-            # print('name: ', name)
-
-            url = ""
-            if "url" in document['_source']['metadata']:
-                url = document['_source']['metadata']['url']
-            # print('url: ', url)
-            
-            print(f"lexical search --> doc[{i}]: {excerpt}, name:{name}, url:{url}\n")
-            
-            docs.append(
-                Document(
-                    page_content=excerpt,
-                    metadata={
-                        'name': name,
-                        'url': url,
-                        'from': 'lexical'
-                    },
-                )
-            )  
+        docs = docs + lexical_search(question, top_k)
+    
     return docs
 
 def web_search(question, documents):
