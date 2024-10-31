@@ -2280,34 +2280,42 @@ def run_corrective_rag(connectionId, requestId, query):
         
         # Score each doc
         filtered_docs = []
+        print("start grading...")
+        print("grade_state: ", grade_state)
+        
         web_search = "No"
         
-        if multi_region == 'enable':  # parallel processing
-            print("start grading...")
-            filtered_docs = grade_documents_using_parallel_processing(question, documents)
-            
-            if len(documents) != len(filtered_docs):
-                web_search = "Yes"
-
-        else:    
-            chat = get_chat()
-            retrieval_grader = get_retrieval_grader(chat)
-            for doc in documents:
-                score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
-                grade = score.binary_score
-                # Document relevant
-                if grade.lower() == "yes":
-                    print("---GRADE: DOCUMENT RELEVANT---")
-                    filtered_docs.append(doc)
-                # Document not relevant
-                else:
-                    print("---GRADE: DOCUMENT NOT RELEVANT---")
-                    # We do not include the document in filtered_docs
-                    # We set a flag to indicate that we want to run web search
+        if grade_state == "LLM":
+            if multi_region == 'enable':  # parallel processing            
+                filtered_docs = grade_documents_using_parallel_processing(question, documents)
+                
+                if len(documents) != len(filtered_docs):
                     web_search = "Yes"
-                    continue
-        print('len(docments): ', len(filtered_docs))
-        print('web_search: ', web_search)
+
+            else:    
+                chat = get_chat()
+                retrieval_grader = get_retrieval_grader(chat)
+                for doc in documents:
+                    score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+                    grade = score.binary_score
+                    # Document relevant
+                    if grade.lower() == "yes":
+                        print("---GRADE: DOCUMENT RELEVANT---")
+                        filtered_docs.append(doc)
+                    # Document not relevant
+                    else:
+                        print("---GRADE: DOCUMENT NOT RELEVANT---")
+                        # We do not include the document in filtered_docs
+                        # We set a flag to indicate that we want to run web search
+                        web_search = "Yes"
+                        continue
+            print('len(docments): ', len(filtered_docs))
+            print('web_search: ', web_search)
+            
+        elif grade_state == "PRIORITY_SEARCH":
+            filtered_docs = priority_search(question, documents, minDocSimilarity)
+        else:  # OTHERS
+            filtered_docs = documents
         
         global reference_docs
         reference_docs += filtered_docs
@@ -2471,31 +2479,38 @@ def run_self_rag(connectionId, requestId, query):
         documents = state["documents"]
         count = state["count"] if state.get("count") is not None else -1
         
+        print("start grading...")
+        print("grade_state: ", grade_state)
         update_state_message("grading...", config)
         
-        if multi_region == 'enable':  # parallel processing
-            print("start grading...")
-            filtered_docs = grade_documents_using_parallel_processing(question, documents)
+        if grade_state == "LLM":
+            if multi_region == 'enable':  # parallel processing            
+                filtered_docs = grade_documents_using_parallel_processing(question, documents)
 
-        else:    
-            # Score each doc
-            filtered_docs = []
-            chat = get_chat()
-            retrieval_grader = get_retrieval_grader(chat)
-            for doc in documents:
-                score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
-                grade = score.binary_score
-                # Document relevant
-                if grade.lower() == "yes":
-                    print("---GRADE: DOCUMENT RELEVANT---")
-                    filtered_docs.append(doc)
-                # Document not relevant
-                else:
-                    print("---GRADE: DOCUMENT NOT RELEVANT---")
-                    # We do not include the document in filtered_docs
-                    # We set a flag to indicate that we want to run web search
-                    continue
-        print('len(docments): ', len(filtered_docs))    
+            else:    
+                # Score each doc
+                filtered_docs = []
+                chat = get_chat()
+                retrieval_grader = get_retrieval_grader(chat)
+                for doc in documents:
+                    score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+                    grade = score.binary_score
+                    # Document relevant
+                    if grade.lower() == "yes":
+                        print("---GRADE: DOCUMENT RELEVANT---")
+                        filtered_docs.append(doc)
+                    # Document not relevant
+                    else:
+                        print("---GRADE: DOCUMENT NOT RELEVANT---")
+                        # We do not include the document in filtered_docs
+                        # We set a flag to indicate that we want to run web search
+                        continue
+            print('len(docments): ', len(filtered_docs))    
+
+        elif grade_state == "PRIORITY_SEARCH":
+            filtered_docs = priority_search(question, documents, minDocSimilarity)
+        else:  # OTHERS
+            filtered_docs = documents
         
         global reference_docs
         reference_docs += filtered_docs
