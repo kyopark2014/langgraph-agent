@@ -21,6 +21,7 @@ RUN /var/lang/bin/python3 -m pip install langchainhub
 RUN /var/lang/bin/python3 -m pip install pytz
 RUN /var/lang/bin/python3 -m pip install tavily-python
 RUN /var/lang/bin/python3 -m pip install langgraph
+RUN /var/lang/bin/python3 -m pip install faiss-cpu
 
 RUN /var/lang/bin/python3 -m pip install botocore --upgrade
 RUN /var/lang/bin/python3 -m pip install boto3 --upgrade

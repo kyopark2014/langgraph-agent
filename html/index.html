@@ -21,7 +21,12 @@
                         <option value="disable" selected>Disable</option>
                         <option value="enable">Enable</option>
                     </select>
-                    <text>Conversation Type: </text>
+                    <br><text>Grading: </text>
+                    <select name="gradeMode" id="gradeMode">
+                        <option value="LLM" selected>LLM</option>
+                        <option value="PRIORITY_SEARCH">PRIORITY SEARCH</option>
+                    </select>
+                    <br><text>Conversation Type: </text>
                     <select name="conversationType" id="convtype">
                         <option type="text" value="normal" selected>1-1. General Conversation</option>
                         <option value="rag-opensearch">1-2. RAG OpenSearch</option>

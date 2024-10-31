@@ -31,6 +31,16 @@ else {
 }
 console.log(multiRegionInput.value);
 
+const gradeInput = document.querySelector('#gradeMode');
+let grade_mode = localStorage.getItem('gradeMode');
+if(grade_mode != '') {
+    gradeInput.value = grade_mode;
+}
+else {
+    gradeInput.value = "LLM"  
+}
+console.log('gradeInput: ', gradeInput.value);
+
 // provisioning
 getProvisioningInfo(userId);
 
@@ -48,6 +58,9 @@ function onSubmit(e) {
 
     localStorage.setItem('multiRegion',multiRegionInput.value);
     console.log('Save config> multiRegion:', multiRegionInput.value)
+
+    localStorage.setItem('gradeMode',gradeInput.value);
+    console.log('Save config> gradeInput:', gradeInput.value)
 
     window.location.href = "chat.html";
 }

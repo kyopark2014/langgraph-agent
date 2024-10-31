@@ -23,8 +23,9 @@ from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
 from langchain.memory import ConversationBufferWindowMemory
 from langchain_aws import ChatBedrock
 from langchain_community.vectorstores.opensearch_vector_search import OpenSearchVectorSearch
-from langchain_aws import BedrockEmbeddings
 from multiprocessing import Process, Pipe
+from langchain_aws import BedrockEmbeddings
+from langchain_community.vectorstores.faiss import FAISS
 
 from langchain.agents import tool
 from bs4 import BeautifulSoup
@@ -71,6 +72,8 @@ useParrelWebSearch = True
 useEnhancedSearch = True
 vectorIndexName = os.environ.get('vectorIndexName')
 index_name = vectorIndexName
+grade_state = "LLM" # LLM, PRIORITY_SEARCH, OTHERS
+minDocSimilarity = 300
 
 prompt_flow_name = os.environ.get('prompt_flow_name')
 rag_prompt_flow_name = os.environ.get('rag_prompt_flow_name')
@@ -138,6 +141,21 @@ multi_region_models = [   # claude sonnet 3.0
     }
 ]
 multi_region = 'enable'
+
+titan_embedding_v1 = [  # dimension = 1536
+  {
+    "bedrock_region": "us-west-2", # Oregon
+    "model_type": "titan",
+    "model_id": "amazon.titan-embed-text-v1"
+  },
+  {
+    "bedrock_region": "us-east-1", # N.Virginia
+    "model_type": "titan",
+    "model_id": "amazon.titan-embed-text-v1"
+  }
+]
+priority_search_embedding = titan_embedding_v1
+selected_ps_embedding = 0
 
 reference_docs = []
 # api key to get weather information in agent
@@ -707,14 +725,8 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
     # print('the number of docs (vector search): ', len(relevant_docs))
             
     if enableHybridSearch == 'true':
-        relevant_docs_from_lexical = lexical_search(text, top_k)    
+        relevant_docs += lexical_search(text, top_k)    
         
-        # print('the number of docs (lexical search): ', len(relevant_docs_from_lexical))
-        for i, document in enumerate(relevant_docs_from_lexical):
-            print(f'## Document(opensearch-lexical) {i+1}: {document}')
-
-        relevant_docs += relevant_docs_from_lexical
-
     isTyping(connectionId, requestId, "grading...")
     
     filtered_docs = grade_documents(text, relevant_docs) # grading
@@ -1055,7 +1067,7 @@ def search_by_opensearch(keyword: str) -> str:
             )
     
     if enableHybridSearch == 'true':
-        relevant_docs = relevant_docs + lexical_search(keyword, top_k)
+        relevant_docs += lexical_search(keyword, top_k)
     
     print('relevant_docs length: ', len(relevant_docs))
                 
@@ -1348,38 +1360,127 @@ def check_duplication(docs):
         print('no duplication')
     
     return updated_docs
+
+def get_ps_embedding():
+    global selected_ps_embedding
+    profile = priority_search_embedding[selected_ps_embedding]
+    bedrock_region =  profile['bedrock_region']
+    model_id = profile['model_id']
+    print(f'selected_ps_embedding: {selected_ps_embedding}, bedrock_region: {bedrock_region}, model_id: {model_id}')
+    
+    # bedrock   
+    boto3_bedrock = boto3.client(
+        service_name='bedrock-runtime',
+        region_name=bedrock_region, 
+        config=Config(
+            retries = {
+                'max_attempts': 30
+            }
+        )
+    )
+    
+    bedrock_ps_embedding = BedrockEmbeddings(
+        client=boto3_bedrock,
+        region_name = bedrock_region,
+        model_id = model_id
+    )  
+
+    selected_ps_embedding = selected_ps_embedding + 1
+    if selected_ps_embedding == len(priority_search_embedding):
+        selected_ps_embedding = 0
+
+    return bedrock_ps_embedding
+
+def priority_search(query, relevant_docs, minSimilarity):
+    excerpts = []
+    for i, doc in enumerate(relevant_docs):
+        #print('doc: ', doc)
+
+        content = doc.page_content
+        # print('content: ', content)
+
+        excerpts.append(
+            Document(
+                page_content=content,
+                metadata={
+                    'name': doc.metadata['name'],
+                    'url': doc.metadata['url'],
+                    'from': doc.metadata['from'],
+                    'order':i,
+                    'score':0
+                }
+            )
+        )
+    #print('excerpts: ', excerpts)
+
+    embeddings = get_ps_embedding()
+    vectorstore_confidence = FAISS.from_documents(
+        excerpts,  # documents
+        embeddings  # embeddings
+    )            
+    rel_documents = vectorstore_confidence.similarity_search_with_score(
+        query=query,
+        k=len(relevant_docs)
+    )
+
+    docs = []
+    for i, document in enumerate(rel_documents):
+        print(f'## Document(priority_search) query: {query}, {i+1}: {document}')
+
+        order = document[0].metadata['order']
+        name = document[0].metadata['name']
+        
+        score = document[1]
+        print(f"query: {query}, {order}: {name}, {score}")
+
+        relevant_docs[order].metadata['score'] = int(score)
+
+        if score < minSimilarity:
+            docs.append(relevant_docs[order])    
+    # print('selected docs: ', docs)
+
+    return docs
         
 def grade_documents(question, documents):
     print("###### grade_documents ######")
     
     filtered_docs = []
-    if multi_region == 'enable':  # parallel processing
-        print("start grading...")
-        filtered_docs = grade_documents_using_parallel_processing(question, documents)
+    print("start grading...")
+    print("grade_state: ", grade_state)
+        
+    if grade_state == "LLM":
+        if multi_region == 'enable':  # parallel processing
+            filtered_docs = grade_documents_using_parallel_processing(question, documents)
 
-    else:
-        # Score each doc    
-        chat = get_chat()
-        retrieval_grader = get_retrieval_grader(chat)
-        for i, doc in enumerate(documents):
-            # print('doc: ', doc)
-            print_doc(i, doc)
-            
-            score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
-            print("score: ", score)
-            
-            grade = score.binary_score
-            print("grade: ", grade)
-            # Document relevant
-            if grade.lower() == "yes":
-                print("---GRADE: DOCUMENT RELEVANT---")
-                filtered_docs.append(doc)
-            # Document not relevant
-            else:
-                print("---GRADE: DOCUMENT NOT RELEVANT---")
-                # We do not include the document in filtered_docs
-                # We set a flag to indicate that we want to run web search
-                continue
+        else:
+            # Score each doc    
+            chat = get_chat()
+            retrieval_grader = get_retrieval_grader(chat)
+            for i, doc in enumerate(documents):
+                # print('doc: ', doc)
+                print_doc(i, doc)
+                
+                score = retrieval_grader.invoke({"question": question, "document": doc.page_content})
+                print("score: ", score)
+                
+                grade = score.binary_score
+                print("grade: ", grade)
+                # Document relevant
+                if grade.lower() == "yes":
+                    print("---GRADE: DOCUMENT RELEVANT---")
+                    filtered_docs.append(doc)
+                # Document not relevant
+                else:
+                    print("---GRADE: DOCUMENT NOT RELEVANT---")
+                    # We do not include the document in filtered_docs
+                    # We set a flag to indicate that we want to run web search
+                    continue
+
+    elif grade_state == "PRIORITY_SEARCH":
+        filtered_docs = priority_search(question, documents, minDocSimilarity)
+
+    else:  # OTHERS
+        filtered_docs = documents
     
     global reference_docs 
     reference_docs += filtered_docs    
@@ -1506,7 +1607,7 @@ def retrieve(question):
             )    
     
     if enableHybridSearch=='true':
-        docs = docs + lexical_search(question, top_k)
+        docs += lexical_search(question, top_k)
     
     return docs
 
@@ -6507,6 +6608,13 @@ def getResponse(connectionId, jsonBody):
     if "multi_region" in jsonBody:
         multi_region = jsonBody['multi_region']
     print('multi_region: ', multi_region)
+    
+    global grade_state
+    if "grade" in jsonBody:
+        grade_state = jsonBody['grade']
+    else:
+        grade_state = 'LLM'
+    print('grade_state: ', grade_state)
         
     print('initiate....')
     global reference_docs
