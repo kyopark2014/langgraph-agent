@@ -6637,7 +6637,7 @@ def getResponse(connectionId, jsonBody):
     global map_chain, memory_chain
     
     # Multi-LLM
-    global length_of_models
+    global selected_chat, length_of_models
     if multi_region == 'enable':
         length_of_models = len(multi_region_models)
         if selected_chat == length_of_models:
