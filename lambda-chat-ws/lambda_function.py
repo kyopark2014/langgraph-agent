@@ -63,6 +63,7 @@ LLM_for_chat = json.loads(os.environ.get('LLM_for_chat'))
 LLM_for_multimodal= json.loads(os.environ.get('LLM_for_multimodal'))
 LLM_embedding = json.loads(os.environ.get('LLM_embedding'))
 selected_chat = 0
+length_of_models = 1
 selected_multimodal = 0
 selected_embedding = 0
 separated_chat_history = os.environ.get('separated_chat_history')
@@ -313,10 +314,8 @@ def get_chat():
     global selected_chat
     
     if multi_region == 'enable':
-        length_of_models = len(multi_region_models)
         profile = multi_region_models[selected_chat]
     else:
-        length_of_models = len(LLM_for_chat)
         profile = LLM_for_chat[selected_chat]
         
     bedrock_region =  profile['bedrock_region']
@@ -1210,7 +1209,7 @@ def grade_documents_using_parallel_processing(question, documents):
         processes.append(process)
 
         selected_chat = selected_chat + 1
-        if selected_chat == len(multi_region_models):
+        if selected_chat == length_of_models:
             selected_chat = 0
     for process in processes:
         process.start()
@@ -5221,7 +5220,7 @@ def run_rag_with_reflection(connectionId, requestId, query):
             processes.append(process)
 
             selected_chat = selected_chat + 1
-            if selected_chat == len(multi_region_models):
+            if selected_chat == length_of_models:
                 selected_chat = 0
         for process in processes:
             process.start()
@@ -5733,7 +5732,7 @@ def run_rag_with_transformation(connectionId, requestId, query):
             processes.append(process)
 
             selected_chat = selected_chat + 1
-            if selected_chat == len(multi_region_models):
+            if selected_chat == length_of_models:
                 selected_chat = 0
         for process in processes:
             process.start()
@@ -6638,14 +6637,23 @@ def getResponse(connectionId, jsonBody):
     global map_chain, memory_chain
     
     # Multi-LLM
+    global length_of_models
     if multi_region == 'enable':
+        length_of_models = len(multi_region_models)
+        if selected_chat == length_of_models:
+            selected_chat = 0
         profile = multi_region_models[selected_chat]
+        
     else:
-        profile = LLM_for_chat[selected_chat]
+        length_of_models = len(LLM_for_chat)
+        if selected_chat == length_of_models:
+            selected_chat = 0
+        profile = LLM_for_chat[selected_chat]    
+        
+    print('length_of_models: ', length_of_models)
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
-    # print(f'selected_chat: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
-    # print('profile: ', profile)
+    print(f'selected_chat: {selected_chat}, bedrock_region: {bedrock_region}, modelId: {modelId}')
     
     chat = get_chat()    
     
