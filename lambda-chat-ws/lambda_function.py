@@ -6640,13 +6640,13 @@ def getResponse(connectionId, jsonBody):
     global selected_chat, length_of_models
     if multi_region == 'enable':
         length_of_models = len(multi_region_models)
-        if selected_chat == length_of_models:
+        if selected_chat >= length_of_models:
             selected_chat = 0
         profile = multi_region_models[selected_chat]
         
     else:
         length_of_models = len(LLM_for_chat)
-        if selected_chat == length_of_models:
+        if selected_chat >= length_of_models:
             selected_chat = 0
         profile = LLM_for_chat[selected_chat]    
         
