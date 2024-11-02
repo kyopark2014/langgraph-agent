@@ -9,6 +9,50 @@ LLM으로 Anthropic의 Claude3을 사용하기 위하여, Amazon Bedrock의 us-w
 ![image](https://github.com/user-attachments/assets/1d36a962-27db-4fcf-857d-8b1e8b67af75)
 
 
+## 설치하기
+
+Cloud9이 Deprecated될 예정이므로 EC2를 사용하여 설치하는것을 추천 드립니다. 기존 계정의 경우에 Cloud9을 계속 사용할 수 있습니다.
+
+
+### EC2를 사용하여 설치 환경 구성하기
+
+여기서는 편의상 us-west-2 (Oregon) 리전을 사용합니다.
+
+
+#### EC2 생성
+
+[EC2 - LaunchInstances](https://us-west-2.console.aws.amazon.com/ec2/home?region=us-west-2#LaunchInstances:)에 접속하여 Name으로 "chatbot"이라고 입력합니다.
+
+![noname](https://github.com/user-attachments/assets/acdac538-ea1e-4b32-a7f8-efc2b0e34664)
+
+OS로 기본값인 "Amazon Linux"를 유지하고, Amazon Machine Image (AMI)도 기본값을 그대로 사용합니다.
+
+Instance Type은 "m5.large"를 선택하고, Key pair는 "Proceeding without a key pair"를 선택합니다. 
+
+[Configure storage]는 편의상 80G로 변경하고 [Launch instance]를 선택하여 EC2를 설치합니다. 
+
+![noname](https://github.com/user-attachments/assets/84edf46d-0aa8-478c-8727-1301cf32f4db)
+
+이후 아래와 같이 instance를 선택하여 EC2 instance 화면으로 이동하거나, console에서 [EC-Instances](https://us-west-2.console.aws.amazon.com/ec2/home?region=us-west-2#Instances:)로 접속합니다. 
+
+![noname](https://github.com/user-attachments/assets/f5c82338-3e05-4c26-bdef-642c81f2c5d2)
+
+아래와 같이 instance에서 [Connect]를 선택하여 [Session Manager]로 접속합니다. 
+
+#### 관련 패키지 설치
+
+편의상 C-Shell로 변경후 필요한 패키지로 git, node.js, npm, docker를 설치하고 환경을 설절정합니다. 
+
+```text
+csh
+cd && sudo yum install git nodejs npm docker -y
+sudo usermod -a -G docker $USER
+newgrp docker
+sudo service docker start
+sudo npm install -g aws-cdk --prefix /usr/local
+```
+
+
 <!--
 
 ## CDK를 이용한 인프라 설치하기
