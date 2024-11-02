@@ -4625,7 +4625,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         result = {
             "revised_draft": output['revised_draft'],
-            "idx": idx
+            "idx": idx,
+            "reference": output['reference']
         }
             
         conn.send(result)    
