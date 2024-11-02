@@ -74,6 +74,7 @@ useEnhancedSearch = True
 vectorIndexName = os.environ.get('vectorIndexName')
 index_name = vectorIndexName
 grade_state = "LLM" # LLM, PRIORITY_SEARCH, OTHERS
+numberOfDocs = 3
 minDocSimilarity = 300
 
 prompt_flow_name = os.environ.get('prompt_flow_name')
@@ -4107,6 +4108,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         search_queries : List[str]
         revised_draft: str
         revision_number: int
+        reference: List[str]
         
     class Reflection(BaseModel):
         missing: str = Field(description="Critique of what is missing.")
@@ -4185,9 +4187,70 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "search_queries": search_queries,
             "revision_number": revision_number + 1
         }
+
+    def parallel_retriever(search_queries, idx, config):
+        relevant_documents = []    
+        
+        processes = []
+        parent_connections = []
+        for q in search_queries:
+            parent_conn, child_conn = Pipe()
+            parent_connections.append(parent_conn)
+                
+            process = Process(target=retrieve, args=(child_conn, q, idx, config))
+            processes.append(process)
+
+        for process in processes:
+            process.start()
+                
+        for parent_conn in parent_connections:
+            rel_docs = parent_conn.recv()
+
+            if(len(rel_docs)>=1):
+                for doc in rel_docs:
+                    relevant_documents.append(doc)    
+
+        for process in processes:
+            process.join()
+        
+        #print('relevant_docs: ', relevant_docs)
+        return relevant_documents
+
+    def retrieve_docs(search_queries, idx, config):
+        relevant_docs = []
+        top_k = numberOfDocs
+        
+        if multi_region == 'enable':
+            relevant_docs = parallel_retriever(search_queries, idx, config)        
+        else:
+            for q in search_queries:        
+                # RAG - knowledge base
+                #if rag_state=='enable':
+                #    update_state_message(f"reflecting... (RAG_retriever-{idx})", config)
+                #    docs = retrieve_from_knowledge_base(q, top_k)
+                #    print(f'q: {q}, RAG: {docs}')
+                            
+                #    if len(docs):
+                #        update_state_message(f"reflecting... (grader-{idx})", config)        
+                #        relevant_docs += grade_documents(q, docs)
+            
+                # web search
+                update_state_message(f"reflecting... (WEB_retriever-{idx})", config)
+                docs = tavily_search(q, top_k)
+                print(f'q: {q}, WEB: {docs}')
+                
+                if len(docs):
+                    update_state_message(f"reflecting... (grader-{idx})", config)        
+                    relevant_docs += grade_documents(q, docs)
+                    
+        for i, doc in enumerate(relevant_docs):
+            print(f"#### {i}: {doc.page_content[:100]}")
+        
+        return relevant_docs
         
     def revise_draft(state: ReflectionState, config):   
         print("###### revise_answer ######")
+        
         draft = state['draft']
         search_queries = state['search_queries']
         reflection = state['reflection']
@@ -4199,15 +4262,15 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         idx = config.get("configurable", {}).get("idx")
         update_state_message(f"revising... (retrieve-{idx})", config)
         
-        filtered_docs = []          
-        for q in search_queries:
-            docs = tavily_search(q, 4)
-            print(f'q: {q}, WEB: {docs}')
-            
-            if len(docs):
-                filtered_docs += grade_documents(q, docs)
-                
+        filtered_docs = retrieve_docs(search_queries, idx, config)        
         print('filtered_docs: ', filtered_docs)
+        
+        if 'reference' in state:
+            reference = state['reference']
+            reference += filtered_docs
+        else:
+            reference = filtered_docs
+        print('len(reference): ', reference)
         
         content = []   
         if len(filtered_docs):
@@ -4286,7 +4349,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         return {
             "revised_draft": revised_draft,            
-            "revision_number": revision_number
+            "revision_number": revision_number,
+            "reference": reference
         }
         
     MAX_REVISIONS = 1
@@ -4571,6 +4635,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             if result is not None:
                 print('result: ', result)
                 revised_drafts[result['idx']] = result['revised_draft']
+                references += result['reference']
 
         for process in processes:
             process.join()
@@ -4579,7 +4644,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         for revised_draft in revised_drafts:
             final_doc += revised_draft + '\n\n'
         
-        return final_doc
+        return final_doc, references
 
     def get_subject(query):
         system = (
@@ -4608,28 +4673,67 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             raise Exception ("Not able to request to LLM")        
         return subject
     
-    def markdown_to_html(body):
+    def markdown_to_html(body, reference):
+        body = body + f"\n\n### 참고자료\n\n\n"
+        
         html = f"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <md-block>
-    </md-block>
-    <script type="module" src="https://md-block.verou.me/md-block.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.css" integrity="sha512-n5zPz6LZB0QV1eraRj4OOxRbsV7a12eAGfFcrJ4bBFxxAwwYDp542z5M0w24tKPEhKk2QzjjIpR5hpOjJtGGoA==" crossorigin="anonymous" referrerpolicy="no-referrer"/>
-</head>
-<body>
-    <div class="markdown-body">
-        <md-block>{body}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <md-block>
         </md-block>
-    </div>
-</body>
-</html>"""        
+        <script type="module" src="https://md-block.verou.me/md-block.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.css" integrity="sha512-n5zPz6LZB0QV1eraRj4OOxRbsV7a12eAGfFcrJ4bBFxxAwwYDp542z5M0w24tKPEhKk2QzjjIpR5hpOjJtGGoA==" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    </head>
+    <body>
+        <div class="markdown-body">
+            <md-block>{body}
+            </md-block>
+        </div>
+        {reference}
+    </body>
+    </html>"""        
         return html
+
+    def get_references_for_html(docs):
+        reference = ""
+        nameList = []
+        cnt = 1
+        for i, doc in enumerate(docs):
+            print(f"reference {i}: doc")
+            page = ""
+            if "page" in doc.metadata:
+                page = doc.metadata['page']
+                #print('page: ', page)            
+            url = ""
+            if "url" in doc.metadata:
+                url = doc.metadata['url']
+                #print('url: ', url)                
+            name = ""
+            if "name" in doc.metadata:
+                name = doc.metadata['name']
+                #print('name: ', name)     
+            pos = name.rfind('/')
+            name = name[pos+1:]
+            print(f"name: {name}")
+            
+            excerpt = ""+doc.page_content
+
+            excerpt = re.sub('"', '', excerpt)
+            print('length: ', len(excerpt))
+            
+            if name in nameList:
+                print('duplicated!')
+            else:
+                reference = reference + f"{cnt}. <a href={url} target=_blank>{name}</a><br>"
+                nameList.append(name)
+                cnt = cnt+1
+                
+        return reference
 
     def revise_answer(state: State, config):
         print("###### revise ######")
@@ -4640,18 +4744,19 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         # reflection
         if multi_region == 'enable':  # parallel processing
-            final_doc = reflect_drafts_using_parallel_processing(drafts, config)
+            final_doc, references = reflect_drafts_using_parallel_processing(drafts, config)
         else:
             reflection_app = buildReflection()
                 
             final_doc = ""   
+            references = []
             for idx, draft in enumerate(drafts):
                 inputs = {
                     "draft": draft
                 }    
-                output = reflection_app.invoke(inputs, config)
-                
+                output = reflection_app.invoke(inputs, config)                
                 final_doc += output['revised_draft'] + '\n\n'
+                references += output['reference']
 
         subject = get_subject(state['instruction'])
         subject = subject.replace(" ","_")
@@ -4659,6 +4764,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         subject = subject.replace("!","")
         subject = subject.replace(".","")
         subject = subject.replace(":","")
+        
+        print('len(references): ', len(references))
         
         # markdown file
         markdown_key = 'markdown/'+f"{subject}.md"
@@ -4681,7 +4788,15 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         # html file
         html_key = 'markdown/'+f"{subject}.html"
         
-        html_body = markdown_to_html(markdown_body)
+        html_reference = ""
+        print('references: ', references)
+        if references:
+            html_reference = get_references_for_html(references)
+            
+            global reference_docs
+            reference_docs += references
+            
+        html_body = markdown_to_html(markdown_body, html_reference)
         print('html_body: ', html_body)
         
         s3_client = boto3.client('s3')  
