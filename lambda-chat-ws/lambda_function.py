@@ -4188,6 +4188,38 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "revision_number": revision_number + 1
         }
 
+    def retrieve_for_writing(conn, q, idx, config):
+        top_k = numberOfDocs
+        
+        relevant_docs = []
+        # RAG - knowledge base
+        #if rag_state=='enable':
+        #    update_state_message(f"reflecting... (RAG_retriever-{idx})", config)
+        #    docs = retrieve_from_knowledge_base(q, top_k)
+        #    print(f'q: {q}, RAG: {docs}')
+                            
+        #    if len(docs):
+        #        update_state_message(f"reflecting... (grader-{idx})", config)        
+        #        fitered_docs = grade_documents(q, docs)
+                
+        #        print(f'retrieve {idx}: len(RAG_relevant_docs)=', len(relevant_docs))
+        #        relevant_docs += fitered_docs
+            
+        # web search
+        update_state_message(f"reflecting... (WEB_retriever-{idx})", config)    
+        docs = tavily_search(q, top_k)
+        print(f'q: {q}, WEB: {docs}')
+                
+        if len(docs):
+            update_state_message(f"reflecting... (grader-{idx})", config)        
+            fitered_docs = grade_documents(q, docs)
+            
+            print(f'retrieve {idx}: len(WEB_relevant_docs)=', len(relevant_docs))
+            relevant_docs += fitered_docs
+                    
+        conn.send(relevant_docs)
+        conn.close()
+
     def parallel_retriever(search_queries, idx, config):
         relevant_documents = []    
         
@@ -4197,7 +4229,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             parent_conn, child_conn = Pipe()
             parent_connections.append(parent_conn)
                 
-            process = Process(target=retrieve, args=(child_conn, q, idx, config))
+            process = Process(target=retrieve_for_writing, args=(child_conn, q, idx, config))
             processes.append(process)
 
         for process in processes:
