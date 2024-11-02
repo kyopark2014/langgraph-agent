@@ -4604,6 +4604,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         processes = []
         parent_connections = []
+        references = []
         
         reflection_app = buildReflection()
         
