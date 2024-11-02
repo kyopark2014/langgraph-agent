@@ -1476,7 +1476,7 @@ def grade_documents(question, documents):
                     # We set a flag to indicate that we want to run web search
                     continue
 
-    elif grade_state == "PRIORITY_SEARCH":
+    elif grade_state == "PRIORITY_SEARCH" and len(documents):
         filtered_docs = priority_search(question, documents, minDocSimilarity)
 
     else:  # OTHERS
