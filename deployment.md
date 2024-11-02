@@ -9,6 +9,8 @@ LLM으로 Anthropic의 Claude3을 사용하기 위하여, Amazon Bedrock의 us-w
 ![image](https://github.com/user-attachments/assets/1d36a962-27db-4fcf-857d-8b1e8b67af75)
 
 
+<!--
+
 ## CDK를 이용한 인프라 설치하기
 
 여기서는 [AWS Cloud9](https://aws.amazon.com/ko/cloud9/)에서 [AWS CDK](https://aws.amazon.com/ko/cdk/)를 이용하여 인프라를 설치합니다. 
@@ -34,20 +36,24 @@ curl https://raw.githubusercontent.com/kyopark2014/technical-summary/main/resize
 chmod a+rx resize.sh && ./resize.sh 80
 ```
 
+-->
 
-4) 소스를 다운로드합니다.
+
+### 소스 다운로드 및 설치 
+
+1) 소스를 다운로드합니다.
 
 ```java
 git clone https://github.com/kyopark2014/langgraph-agent
 ```
 
-5) cdk 폴더로 이동하여 필요한 라이브러리를 설치합니다.
+2) cdk 폴더로 이동하여 필요한 라이브러리를 설치합니다.
 
 ```java
 cd langgraph-agent/cdk-langgraph-agent/ && npm install
 ```
 
-7) CDK 사용을 위해 Boostraping을 수행합니다.
+3) CDK 사용을 위해 Boostraping을 수행합니다.
 
 아래 명령어로 Account ID를 확인합니다.
 
@@ -61,7 +67,7 @@ aws sts get-caller-identity --query Account --output text
 cdk bootstrap aws://[account-id]/us-west-2
 ```
 
-8) 아래 명령어로 인프라를 설치합니다.
+4) 아래 명령어로 인프라를 설치합니다.
 
 ```java
 cdk deploy --require-approval never --all
@@ -71,19 +77,19 @@ cdk deploy --require-approval never --all
 
 ![noname](https://github.com/user-attachments/assets/21488aac-9319-4f80-bc7f-c2c855a68ac9)
 
-9) Output의 HtmlUpdateCommend을 아래와 같이 복사하여 실행합니다.
+5) Output의 HtmlUpdateCommend을 아래와 같이 복사하여 실행합니다.
 
 ![noname](https://github.com/user-attachments/assets/f7971246-3b38-441e-935c-b1ebfd5b3be9)
 
     
 
-9) Hybrid 검색을 위한 Nori Plug-in 설치
+6) Hybrid 검색을 위한 Nori Plug-in 설치
 
 [OpenSearch Console](https://us-west-2.console.aws.amazon.com/aos/home?region=us-west-2#opensearch/domains)에서 "langgraph-agent"로 들어가서 [Packages] - [Associate package]을 선택한 후에, 아래와 같이 "analysis-nori"을 설치합니다. 
 
 ![image](https://github.com/user-attachments/assets/9297a93a-cf25-4fea-aae1-8b6b00e79949)
 
-10) API에 대한 Credential을 획득하고 입력합니다.
+7) API에 대한 Credential을 획득하고 입력합니다.
 
 - 일반 검색을 위하여 [Tavily Search](https://app.tavily.com/sign-in)에 접속하여 가입 후 API Key를 발급합니다. 이것은 tvly-로 시작합니다.
 
@@ -98,5 +104,5 @@ Tavily의 경우 1000건/월을 허용하므로 여러 건의 credential을 사�
 
 [Secret manger](https://us-west-2.console.aws.amazon.com/secretsmanager/listsecrets?region=us-west-2)에 접속하여, [openweathermap-langgraph-agent](https://us-west-2.console.aws.amazon.com/secretsmanager/secret?name=openweathermap-langgraph-agent&region=us-west-2), [tavilyapikey-langgraph-agent](https://us-west-2.console.aws.amazon.com/secretsmanager/secret?name=tavilyapikey-langgraph-agent&region=us-west-2), [langsmithapikey-langgraph-agent](https://us-west-2.console.aws.amazon.com/secretsmanager/secret?name=langsmithapikey-langgraph-agent&region=us-west-2)에 접속하여, [Retrieve secret value]를 선택 후, api key를 입력합니다.
 
-10) Output의 WebUrlforstreamchatbot의 URL로 접속합니다. 만약 Credential을 입력 전에 URL을 접속을 했다면, Lambda를 재배포하거나 일정 시간후에 Lamba가 내려갈때까지 기다렸다가 재접속하여야 하므로, Credential들을 입력 후에 URL로 접속하는것이 좋습니다. 
+8) Output의 WebUrlforstreamchatbot의 URL로 접속합니다. 만약 Credential을 입력 전에 URL을 접속을 했다면, Lambda를 재배포하거나 일정 시간후에 Lamba가 내려갈때까지 기다렸다가 재접속하여야 하므로, Credential들을 입력 후에 URL로 접속하는것이 좋습니다. 
 
