@@ -6899,7 +6899,7 @@ def getResponse(connectionId, jsonBody):
                 elif convType == 'agent-scrag':  # self-corrective RAG
                     msg = run_self_corrective_rag(connectionId, requestId, text)        
                 
-                elif convType == 'agent-plan-and-execute':  # self-corrective RAG
+                elif convType == 'agent-plan-and-execute':  # plan and execute
                     msg = run_plan_and_exeucute(connectionId, requestId, text)        
                                                 
                 elif convType == 'agent-essay-writer':  # essay writer
