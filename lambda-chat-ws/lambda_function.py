@@ -11,6 +11,7 @@ import requests
 import base64
 import operator
 import uuid
+import functools
 
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -43,7 +44,6 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import tools_condition
 from pydantic.v1 import BaseModel, Field
 from typing import Annotated, List, Tuple, TypedDict, Literal, Sequence, Union
-import functools
 from langchain_aws import AmazonKnowledgeBasesRetriever
 from tavily import TavilyClient  
     
@@ -1413,31 +1413,32 @@ def priority_search(query, relevant_docs, minSimilarity):
         )
     #print('excerpts: ', excerpts)
 
-    embeddings = get_ps_embedding()
-    vectorstore_confidence = FAISS.from_documents(
-        excerpts,  # documents
-        embeddings  # embeddings
-    )            
-    rel_documents = vectorstore_confidence.similarity_search_with_score(
-        query=query,
-        k=len(relevant_docs)
-    )
-
     docs = []
-    for i, document in enumerate(rel_documents):
-        print(f'## Document(priority_search) query: {query}, {i+1}: {document}')
-
-        order = document[0].metadata['order']
-        name = document[0].metadata['name']
+    if len(excerpts):
+        embeddings = get_ps_embedding()
+        vectorstore_confidence = FAISS.from_documents(
+            excerpts,  # documents
+            embeddings  # embeddings
+        )            
+        rel_documents = vectorstore_confidence.similarity_search_with_score(
+            query=query,
+            k=len(relevant_docs)
+        )
         
-        score = document[1]
-        print(f"query: {query}, {order}: {name}, {score}")
+        for i, document in enumerate(rel_documents):
+            print(f'## Document(priority_search) query: {query}, {i+1}: {document}')
 
-        relevant_docs[order].metadata['score'] = int(score)
+            order = document[0].metadata['order']
+            name = document[0].metadata['name']
+            
+            score = document[1]
+            print(f"query: {query}, {order}: {name}, {score}")
 
-        if score < minSimilarity:
-            docs.append(relevant_docs[order])    
-    # print('selected docs: ', docs)
+            relevant_docs[order].metadata['score'] = int(score)
+
+            if score < minSimilarity:
+                docs.append(relevant_docs[order])    
+        # print('selected docs: ', docs)
 
     return docs
         
@@ -1982,7 +1983,7 @@ def run_agent_executor(connectionId, requestId, query):
 
     app = buildChatAgent()
         
-    isTyping(connectionId, requestId, "")
+    isTyping(connectionId, requestId, "thinking...")
     
     inputs = [HumanMessage(content=query)]
     config = {
