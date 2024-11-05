@@ -6721,7 +6721,8 @@ def use_multimodal(img_base64, query):
     
     return summary
 
-def extract_text(chat, img_base64):    
+def extract_text(img_base64):    
+    multimodal = get_multimodal()
     query = "텍스트를 추출해서 utf8로 변환하세요. <result> tag를 붙여주세요."
     
     messages = [
@@ -6741,7 +6742,7 @@ def extract_text(chat, img_base64):
     ]
     
     try: 
-        result = chat.invoke(messages)
+        result = multimodal.invoke(messages)
         
         extracted_text = result.content
         print('result of text extraction from an image: ', extracted_text)
@@ -7079,7 +7080,7 @@ def getResponse(connectionId, jsonBody):
                 msg = use_multimodal(img_base64, command)       
                 
                 # extract text from the image
-                text = extract_text(chat, img_base64)
+                text = extract_text(img_base64)
                 extracted_text = text[text.find('<result>')+8:len(text)-9] # remove <result> tag
                 print('extracted_text: ', extracted_text)
                 if len(extracted_text)>10:
