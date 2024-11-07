@@ -4796,8 +4796,15 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             for idx, draft in enumerate(drafts):
                 inputs = {
                     "draft": draft
-                }    
-                output = reflection_app.invoke(inputs, config)                
+                }                    
+                app_config = {
+                    "recursion_limit": 50,
+                    "max_revisions": MAX_REVISIONS,
+                    "requestId":requestId,
+                    "connectionId": connectionId,
+                    "idx": idx
+                }
+                output = reflection_app.invoke(inputs, app_config)                
                 final_doc += output['revised_draft'] + '\n\n'
                 references += output['reference']
 
