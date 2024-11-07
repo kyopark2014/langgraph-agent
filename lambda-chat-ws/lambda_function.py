@@ -1479,7 +1479,6 @@ def grade_documents(question, documents):
 
     elif grade_state == "PRIORITY_SEARCH" and len(documents):
         filtered_docs = priority_search(question, documents, minDocSimilarity)
-
     else:  # OTHERS
         filtered_docs = documents
     
