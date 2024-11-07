@@ -4793,6 +4793,12 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 
             final_doc = ""   
             references = []
+            
+            requestId = config.get("configurable", {}).get("requestId", "")
+            print('requestId: ', requestId)
+            connectionId = config.get("configurable", {}).get("connectionId", "")
+            print('connectionId: ', connectionId)
+            
             for idx, draft in enumerate(drafts):
                 inputs = {
                     "draft": draft
