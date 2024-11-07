@@ -74,7 +74,7 @@ useEnhancedSearch = True
 vectorIndexName = os.environ.get('vectorIndexName')
 index_name = vectorIndexName
 grade_state = "LLM" # LLM, PRIORITY_SEARCH, OTHERS
-numberOfDocs = 3
+numberOfDocs = 2
 minDocSimilarity = 400
 
 prompt_flow_name = os.environ.get('prompt_flow_name')
