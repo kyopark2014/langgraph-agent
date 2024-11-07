@@ -4136,14 +4136,14 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             description="현재 글과 관련된 3개 이내의 검색어"
         )    
         
-    def reflect_node(state: ReflectionState, app_config):
+    def reflect_node(state: ReflectionState, config):
         print("###### reflect ######")
         draft = state['draft']
         print('draft: ', draft)
         
-        idx = app_config.get("configurable", {}).get("idx")
+        idx = config.get("configurable", {}).get("idx")
         print('reflect_node idx: ', idx)
-        update_state_message(f"reflecting... (search_queries-{idx})", app_config)
+        update_state_message(f"reflecting... (search_queries-{idx})", config)
     
         reflection = []
         search_queries = []
@@ -4189,7 +4189,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "revision_number": revision_number + 1
         }
 
-    def retrieve_for_writing(conn, q, app_config):
+    def retrieve_for_writing(conn, q, config):
         top_k = numberOfDocs
         
         relevant_docs = []
@@ -4207,13 +4207,13 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         #        relevant_docs += fitered_docs
             
         # web search
-        idx = app_config.get("configurable", {}).get("idx") 
-        update_state_message(f"reflecting... (WEB_retriever-{idx})", app_config)    
+        idx = config.get("configurable", {}).get("idx") 
+        update_state_message(f"reflecting... (WEB_retriever-{idx})", config)    
         docs = tavily_search(q, top_k)
         print(f'q: {q}, WEB: {docs}')
                 
         if len(docs):
-            update_state_message(f"reflecting... (grader-{idx})", app_config)        
+            update_state_message(f"reflecting... (grader-{idx})", config)        
             fitered_docs = grade_documents(q, docs)
             
             print(f'retrieve {idx}: len(WEB_relevant_docs)=', len(relevant_docs))
@@ -4222,7 +4222,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         conn.send(relevant_docs)
         conn.close()
 
-    def parallel_retriever(search_queries, app_config):
+    def parallel_retriever(search_queries, config):
         relevant_documents = []    
         
         processes = []
@@ -4231,7 +4231,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             parent_conn, child_conn = Pipe()
             parent_connections.append(parent_conn)
                 
-            process = Process(target=retrieve_for_writing, args=(child_conn, q, app_config))
+            process = Process(target=retrieve_for_writing, args=(child_conn, q, config))
             processes.append(process)
 
         for process in processes:
@@ -4250,14 +4250,14 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         #print('relevant_docs: ', relevant_docs)
         return relevant_documents
 
-    def retrieve_docs(search_queries, app_config):
+    def retrieve_docs(search_queries, config):
         relevant_docs = []
         top_k = numberOfDocs
         
-        idx = app_config.get("configurable", {}).get("idx")
+        idx = config.get("configurable", {}).get("idx")
         
         if multi_region == 'enable':
-            relevant_docs = parallel_retriever(search_queries, app_config)        
+            relevant_docs = parallel_retriever(search_queries, config)        
         else:
             for q in search_queries:        
                 # RAG - knowledge base
@@ -4271,12 +4271,12 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 #        relevant_docs += grade_documents(q, docs)
             
                 # web search
-                update_state_message(f"reflecting... (WEB_retriever-{idx})", app_config)
+                update_state_message(f"reflecting... (WEB_retriever-{idx})", config)
                 docs = tavily_search(q, top_k)
                 print(f'q: {q}, WEB: {docs}')
                 
                 if len(docs):
-                    update_state_message(f"reflecting... (grader-{idx})", app_config)        
+                    update_state_message(f"reflecting... (grader-{idx})", config)        
                     relevant_docs += grade_documents(q, docs)
                     
         for i, doc in enumerate(relevant_docs):
@@ -4284,7 +4284,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         return relevant_docs
         
-    def revise_draft(state: ReflectionState, app_config):   
+    def revise_draft(state: ReflectionState, config):   
         print("###### revise_answer ######")
         
         draft = state['draft']
@@ -4295,11 +4295,11 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         print('reflection: ', reflection)
                             
         # web search
-        idx = app_config.get("configurable", {}).get("idx")
+        idx = config.get("configurable", {}).get("idx")
         print('revise_draft idx: ', idx)
-        update_state_message(f"revising... (retrieve-{idx})", app_config)
+        update_state_message(f"revising... (retrieve-{idx})", config)
         
-        filtered_docs = retrieve_docs(search_queries, app_config)        
+        filtered_docs = retrieve_docs(search_queries, config)        
         print('filtered_docs: ', filtered_docs)
         
         if 'reference' in state:
@@ -4315,7 +4315,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 content.append(d.page_content)            
         print('content: ', content)
         
-        update_state_message(f"revising... (generate-{idx})", app_config)
+        update_state_message(f"revising... (generate-{idx})", config)
         
         if isKorean(draft):
             revise_template = (
@@ -4623,13 +4623,13 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "drafts": drafts
         }
 
-    def reflect_draft(conn, reflection_app, app_config, draft):     
+    def reflect_draft(conn, reflection_app, config, draft):     
         inputs = {
             "draft": draft
         }            
-        output = reflection_app.invoke(inputs, app_config)
+        output = reflection_app.invoke(inputs, config)
         
-        idx = app_config.get("configurable", {}).get("idx", "")
+        idx = config.get("configurable", {}).get("idx", "")
         print('idx: ', idx)
         
         result = {
@@ -4810,7 +4810,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                     "connectionId": connectionId,
                     "idx": idx
                 }
-                output = reflection_app.invoke(inputs, app_config)                
+                output = reflection_app.invoke(inputs, config=app_config)
                 final_doc += output['revised_draft'] + '\n\n'
                 references += output['reference']
 
@@ -5529,12 +5529,12 @@ def run_rag_with_reflection(connectionId, requestId, query):
         
         return relevant_docs
     
-    def parallel_retriever(state: State, app_config):
+    def parallel_retriever(state: State, config):
         print("###### parallel_retriever ######")
         sub_queries = state['sub_queries']
         print('sub_queries: ', sub_queries)
         
-        update_state_message("retrieving...", app_config)
+        update_state_message("retrieving...", config)
         
         relevant_docs = []
         processes = []
