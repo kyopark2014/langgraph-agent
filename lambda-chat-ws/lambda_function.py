@@ -4623,13 +4623,12 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             "drafts": drafts
         }
 
-    def reflect_draft(conn, reflection_app, config, draft):     
+    def reflect_draft(conn, reflection_app, idx, config, draft):     
         inputs = {
             "draft": draft
         }            
         output = reflection_app.invoke(inputs, config)
         
-        idx = config.get("configurable", {}).get("idx", "")
         print('idx: ', idx)
         
         result = {
@@ -4659,6 +4658,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             parent_conn, child_conn = Pipe()
             parent_connections.append(parent_conn)
             
+            print(f"idx:{idx} --> draft:{draft}")
+            
             app_config = {
                 "recursion_limit": 50,
                 "max_revisions": MAX_REVISIONS,
@@ -4666,7 +4667,7 @@ def run_long_form_writing_agent(connectionId, requestId, query):
                 "connectionId": connectionId,
                 "idx": idx
             }
-            process = Process(target=reflect_draft, args=(child_conn, reflection_app, app_config, draft))
+            process = Process(target=reflect_draft, args=(child_conn, reflection_app, idx, app_config, draft))
             processes.append(process)
             
         for process in processes:
