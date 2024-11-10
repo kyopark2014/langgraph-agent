@@ -20,7 +20,7 @@ LangGraph는 agent를 생성하고 여러개의 agent가 있을때의 흐름을 
 4) OpenSearch로 얻어진 관련된 문서는 LLM Prompt를 이용해 관련도를 평가(grade) 합니다. 평가 결과에 따라 웹검색을 이용한 fallback 동작을 수행할 수 있습니다.
 5) LLM에 관련된 문서를 context로 제공하여 적절한 답변을 생성합니다. 답변이 환각(hallucination)인지, 적절한 답변이 생성되었는지를 LLM prompt를 이용해 평가(grade)할 수 있습니다. 
 
-![image](https://github.com/user-attachments/assets/c12d72fa-310c-4ea6-aa6e-634ac858ffaa)
+<img width="640" alt="image" src="https://github.com/user-attachments/assets/4c18b02c-588d-4a3c-b024-39ac58d20dec">
 
 
 [langgraph-agent.md](./langgraph-agent.md)에서는 LangGraph Agent의 기본 구성을 설명하고 있습니다.
