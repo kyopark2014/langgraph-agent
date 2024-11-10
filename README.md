@@ -27,8 +27,9 @@ LangGraph는 agent를 생성하고 여러개의 agent가 있을때의 흐름을 
 
 
 
-## Agentic Workflow Patterns 
+## Agentic Workflow Design Patterns 
 
+여기서는 대표적인 agentic workflow의 4가지 패턴인 tool use, reflection, plan and execute, multi-agent collaboration에 대해 설명합니다. 
 
 ### Tool Use
 
