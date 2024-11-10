@@ -30,19 +30,33 @@ LangGraph는 agent를 생성하고 여러개의 agent가 있을때의 흐름을 
 ## Agent Use Cases
 
 
-### Tool Execution Agent
+### Tool Use
 
 [agent-executor.md](./agent-executor.md)에서는 LangGraph를 이용해 각종 Tool을 실행하는 agent를 만드는 방법을 설명하고 있습니다. 아래는 agent executor의 activity diagram입니다.
 
 <img src="https://github.com/user-attachments/assets/836d7458-1dab-40db-8cde-fae0becbcce6" width="350">
-
   
-### Reflection Agent
+### Reflection
 
 Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제공할 수 있습니다. [reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다. 
 
 <img src="https://github.com/user-attachments/assets/8ca02018-56b8-4272-a8d1-f71aa6b6f0ca" width="400">
-  
+
+
+### Plan and Execute
+
+[plan-and-execuite.md](./plan-and-execuite.md)에서는 Plan and Execute 방식의 Agent를 생성하는 방법에 대해 설명합니다. 
+
+![image](https://github.com/user-attachments/assets/3cf0d104-67d3-45b5-9e31-bbe63d6d861a)
+
+  
+### Multi-agent Collaboration 
+
+[long-form-writing.md](./long-form-writing.md)에서는 plan and execute 패턴을 가지는 agent와 reflection을 수행하는 agent를 이용하여 instruction으로 장문의 글쓰기를 수행합니다. Multi agent 구조로 구성함으로써 복잡한 workflow를 단순하게 구현할 수 있습니다.
+
+<img src="https://github.com/user-attachments/assets/6007e82d-f617-48a9-b23a-38a156f4abd1" width="800">
+
+
 
 ### Agentic RAG
 
@@ -90,11 +104,6 @@ Self-Corrective RAG는 Corrective RAG처럼 vector store로 부터 얻어진 문
 
 ![image](https://github.com/user-attachments/assets/5769e8ed-6e76-4fda-a932-a1d3c461de50)
 
-### Plan and Execute
-
-[plan-and-execuite.md](./plan-and-execuite.md)에서는 Plan and Execute 방식의 Agent를 생성하는 방법에 대해 설명합니다. 
-
-![image](https://github.com/user-attachments/assets/3cf0d104-67d3-45b5-9e31-bbe63d6d861a)
 
 
 ### Human-in-the-loop (HIL)
@@ -119,11 +128,6 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 [AgentWrite LangGraph](https://github.com/samwit/agent_tutorials/tree/main/agent_write)는 Agent를 이용한 Write 과정에 대해 설명하고 있습니다. 상세한 설명은 [AgentWrite with LangGraph - Youtube](https://www.youtube.com/watch?v=nK9K8UPraXk)를 참고합니다.
 
-### Long Form Writing
-
-[long-form-writing.md](./long-form-writing.md)에서는 plan and execute 패턴을 가지는 agent와 reflection을 수행하는 agent를 이용하여 instruction으로 장문의 글쓰기를 수행합니다. Multi agent 구조로 구성함으로써 복잡한 workflow를 단순하게 구현할 수 있습니다.
-
-<img src="https://github.com/user-attachments/assets/6007e82d-f617-48a9-b23a-38a156f4abd1" width="800">
    
 
 ### Multi Agent 
