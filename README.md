@@ -44,7 +44,7 @@ Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제
 
 [plan-and-execuite.md](./plan-and-execuite.md)에서는 Plan and Execute 방식의 Agent를 생성하는 방법에 대해 설명합니다. 
 
-![image](https://github.com/user-attachments/assets/3cf0d104-67d3-45b5-9e31-bbe63d6d861a)
+![image](https://github.com/user-attachments/assets/8e6340d8-a49f-4af7-ae4e-167909ff6f7c)
   
 ### Multi-agent Collaboration 
 
