@@ -27,7 +27,7 @@ LangGraph는 agent를 생성하고 여러개의 agent가 있을때의 흐름을 
 
 
 
-## Agent Use Cases
+## Agentic Workflow Patterns 
 
 
 ### Tool Use
@@ -38,17 +38,13 @@ LangGraph는 agent를 생성하고 여러개의 agent가 있을때의 흐름을 
   
 ### Reflection
 
-Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제공할 수 있습니다. [reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다. 
-
-<img src="https://github.com/user-attachments/assets/8ca02018-56b8-4272-a8d1-f71aa6b6f0ca" width="400">
-
+Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제공할 수 있습니다. [knowledge-guru.md](./knowledge-guru.md)에서는 OpenSearch와 Tavily 검색으로 얻어진 정보로 초안(draft)를 만들고, 검색을 위한 keyword를 추출하여 다시 검색하는 방법으로 답변을 향상사키는(revise) 방법에 대해 설명합니다. 
 
 ### Plan and Execute
 
 [plan-and-execuite.md](./plan-and-execuite.md)에서는 Plan and Execute 방식의 Agent를 생성하는 방법에 대해 설명합니다. 
 
 ![image](https://github.com/user-attachments/assets/3cf0d104-67d3-45b5-9e31-bbe63d6d861a)
-
   
 ### Multi-agent Collaboration 
 
@@ -57,6 +53,13 @@ Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제
 <img src="https://github.com/user-attachments/assets/6007e82d-f617-48a9-b23a-38a156f4abd1" width="800">
 
 
+## Case Studies
+
+### Reflection
+
+[reflection-agent.md](./reflection-agent.md)에서는 LangGraph를 이용해 Reflection을 반영하는 Agent를 생성하는 방법을 설명하고 있습니다. 
+
+<img src="https://github.com/user-attachments/assets/8ca02018-56b8-4272-a8d1-f71aa6b6f0ca" width="400">
 
 ### Agentic RAG
 
@@ -116,10 +119,6 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 [Essay Writer](./essay-writer.md)에서는 essay를 작성하는 Agent를 생성합니다.
 
 ![image](https://github.com/user-attachments/assets/b876e10b-aa5f-4b12-8e0d-a1f803cd7647)
-
-### Knowledge Guru
-
-[knowledge-guru.md](./knowledge-guru.md)에서는 OpenSearch와 Tavily 검색으로 얻어진 정보로 초안(draft)를 만들고, 검색을 위한 keyword를 추출하여 다시 검색하는 방법으로 답변을 향상사키는(revise) 방법에 대해 설명합니다. 
 
 
 ![image](https://github.com/user-attachments/assets/7207687c-5649-4e2d-b4ab-c51ebf9c60f4)
