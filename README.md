@@ -41,6 +41,9 @@ LangGraph는 agent를 생성하고 여러개의 agent가 있을때의 흐름을 
 
 Reflection을 통해 LLM의 응답을 향상시키고 충분한 컨텐츠를 제공할 수 있습니다. [knowledge-guru.md](./knowledge-guru.md)에서는 OpenSearch와 Tavily 검색으로 얻어진 정보로 초안(draft)를 만들고, 검색을 위한 keyword를 추출하여 다시 검색하는 방법으로 답변을 향상사키는(revise) 방법에 대해 설명합니다. 
 
+![image](https://github.com/user-attachments/assets/59f022a3-5946-4cb1-93bf-46b159635f9f)
+
+
 ### Plan and Execute
 
 [plan-and-execuite.md](./plan-and-execuite.md)에서는 Plan and Execute 방식의 Agent를 생성하는 방법에 대해 설명합니다. 
