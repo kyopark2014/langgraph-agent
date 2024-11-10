@@ -121,7 +121,7 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 ### Long Form Writing
 
-[long-term-writing.md](./long-form-writing.md)에서는 plan and execute 패턴을 가지는 agent와 reflection을 수행하는 agent를 이용하여 instruction으로 장문의 글쓰기를 수행합니다. Multi agent 구조로 구성함으로써 복잡한 workflow를 단순하게 구현할 수 있습니다.
+[long-form-writing.md](./long-form-writing.md)에서는 plan and execute 패턴을 가지는 agent와 reflection을 수행하는 agent를 이용하여 instruction으로 장문의 글쓰기를 수행합니다. Multi agent 구조로 구성함으로써 복잡한 workflow를 단순하게 구현할 수 있습니다.
 
 <img src="https://github.com/user-attachments/assets/6007e82d-f617-48a9-b23a-38a156f4abd1" width="800">
    
