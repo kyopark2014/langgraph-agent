@@ -6029,9 +6029,14 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         {content}
         </Website content>"""
 
-    async def search(
+    async def search(        
         query: str, *, config: Annotated[RunnableConfig, InjectedToolArg]
     ) -> Optional[list[dict[str, Any]]]:
+        """Query a search engine.
+
+        This function queries the web to fetch comprehensive, accurate, and trusted results. It's particularly useful
+        for answering questions about current events. Provide as much context in the query as needed to ensure high recall.
+        """        
         wrapped = TavilySearchResults(max_results=max_search_results)
         result = await wrapped.ainvoke({"query": query})
         return cast(list[dict[str, Any]], result)
@@ -6042,6 +6047,11 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         state: Annotated[State, InjectedState],
         config: Annotated[RunnableConfig, InjectedToolArg],
     ) -> str:        
+        """Scrape and summarize content from a given URL.
+
+        Returns:
+            str: A summary of the scraped content, tailored to the extraction schema.
+        """
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 content = await response.text()
