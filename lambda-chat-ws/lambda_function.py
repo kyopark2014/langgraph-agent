@@ -6239,17 +6239,6 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         presumed_info = state["info"]
         print('presumed_info: ', presumed_info)
         
-        # checker_prompt = (
-        #     "I am thinking of calling the info tool with the info below."
-        #     "Is this good? Give your reasoning as well."
-        #     "You can encourage the Assistant to look at specific URLs if that seems relevant, or do more searches."
-        #     "If you don't think it is good, you should be very specific about what could be improved."
-
-        #     "{presumed_info}"
-        # )        
-        # p1 = checker_prompt.format(presumed_info=json.dumps(presumed_info or {}, indent=2))
-        # print('p1: ', p1)
-        
         system = (
             "I am thinking of calling the info tool with the info below."
             "Is this good? Give your reasoning as well."
@@ -6272,16 +6261,6 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         print('result of checker_prompt: ', result)
         output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
         print('output of checker_prompt: ', output)
-        
-        #chat = get_chat()
-        #result = checker_prompt.invoke({
-        #    presumed_info: json.dumps(presumed_info or {}, indent=2)
-        #})
-        #print('result of checker_prompt: ', result)
-        
-        
-        #messages.append(HumanMessage(content=p1))
-        #print('messages: ', messages)
         
         response = ""
         reason = []
@@ -6317,7 +6296,6 @@ def run_data_enrichment_agent(connectionId, requestId, text):
                         tool_call_id=last_message.tool_calls[0]["id"],
                         content="\n".join(reason),
                         name="Info",
-                        additional_kwargs={"artifact": response.model_dump()},
                         status="success",
                     )
                 ],
@@ -6329,7 +6307,6 @@ def run_data_enrichment_agent(connectionId, requestId, text):
                         tool_call_id=last_message.tool_calls[0]["id"],
                         content=f"Unsatisfactory response:\n{improvement_instructions}",
                         name="Info",
-                        additional_kwargs={"artifact": response.model_dump()},
                         status="error",
                     )
                 ]
