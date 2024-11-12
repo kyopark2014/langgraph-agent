@@ -6016,20 +6016,6 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     max_info_tool_calls = 3
     max_loops = 6
     
-    _INFO_PROMPT = """You are doing web research on behalf of a user. You are trying to find out this information:
-
-        <info>
-        {info}
-        </info>
-
-        You just scraped the following website: {url}
-
-        Based on the website content below, jot down some notes about the website.
-
-        <Website content>
-        {content}
-        </Website content>"""
-
     def search(        
         query: str, *, config: Annotated[RunnableConfig, InjectedToolArg]
     ) -> Optional[list[dict[str, Any]]]:
@@ -6080,6 +6066,22 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             content = soup.get_text()
             print('soup result: ', content)
             
+            _INFO_PROMPT = (
+                "You are doing web research on behalf of a user. You are trying to find out this information:"
+
+                "<info>"
+                "{info}"
+                "</info>"
+
+                "You just scraped the following website: {url}"
+
+                "Based on the website content below, jot down some notes about the website."
+
+                "<Website content>"
+                "{content}"
+                "</Website content>"
+            )
+            
             p = _INFO_PROMPT.format(
                 info=json.dumps(state['extraction_schema'], indent=2),
                 url=url,
@@ -6088,13 +6090,12 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             chat = get_chat()
             result = chat.invoke(p)
             print('result of scrape_website: ', result)
-            output = str(result.content)
+            content = str(result.content)
         else:
             content = "Failed to retrieve the webpage. Status code: " + str(response.status_code)
             print(content)
-            output = ""
         
-        return output
+        return content
 
     tools = [search, scrape_website]
     tool_node = ToolNode(tools)
