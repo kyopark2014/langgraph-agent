@@ -6326,7 +6326,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         workflow.add_node("tools", tool_node)
         
         # Set entry point
-        workflow.set_entry_point("agent_node")
+        workflow.set_entry_point("agent")
         
         workflow.add_conditional_edges(
             "agent", 
