@@ -6410,7 +6410,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
 
         for i, company in enumerate(result["companies"]):
             text += f"""
-    {i+1}: {company['name']}
+    {i+1}. {company['name']}
 
     - Key Technologies: {company['technologies']}
 
@@ -6465,7 +6465,6 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         "extraction_schema": schema
     }    
     config = {
-        #"recursion_limit": 50,
         "recursion_limit": 50,
         "max_loops": max_loops,
         "requestId": requestId,
