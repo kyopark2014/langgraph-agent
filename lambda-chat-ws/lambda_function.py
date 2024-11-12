@@ -6058,7 +6058,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
                 content = await response.text()
 
         p = _INFO_PROMPT.format(
-            info=json.dumps(state.extraction_schema, indent=2),
+            info=json.dumps(state['extraction_schema'], indent=2),
             url=url,
             content=content[:40_000],
         )
@@ -6092,18 +6092,18 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         info_tool = {
             "name": "Info",
             "description": "Call this when you have gathered all the relevant info",
-            "parameters": state.extraction_schema,
+            "parameters": state["extraction_schema"],
         }
-        print('topic: ', state.topic)
-        print('schema: ', json.dumps(state.extraction_schema))
-        print('state.messages: ', state.messages)
+        print('topic: ', state["topic"])
+        print('schema: ', json.dumps(state["extraction_schema"]))
+        print('state["messages"]: ', state["messages"])
 
         p = MAIN_PROMPT.format(
-            info=json.dumps(state.extraction_schema, indent=2), 
-            topic=state.topic
+            info=json.dumps(state["extraction_schema"], indent=2), 
+            topic=state["topic"]
         )
 
-        messages = [HumanMessage(content=p)] + state.messages
+        messages = [HumanMessage(content=p)] + state["messages"]
 
         chat = get_chat() 
         tools = [scrape_website, search, info_tool]
@@ -6158,17 +6158,17 @@ def run_data_enrichment_agent(connectionId, requestId, text):
 
     async def reflect_node(state: State) -> Dict[str, Any]:
         p = MAIN_PROMPT.format(
-            info=json.dumps(state.extraction_schema, indent=2), topic=state.topic
+            info=json.dumps(state['extraction_schema'], indent=2), topic=state["topic"]
         )
         
-        last_message = state.messages[-1]
+        last_message = state["messages"][-1]
         if not isinstance(last_message, AIMessage):
             raise ValueError(
                 f"{reflect_node.__name__} expects the last message in the state to be an AI message with tool calls."
                 f" Got: {type(last_message)}"
             )
         
-        messages = [HumanMessage(content=p)] + state.messages[:-1]
+        messages = [HumanMessage(content=p)] + state["messages"][:-1]
         presumed_info = state.info
         
         checker_prompt = (
@@ -6221,7 +6221,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             }
 
     def route_after_agent(state: State) -> Literal["reflect", "tools", "call_agent_model", "__end__"]:
-        last_message = state.messages[-1]
+        last_message = state["messages"][-1]
         print('last_message: ', last_message)
         
         if not isinstance(last_message, AIMessage):
@@ -6232,7 +6232,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             return "tools"
 
     def route_after_checker(state: State, config: Optional[RunnableConfig]) -> Literal["end", "call_agent_model"]:
-        last_message = state.messages[-1]
+        last_message = state["messages"][-1]
         print('last_message: ', last_message)
         
         if state.loop_step < max_loops:
