@@ -6088,7 +6088,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         "Topic: {topic}"
     )
         
-    async def call_agent_model(state: State) -> Dict[str, Any]:
+    def call_agent_model(state: State) -> Dict[str, Any]:
         info_tool = {
             "name": "Info",
             "description": "Call this when you have gathered all the relevant info",
@@ -6108,7 +6108,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         chat = get_chat() 
         tools = [scrape_website, search, info_tool]
         model = chat.bind_tools(tools, tool_choice="any")
-        result = await model.ainvoke(messages)
+        result = model.invoke(messages)
         print('result of call_model: ', result)
         
         response = cast(AIMessage, result)
