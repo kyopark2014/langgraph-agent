@@ -6099,22 +6099,6 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     tools = [search, scrape_website]
     tool_node = ToolNode(tools)
     
-    MAIN_PROMPT = (
-        "You are doing web research on behalf of a user. You are trying to figure out this information:"
-        "<info>"
-        "{info}"
-        "</info>"
-
-        "You have access to the following tools:"
-        "- `Search`: call a search tool and get back some results"
-        "- `ScrapeWebsite`: scrape a website and get relevant notes about the given request. This will update the notes above."
-        "- `Info`: call this when you are done and have gathered all the relevant info:"
-
-        "Here is the information you have about the topic you are researching:"
-
-        "Topic: {topic}"
-    )
-        
     def agent_node(state: State) -> Dict[str, Any]:
         print("###### agent_node ######")
         
@@ -6125,6 +6109,39 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         }
         #print('topic: ', state["topic"])
         #print('schema: ', json.dumps(state["extraction_schema"]))
+        
+        if isKorean(state["topic"])==True:
+            MAIN_PROMPT = (
+                "웹 검색을 통해 <info> tag의 schema에 대한 정보를 찾아야 합니다."
+                "<info>"
+                "{info}"
+                "</info>"
+
+                "다음 도구를 사용할 수 있습니다:"
+                "- `Search`: call a search tool and get back some results"
+                "- `ScrapeWebsite`: scrape a website and get relevant notes about the given request. This will update the notes above."
+                "- `Info`: call this when you are done and have gathered all the relevant info:"
+
+                "다음은 네가 연구 중인 topic에 대한 정보입니다:"
+
+                "Topic: {topic}"
+            )
+        else:
+            MAIN_PROMPT = (
+                "You are doing web research on behalf of a user. You are trying to figure out this information:"
+                "<info>"
+                "{info}"
+                "</info>"
+
+                "You have access to the following tools:"
+                "- `Search`: call a search tool and get back some results"
+                "- `ScrapeWebsite`: scrape a website and get relevant notes about the given request. This will update the notes above."
+                "- `Info`: call this when you are done and have gathered all the relevant info:"
+
+                "Here is the information you have about the topic you are researching:"
+
+                "Topic: {topic}"
+            )
 
         p = MAIN_PROMPT.format(
             info=json.dumps(state["extraction_schema"], indent=2), 
@@ -6202,11 +6219,11 @@ def run_data_enrichment_agent(connectionId, requestId, text):
                 f" Got: {type(last_message)}"
             )
             
-        p = MAIN_PROMPT.format(
-            info=json.dumps(state['extraction_schema'], indent=2), topic=state["topic"]
-        )
-        messages = [HumanMessage(content=p)] + state["messages"][:-1]
-        print('messages: ', messages)
+        # p = MAIN_PROMPT.format(
+        #     info=json.dumps(state['extraction_schema'], indent=2), topic=state["topic"]
+        # )
+        # messages = [HumanMessage(content=p)] + state["messages"][:-1]
+        # print('messages: ', messages)
         
         presumed_info = state["info"]
         print('presumed_info: ', presumed_info)
@@ -6236,11 +6253,9 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
         chain = prompt | chat
         
-        response = chain.invoke(
-            {
-                "presumed_info": json.dumps(presumed_info)
-            }
-        )
+        response = chain.invoke({
+            "presumed_info": json.dumps(presumed_info)
+        })
         result = response.content
         # print('result of checker_prompt: ', result)
         output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
@@ -6296,7 +6311,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
                 ]
             }
 
-    def route_after_agent(state: State) -> Literal["reflect", "tools", "agent", "__end__"]:
+    def route_after_agent(state: State) -> Literal["reflect", "tools", "agent"]:
         print("###### route_after_agent ######")
         
         last_message = state["messages"][-1]
