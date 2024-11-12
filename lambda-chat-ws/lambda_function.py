@@ -6351,20 +6351,19 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         "connectionId": connectionId
     }
     
-    #message = ""
-    #for event in app.stream(inputs, config, stream_mode="values"):
-    #    # print('event: ', event)
+    message = ""
+    for event in app.stream(inputs, config, stream_mode="values"):
+        print('event: ', event)
         
-    #    if "messages" in event:
-    #        if len(event["messages"]) > 1:
-    #            msg = readStreamMsg(connectionId, requestId, event["messages"][-1].content)
-    #            message += msg
-    #    message = event["messages"][-1]
+        #if "messages" in event:
+        #    if len(event["messages"]) > 1:
+        #        msg = readStreamMsg(connectionId, requestId, event["messages"][-1].content)
+        #        message += msg
+        #message = event["messages"][-1]
         # print('message: ', message)
 
     #msg = readStreamMsg(connectionId, requestId, message.content)
-    output = app.ainvoke(inputs, config)
-    print('output: ', output)
+    #print('output: ', output)
     
     #return output
     return ""
