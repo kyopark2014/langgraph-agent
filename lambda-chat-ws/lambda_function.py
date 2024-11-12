@@ -6140,8 +6140,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         "Topic: {topic}"
     )
         
-    def call_agent_model(state: State) -> Dict[str, Any]:
-        print("###### call_agent_model ######")
+    def agent_node(state: State) -> Dict[str, Any]:
+        print("###### agent_node ######")
         
         info_tool = {
             "name": "Info",
@@ -6163,7 +6163,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         tools = [scrape_website, search, info_tool]
         model = chat.bind_tools(tools, tool_choice="any")
         result = model.invoke(messages)
-        print('result of call_model: ', result)
+        # print('result of call_model: ', result)
         
         response = cast(AIMessage, result)
         print('response of call_model: ', response)
@@ -6276,28 +6276,34 @@ def run_data_enrichment_agent(connectionId, requestId, text):
                 ]
             }
 
-    def route_after_agent(state: State) -> Literal["reflect", "tools", "call_agent_model", "__end__"]:
+    def route_after_agent(state: State) -> Literal["reflect", "tools", "agent", "__end__"]:
         print("###### route_after_agent ######")
         
         last_message = state["messages"][-1]
         print('last_message: ', last_message)
         
+        next = ""
         if not isinstance(last_message, AIMessage):
-            return "call_agent_model"
-        if last_message.tool_calls and last_message.tool_calls[0]["name"] == "Info":
-            return "reflect"
+            next = "agent"
         else:
-            return "tools"
+            if last_message.tool_calls and last_message.tool_calls[0]["name"] == "Info":
+                next = "reflect"
+            else:
+                print('tool_calls: ', last_message.tool_calls[0]["name"])
+                next = "tools"
+        print('next: ', next)
+        
+        return next
 
-    def route_after_checker(state: State, config: Optional[RunnableConfig]) -> Literal["end", "call_agent_model"]:
+    def route_after_checker(state: State) -> Literal["end", "continue"]:
         print("###### route_after_checker ######")
         
         last_message = state["messages"][-1]
         print('last_message: ', last_message)
         
-        if state.loop_step < max_loops:
-            if not state.info:
-                return "call_agent_model"
+        if state["loop_step"] < max_loops:
+            if not state["info"]:
+                return "continue"
             
             if not isinstance(last_message, ToolMessage):
                 raise ValueError(
@@ -6305,7 +6311,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
                 )
             
             if last_message.status == "error":
-                return "call_agent_model"  # Research deemed unsatisfactory           
+                return "continue"  # Research deemed unsatisfactory
+            
             return "end"   # It's great!
         
         else:
@@ -6314,29 +6321,29 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     def build_data_enrichment_agent():
         workflow = StateGraph(State, output=OutputState)
         
-        workflow.add_node("call_agent_model", call_agent_model)
+        workflow.add_node("agent", agent_node)
         workflow.add_node("reflect", reflect_node)
         workflow.add_node("tools", tool_node)
         
         # Set entry point
-        workflow.set_entry_point("call_agent_model")
+        workflow.set_entry_point("agent_node")
         
         workflow.add_conditional_edges(
-            "call_agent_model", 
+            "agent", 
             route_after_agent,
             {
-                "call_agent_model": "call_agent_model",
+                "agent": "agent",
                 "reflect": "reflect",
                 "tools": "tools"
             }
         )
         
-        workflow.add_edge("tools", "call_agent_model")
+        workflow.add_edge("tools", "agent")
         workflow.add_conditional_edges(
             "reflect", 
             route_after_checker,
             {
-                "call_agent_model": "call_agent_model",
+                "continue": "agent",
                 "end": END
             }
         )
@@ -6406,7 +6413,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     }    
     config = {
         #"recursion_limit": 50,
-        "recursion_limit": 5,
+        "recursion_limit": 50,
         "max_loops": max_loops,
         "requestId": requestId,
         "connectionId": connectionId
