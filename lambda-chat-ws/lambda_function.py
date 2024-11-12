@@ -6245,6 +6245,13 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         p1 = checker_prompt.format(presumed_info=json.dumps(presumed_info or {}, indent=2))
         print('p1: ', p1)
         
+        chat = get_chat()
+        result = checker_prompt.invoke({
+            presumed_info: json.dumps(presumed_info or {}, indent=2)
+        })
+        print('result of checker_prompt: ', result)
+        
+        
         #messages.append(HumanMessage(content=p1))
         #print('messages: ', messages)
         
