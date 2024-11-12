@@ -6245,11 +6245,33 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         p1 = checker_prompt.format(presumed_info=json.dumps(presumed_info or {}, indent=2))
         print('p1: ', p1)
         
+        
         chat = get_chat()
-        result = checker_prompt.invoke({
-            presumed_info: json.dumps(presumed_info or {}, indent=2)
-        })
+        system = (
+            "I am thinking of calling the info tool with the info below."
+            "Is this good? Give your reasoning as well."
+            "You can encourage the Assistant to look at specific URLs if that seems relevant, or do more searches."
+            "If you don't think it is good, you should be very specific about what could be improved."
+        )
+        human = "{presumed_info}"
+        
+        chat = get_chat()
+        prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+        chain = prompt | chat
+        
+        response = chain.invoke(
+            {
+                "presumed_info": json.dumps(presumed_info)
+            }
+        )
+        result = response.content
         print('result of checker_prompt: ', result)
+        
+        #chat = get_chat()
+        #result = checker_prompt.invoke({
+        #    presumed_info: json.dumps(presumed_info or {}, indent=2)
+        #})
+        #print('result of checker_prompt: ', result)
         
         
         #messages.append(HumanMessage(content=p1))
@@ -6260,7 +6282,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             chat = get_chat()
             structured_llm = chat.with_structured_output(InfoIsSatisfactory)
             
-            info = structured_llm.invoke(p1)
+            info = structured_llm.invoke(result)
             print(f'attempt: {attempt}, info: {info}')
         
             if not info['parsed'] == None:
