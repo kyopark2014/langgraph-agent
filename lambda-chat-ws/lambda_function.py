@@ -6050,15 +6050,46 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         This function queries the web to fetch comprehensive, accurate, and trusted results. It's particularly useful
         for answering questions about current events. Provide as much context in the query as needed to ensure high recall.
         """        
+        print(f"###### [tool] search: {query} ######")
+        
         wrapped = TavilySearchResults(max_results=max_search_results)
         result = wrapped.invoke({"query": query})
-        print('result of search: ', result)
+        # print('result of search: ', result)
         
         output = cast(list[dict[str, Any]], result)
         print('output of search: ', output)
         return output
     
-    async def scrape_website(
+    # async def scrape_website(
+    #     url: str,
+    #     *,
+    #     state: Annotated[State, InjectedState],
+    #     config: Annotated[RunnableConfig, InjectedToolArg],
+    # ) -> str:        
+    #     """Scrape and summarize content from a given URL.
+
+    #     Returns:
+    #         str: A summary of the scraped content, tailored to the extraction schema.
+    #     """
+    #     print("###### [tool] scrape_website ######")
+        
+    #     async with aiohttp.ClientSession() as session:
+    #         async with session.get(url) as response:
+    #             content = await response.text()
+
+    #     p = _INFO_PROMPT.format(
+    #         info=json.dumps(state['extraction_schema'], indent=2),
+    #         url=url,
+    #         content=content[:40_000],
+    #     )
+        
+    #     chat = get_chat()
+    #     result = await chat.ainvoke(p)
+    #     print('result of scrape_website: ', result)
+        
+    #     return str(result.content)
+    
+    def scrape_website(
         url: str,
         *,
         state: Annotated[State, InjectedState],
@@ -6069,9 +6100,14 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         Returns:
             str: A summary of the scraped content, tailored to the extraction schema.
         """
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                content = await response.text()
+        print("###### [tool] scrape_website ######")
+        
+        response = requests.get(url)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, "html.parser")
+            content = soup.get_text()
+            print('soup result: ', content)
+                
 
         p = _INFO_PROMPT.format(
             info=json.dumps(state['extraction_schema'], indent=2),
@@ -6080,7 +6116,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         )
         
         chat = get_chat()
-        result = await chat.ainvoke(p)
+        result = chat.invoke(p)
         print('result of scrape_website: ', result)
         
         return str(result.content)
@@ -6369,15 +6405,16 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         "extraction_schema": schema
     }    
     config = {
-        "recursion_limit": 50,
+        #"recursion_limit": 50,
+        "recursion_limit": 5,
         "max_loops": max_loops,
         "requestId": requestId,
         "connectionId": connectionId
     }
     
-    message = ""
-    for event in app.stream(inputs, config, stream_mode="values"):
-        print('event: ', event)
+    # message = ""
+    # for event in app.stream(inputs, config, stream_mode="values"):
+    #     print('event: ', event)
         
         #if "messages" in event:
         #    if len(event["messages"]) > 1:
@@ -6388,6 +6425,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
 
     #msg = readStreamMsg(connectionId, requestId, message.content)
     #print('output: ', output)
+    result = app.invoke(inputs, config)
+    print('result: ', result)
     
     #return output
     return ""
