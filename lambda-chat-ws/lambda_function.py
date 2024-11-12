@@ -6300,7 +6300,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
                 
                 reason = parsed_info.reason.values
                 print('reason: ', reason)
-                is_satisfactory = parsed_info.parsed_info
+                is_satisfactory = parsed_info.is_satisfactory
                 print('is_satisfactory: ', is_satisfactory)
                 improvement_instructions = parsed_info.improvement_instructions                
                 print('improvement_instructions: ', improvement_instructions)
