@@ -6030,7 +6030,19 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         {content}
         </Website content>"""
 
-    async def search(        
+    # async def search(        
+    #     query: str, *, config: Annotated[RunnableConfig, InjectedToolArg]
+    # ) -> Optional[list[dict[str, Any]]]:
+    #     """Query a search engine.
+
+    #     This function queries the web to fetch comprehensive, accurate, and trusted results. It's particularly useful
+    #     for answering questions about current events. Provide as much context in the query as needed to ensure high recall.
+    #     """        
+    #     wrapped = TavilySearchResults(max_results=max_search_results)
+    #     result = await wrapped.ainvoke({"query": query})
+    #     return cast(list[dict[str, Any]], result)
+    
+    def search(        
         query: str, *, config: Annotated[RunnableConfig, InjectedToolArg]
     ) -> Optional[list[dict[str, Any]]]:
         """Query a search engine.
@@ -6039,8 +6051,12 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         for answering questions about current events. Provide as much context in the query as needed to ensure high recall.
         """        
         wrapped = TavilySearchResults(max_results=max_search_results)
-        result = await wrapped.ainvoke({"query": query})
-        return cast(list[dict[str, Any]], result)
+        result = wrapped.invoke({"query": query})
+        print('result of search: ', result)
+        
+        output = cast(list[dict[str, Any]], result)
+        print('output of search: ', output)
+        return output
     
     async def scrape_website(
         url: str,
@@ -6089,13 +6105,15 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     )
         
     def call_agent_model(state: State) -> Dict[str, Any]:
+        print("###### call_agent_model ######")
+        
         info_tool = {
             "name": "Info",
             "description": "Call this when you have gathered all the relevant info",
             "parameters": state["extraction_schema"],
         }
-        print('topic: ', state["topic"])
-        print('schema: ', json.dumps(state["extraction_schema"]))
+        #print('topic: ', state["topic"])
+        #print('schema: ', json.dumps(state["extraction_schema"]))
         print('state["messages"]: ', state["messages"])
 
         p = MAIN_PROMPT.format(
@@ -6157,6 +6175,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         )
 
     async def reflect_node(state: State) -> Dict[str, Any]:
+        print("###### reflect_node ######")
+        
         p = MAIN_PROMPT.format(
             info=json.dumps(state['extraction_schema'], indent=2), topic=state["topic"]
         )
@@ -6221,6 +6241,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             }
 
     def route_after_agent(state: State) -> Literal["reflect", "tools", "call_agent_model", "__end__"]:
+        print("###### route_after_agent ######")
+        
         last_message = state["messages"][-1]
         print('last_message: ', last_message)
         
@@ -6232,6 +6254,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             return "tools"
 
     def route_after_checker(state: State, config: Optional[RunnableConfig]) -> Literal["end", "call_agent_model"]:
+        print("###### route_after_checker ######")
+        
         last_message = state["messages"][-1]
         print('last_message: ', last_message)
         
@@ -6359,8 +6383,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         #    if len(event["messages"]) > 1:
         #        msg = readStreamMsg(connectionId, requestId, event["messages"][-1].content)
         #        message += msg
-        #message = event["messages"][-1]
-        # print('message: ', message)
+        message = event["messages"][-1]
+        print('message: ', message)
 
     #msg = readStreamMsg(connectionId, requestId, message.content)
     #print('output: ', output)
