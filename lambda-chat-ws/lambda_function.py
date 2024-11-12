@@ -6228,7 +6228,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             )
         
         messages = [HumanMessage(content=p)] + state["messages"][:-1]
-        presumed_info = state.info
+        presumed_info = state["info"]
+        print('presumed_info: ', presumed_info)
         
         checker_prompt = (
             "I am thinking of calling the info tool with the info below."
