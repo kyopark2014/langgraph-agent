@@ -6284,6 +6284,9 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         #print('messages: ', messages)
         
         response = ""
+        reason = []
+        is_satisfactory = False
+        improvement_instructions = ""
         for attempt in range(5):
             chat = get_chat()
             structured_llm = chat.with_structured_output(InfoIsSatisfactory, include_raw=True)
@@ -6292,17 +6295,27 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             print(f'attempt: {attempt}, info: {info}')
         
             if not info['parsed'] == None:
+                parsed_info = info['parsed']
+                print('parsed_info: ', parsed_info)
+                
+                reason = parsed_info.reason.values
+                print('reason: ', reason)
+                is_satisfactory = parsed_info.parsed_info
+                print('is_satisfactory: ', is_satisfactory)
+                improvement_instructions = parsed_info.improvement_instructions                
+                print('improvement_instructions: ', improvement_instructions)
+                
                 response = cast(InfoIsSatisfactory, info)
                 print('response of InfoIsSatisfactory: ', response)                
                 break                
         
-        if response.is_satisfactory and presumed_info:
+        if is_satisfactory and presumed_info:
             return {
                 "info": presumed_info,
                 "messages": [
                     ToolMessage(
                         tool_call_id=last_message.tool_calls[0]["id"],
-                        content="\n".join(response.reason),
+                        content="\n".join(reason),
                         name="Info",
                         additional_kwargs={"artifact": response.model_dump()},
                         status="success",
@@ -6314,7 +6327,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
                 "messages": [
                     ToolMessage(
                         tool_call_id=last_message.tool_calls[0]["id"],
-                        content=f"Unsatisfactory response:\n{response.improvement_instructions}",
+                        content=f"Unsatisfactory response:\n{improvement_instructions}",
                         name="Info",
                         additional_kwargs={"artifact": response.model_dump()},
                         status="error",
