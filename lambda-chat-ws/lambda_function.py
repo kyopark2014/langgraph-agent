@@ -6213,7 +6213,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             default=None,
         )
 
-    async def reflect_node(state: State) -> Dict[str, Any]:
+    def reflect_node(state: State) -> Dict[str, Any]:
         print("###### reflect_node ######")
         
         p = MAIN_PROMPT.format(
