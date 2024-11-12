@@ -6366,7 +6366,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     output = app.ainvoke(inputs, config)
     print('output: ', output)
     
-    return output
+    #return output
+    return ""
         
 #########################################################
 def traslation(chat, text, input_language, output_language):
