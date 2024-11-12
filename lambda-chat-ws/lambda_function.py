@@ -47,7 +47,8 @@ from pydantic.v1 import BaseModel, Field
 from typing import Any, Annotated, List, Tuple, Dict, Optional, cast, TypedDict, Literal, Sequence, Union
 from langchain_aws import AmazonKnowledgeBasesRetriever
 from tavily import TavilyClient  
-    
+from IPython.display import Markdown, display
+     
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
 s3_prefix = os.environ.get('s3_prefix')
@@ -1784,7 +1785,7 @@ def get_hallucination_grader():
 # define tools
 tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
 
-def update_state_message(msg:str, config: Optional[RunnableConfig] = None):
+def update_state_message(msg:str, config):
     print(msg)
     # print('config: ', config)
     
@@ -1813,7 +1814,7 @@ def init_enhanced_search():
         else:                
             return "continue"
 
-    def call_model(state: State, config: Optional[RunnableConfig] = None):
+    def call_model(state: State, config):
         question = state["messages"]
         print('question: ', question)
         
@@ -1876,7 +1877,7 @@ def init_enhanced_search():
 
 app_enhanced_search = init_enhanced_search()
 
-def enhanced_search(query, config: Optional[RunnableConfig] = None):
+def enhanced_search(query, config):
     print("###### enhanced_search ######")
     inputs = [HumanMessage(content=query)]
         
@@ -1918,7 +1919,7 @@ def run_agent_executor(connectionId, requestId, query):
         else:                
             return "continue"
 
-    def call_model(state: State, config: Optional[RunnableConfig] = None):
+    def call_model(state: State, config):
         print("###### call_model ######")
         # print('state: ', state["messages"])
         
@@ -2136,7 +2137,7 @@ def run_reflection_agent(connectionId, requestId, query):
         # messages: Annotated[Sequence[BaseMessage], operator.add]
         messages: Annotated[list, add_messages]
 
-    def generation_node(state: State, config: Optional[RunnableConfig] = None):    
+    def generation_node(state: State, config):    
         print("###### generation ######")      
         update_state_message("generating...", config)
           
@@ -2159,7 +2160,7 @@ def run_reflection_agent(connectionId, requestId, query):
         response = chain.invoke(state["messages"])
         return {"messages": [response]}
 
-    def reflection_node(state: State, config: Optional[RunnableConfig] = None):
+    def reflection_node(state: State, config):
         print("###### reflection ######")
         messages = state["messages"]
         
@@ -2272,7 +2273,7 @@ def run_corrective_rag(connectionId, requestId, query):
         
         return {"documents": docs, "question": question}
 
-    def grade_documents_node(state: State, config: Optional[RunnableConfig] = None):
+    def grade_documents_node(state: State, config):
         print("###### grade_documents ######")
         question = state["question"]
         documents = state["documents"]
@@ -2337,7 +2338,7 @@ def run_corrective_rag(connectionId, requestId, query):
             print("---DECISION: GENERATE---")
             return "generate"
 
-    def generate_node(state: State, config: Optional[RunnableConfig] = None):
+    def generate_node(state: State, config):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
@@ -2352,7 +2353,7 @@ def run_corrective_rag(connectionId, requestId, query):
             
         return {"documents": documents, "question": question, "generation": generation}
 
-    def rewrite_node(state: State, config: Optional[RunnableConfig] = None):
+    def rewrite_node(state: State, config):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
@@ -2367,7 +2368,7 @@ def run_corrective_rag(connectionId, requestId, query):
 
         return {"question": better_question.question, "documents": documents}
 
-    def web_search_node(state: State, config: Optional[RunnableConfig] = None):
+    def web_search_node(state: State, config):
         print("###### web_search ######")
         question = state["question"]
         documents = state["documents"]
@@ -2447,7 +2448,7 @@ def run_self_rag(connectionId, requestId, query):
         count: int # number of retrieval
         documents : List[str]
     
-    def retrieve_node(state: State, config: Optional[RunnableConfig] = None):
+    def retrieve_node(state: State, config):
         print('state: ', state)
         print("###### retrieve ######")
         question = state["question"]
@@ -2458,7 +2459,7 @@ def run_self_rag(connectionId, requestId, query):
         
         return {"documents": docs, "question": question}
     
-    def generate_node(state: State, config: Optional[RunnableConfig] = None):
+    def generate_node(state: State, config):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
@@ -2474,7 +2475,7 @@ def run_self_rag(connectionId, requestId, query):
         
         return {"documents": documents, "question": question, "generation": generation, "retries": retries + 1}
             
-    def grade_documents_node(state: State, config: Optional[RunnableConfig] = None):
+    def grade_documents_node(state: State, config):
         print("###### grade_documents ######")
         question = state["question"]
         documents = state["documents"]
@@ -2518,7 +2519,7 @@ def run_self_rag(connectionId, requestId, query):
         
         return {"question": question, "documents": filtered_docs, "count": count + 1}
 
-    def decide_to_generate(state: State, config: Optional[RunnableConfig] = None):
+    def decide_to_generate(state: State, config):
         print("###### decide_to_generate ######")
         filtered_documents = state["documents"]
         
@@ -2536,7 +2537,7 @@ def run_self_rag(connectionId, requestId, query):
             print("---DECISION: GENERATE---")
             return "document"
 
-    def rewrite_node(state: State, config: Optional[RunnableConfig] = None):
+    def rewrite_node(state: State, config):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
@@ -2551,7 +2552,7 @@ def run_self_rag(connectionId, requestId, query):
 
         return {"question": better_question.question, "documents": documents}
 
-    def grade_generation(state: State, config: Optional[RunnableConfig] = None):
+    def grade_generation(state: State, config):
         print("###### grade_generation ######")
         question = state["question"]
         documents = state["documents"]
@@ -2663,7 +2664,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         retries: int
         web_fallback: bool
 
-    def retrieve_node(state: State, config: Optional[RunnableConfig] = None):
+    def retrieve_node(state: State, config):
         print("###### retrieve ######")
         question = state["question"]
         
@@ -2673,7 +2674,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         
         return {"documents": docs, "question": question, "web_fallback": True}
 
-    def generate_node(state: State, config: Optional[RunnableConfig] = None):
+    def generate_node(state: State, config):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
@@ -2692,7 +2693,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         
         return {"retries": retries + 1, "candidate_answer": generation.content}
 
-    def rewrite_node(state: State, config: Optional[RunnableConfig] = None):
+    def rewrite_node(state: State, config):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
@@ -2707,7 +2708,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
 
         return {"question": better_question.question, "documents": documents}
     
-    def grade_generation(state: State, config: Optional[RunnableConfig] = None):
+    def grade_generation(state: State, config):
         print("###### grade_generation ######")
         question = state["question"]
         documents = state["documents"]
@@ -2750,7 +2751,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
             print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION (Not Answer)---")
             return "rewrite" if retries < max_retries else "websearch"
 
-    def web_search_node(state: State, config: Optional[RunnableConfig] = None):
+    def web_search_node(state: State, config):
         print("###### web_search ######")
         question = state["question"]
         documents = state["documents"]
@@ -2859,7 +2860,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         planner = planner_prompt | chat
         return planner
     
-    def plan_node(state: State, config: Optional[RunnableConfig] = None):
+    def plan_node(state: State, config):
         print("###### plan ######")
         print('input: ', state["input"])
         
@@ -2889,7 +2890,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         print('parsing_error: ', info['parsing_error'])
         return {"plan": []}          
 
-    def execute_node(state: State, config: Optional[RunnableConfig] = None):
+    def execute_node(state: State, config):
         print("###### execute ######")
         print('input: ', state["input"])
         plan = state["plan"]
@@ -2974,7 +2975,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         
         return replanner
 
-    def replan_node(state: State, config: Optional[RunnableConfig] = None):
+    def replan_node(state: State, config):
         print('#### replan ####')
         
         update_state_message("replanning...", config)
@@ -3166,7 +3167,7 @@ def run_essay_writer(connectionId, requestId, query):
         planner = planner_prompt | chat
         return planner
         
-    def plan(state: State, config: Optional[RunnableConfig] = None):
+    def plan(state: State, config):
         print("###### plan ######")
         print('task: ', state["task"])
         
@@ -3269,7 +3270,7 @@ def run_essay_writer(connectionId, requestId, query):
             "content": content,
         }
         
-    def generation(state: State, config: RunnableConfig):    
+    def generation(state: State, config):    
         print("###### generation ######")
         print('content: ', state['content'])
         print('task: ', state['task'])
@@ -3325,7 +3326,7 @@ Utilize all the information below as needed:
             "revision_number": revision_number + 1
         }
 
-    def reflection(state: State, config: RunnableConfig):    
+    def reflection(state: State, config):    
         print("###### reflection ######")
         
         update_state_message("reflecting...", config)
@@ -6626,6 +6627,25 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         )
 
         return workflow.compile()        
+       
+    def format_llm_chip_info(data):
+        markdown_text = "# Top 5 Chip Providers for LLM Training\n\n"
+
+        for company in data["companies"]:
+            markdown_text += f"""
+    ## {company['name']}
+
+    **Key Technologies:** {company['technologies']}
+
+    **Market Share:** {company['market_share']}
+
+    **Key Powers:** {company.get('key_powers', 'Not specified')}
+
+    **Future Outlook:** {company['future_outlook']}
+
+    ---
+    """
+        return Markdown(markdown_text)
 
     app = build_data_enrichment_agent()
     
