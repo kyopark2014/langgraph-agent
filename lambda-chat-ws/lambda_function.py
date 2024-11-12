@@ -12,6 +12,7 @@ import base64
 import operator
 import uuid
 import functools
+import aiohttp
 
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -43,7 +44,7 @@ from langgraph.prebuilt import ToolNode
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import tools_condition
 from pydantic.v1 import BaseModel, Field
-from typing import Annotated, List, Tuple, TypedDict, Literal, Sequence, Union
+from typing import Any, Annotated, List, Tuple, Dict, Optional, cast, TypedDict, Literal, Sequence, Union
 from langchain_aws import AmazonKnowledgeBasesRetriever
 from tavily import TavilyClient  
     
@@ -1783,7 +1784,7 @@ def get_hallucination_grader():
 # define tools
 tools = [get_current_time, get_book_list, get_weather_info, search_by_tavily, search_by_opensearch]        
 
-def update_state_message(msg:str, config):
+def update_state_message(msg:str, config: Optional[RunnableConfig] = None):
     print(msg)
     # print('config: ', config)
     
@@ -1812,7 +1813,7 @@ def init_enhanced_search():
         else:                
             return "continue"
 
-    def call_model(state: State, config):
+    def call_model(state: State, config: Optional[RunnableConfig] = None):
         question = state["messages"]
         print('question: ', question)
         
@@ -1875,7 +1876,7 @@ def init_enhanced_search():
 
 app_enhanced_search = init_enhanced_search()
 
-def enhanced_search(query, config):
+def enhanced_search(query, config: Optional[RunnableConfig] = None):
     print("###### enhanced_search ######")
     inputs = [HumanMessage(content=query)]
         
@@ -1917,7 +1918,7 @@ def run_agent_executor(connectionId, requestId, query):
         else:                
             return "continue"
 
-    def call_model(state: State, config):
+    def call_model(state: State, config: Optional[RunnableConfig] = None):
         print("###### call_model ######")
         # print('state: ', state["messages"])
         
@@ -2135,7 +2136,7 @@ def run_reflection_agent(connectionId, requestId, query):
         # messages: Annotated[Sequence[BaseMessage], operator.add]
         messages: Annotated[list, add_messages]
 
-    def generation_node(state: State, config):    
+    def generation_node(state: State, config: Optional[RunnableConfig] = None):    
         print("###### generation ######")      
         update_state_message("generating...", config)
           
@@ -2158,7 +2159,7 @@ def run_reflection_agent(connectionId, requestId, query):
         response = chain.invoke(state["messages"])
         return {"messages": [response]}
 
-    def reflection_node(state: State, config):
+    def reflection_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### reflection ######")
         messages = state["messages"]
         
@@ -2271,7 +2272,7 @@ def run_corrective_rag(connectionId, requestId, query):
         
         return {"documents": docs, "question": question}
 
-    def grade_documents_node(state: State, config):
+    def grade_documents_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### grade_documents ######")
         question = state["question"]
         documents = state["documents"]
@@ -2336,7 +2337,7 @@ def run_corrective_rag(connectionId, requestId, query):
             print("---DECISION: GENERATE---")
             return "generate"
 
-    def generate_node(state: State, config):
+    def generate_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
@@ -2351,7 +2352,7 @@ def run_corrective_rag(connectionId, requestId, query):
             
         return {"documents": documents, "question": question, "generation": generation}
 
-    def rewrite_node(state: State, config):
+    def rewrite_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
@@ -2366,7 +2367,7 @@ def run_corrective_rag(connectionId, requestId, query):
 
         return {"question": better_question.question, "documents": documents}
 
-    def web_search_node(state: State, config):
+    def web_search_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### web_search ######")
         question = state["question"]
         documents = state["documents"]
@@ -2446,7 +2447,7 @@ def run_self_rag(connectionId, requestId, query):
         count: int # number of retrieval
         documents : List[str]
     
-    def retrieve_node(state: State, config):
+    def retrieve_node(state: State, config: Optional[RunnableConfig] = None):
         print('state: ', state)
         print("###### retrieve ######")
         question = state["question"]
@@ -2457,7 +2458,7 @@ def run_self_rag(connectionId, requestId, query):
         
         return {"documents": docs, "question": question}
     
-    def generate_node(state: State, config):
+    def generate_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
@@ -2473,7 +2474,7 @@ def run_self_rag(connectionId, requestId, query):
         
         return {"documents": documents, "question": question, "generation": generation, "retries": retries + 1}
             
-    def grade_documents_node(state: State, config):
+    def grade_documents_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### grade_documents ######")
         question = state["question"]
         documents = state["documents"]
@@ -2517,7 +2518,7 @@ def run_self_rag(connectionId, requestId, query):
         
         return {"question": question, "documents": filtered_docs, "count": count + 1}
 
-    def decide_to_generate(state: State, config):
+    def decide_to_generate(state: State, config: Optional[RunnableConfig] = None):
         print("###### decide_to_generate ######")
         filtered_documents = state["documents"]
         
@@ -2535,7 +2536,7 @@ def run_self_rag(connectionId, requestId, query):
             print("---DECISION: GENERATE---")
             return "document"
 
-    def rewrite_node(state: State, config):
+    def rewrite_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
@@ -2550,7 +2551,7 @@ def run_self_rag(connectionId, requestId, query):
 
         return {"question": better_question.question, "documents": documents}
 
-    def grade_generation(state: State, config):
+    def grade_generation(state: State, config: Optional[RunnableConfig] = None):
         print("###### grade_generation ######")
         question = state["question"]
         documents = state["documents"]
@@ -2662,7 +2663,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         retries: int
         web_fallback: bool
 
-    def retrieve_node(state: State, config):
+    def retrieve_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### retrieve ######")
         question = state["question"]
         
@@ -2672,7 +2673,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         
         return {"documents": docs, "question": question, "web_fallback": True}
 
-    def generate_node(state: State, config):
+    def generate_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### generate ######")
         question = state["question"]
         documents = state["documents"]
@@ -2691,7 +2692,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         
         return {"retries": retries + 1, "candidate_answer": generation.content}
 
-    def rewrite_node(state: State, config):
+    def rewrite_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### rewrite ######")
         question = state["question"]
         documents = state["documents"]
@@ -2706,7 +2707,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
 
         return {"question": better_question.question, "documents": documents}
     
-    def grade_generation(state: State, config):
+    def grade_generation(state: State, config: Optional[RunnableConfig] = None):
         print("###### grade_generation ######")
         question = state["question"]
         documents = state["documents"]
@@ -2749,7 +2750,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
             print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION (Not Answer)---")
             return "rewrite" if retries < max_retries else "websearch"
 
-    def web_search_node(state: State, config):
+    def web_search_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### web_search ######")
         question = state["question"]
         documents = state["documents"]
@@ -2858,7 +2859,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         planner = planner_prompt | chat
         return planner
     
-    def plan_node(state: State, config):
+    def plan_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### plan ######")
         print('input: ', state["input"])
         
@@ -2888,7 +2889,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         print('parsing_error: ', info['parsing_error'])
         return {"plan": []}          
 
-    def execute_node(state: State, config):
+    def execute_node(state: State, config: Optional[RunnableConfig] = None):
         print("###### execute ######")
         print('input: ', state["input"])
         plan = state["plan"]
@@ -2973,7 +2974,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         
         return replanner
 
-    def replan_node(state: State, config):
+    def replan_node(state: State, config: Optional[RunnableConfig] = None):
         print('#### replan ####')
         
         update_state_message("replanning...", config)
@@ -3165,7 +3166,7 @@ def run_essay_writer(connectionId, requestId, query):
         planner = planner_prompt | chat
         return planner
         
-    def plan(state: State, config):
+    def plan(state: State, config: Optional[RunnableConfig] = None):
         print("###### plan ######")
         print('task: ', state["task"])
         
@@ -3268,7 +3269,7 @@ def run_essay_writer(connectionId, requestId, query):
             "content": content,
         }
         
-    def generation(state: State, config):    
+    def generation(state: State, config: RunnableConfig):    
         print("###### generation ######")
         print('content: ', state['content'])
         print('task: ', state['task'])
@@ -3324,7 +3325,7 @@ Utilize all the information below as needed:
             "revision_number": revision_number + 1
         }
 
-    def reflection(state: State, config):    
+    def reflection(state: State, config: RunnableConfig):    
         print("###### reflection ######")
         
         update_state_message("reflecting...", config)
@@ -5992,7 +5993,7 @@ def run_rag_with_transformation(connectionId, requestId, query):
     return output['draft']
 
 ####################### LangGraph #######################
-# RAG with query trasnformation
+# Data Enrichment Agent
 #########################################################
 from typing import Any, Optional, cast
 from langchain_core.runnables import RunnableConfig
@@ -6152,7 +6153,6 @@ def run_enrichment_agent(connectionId, requestId, query):
         print('response: ', response)
 
         info = None
-
         if response.tool_calls:
             for tool_call in response.tool_calls:
                 if tool_call["name"] == "Info":
@@ -6163,6 +6163,7 @@ def run_enrichment_agent(connectionId, requestId, query):
             response.tool_calls = [
                 next(tc for tc in response.tool_calls if tc["name"] == "Info")
             ]
+            print('response.tool_calls: ',  response.tool_calls)
 
         response_messages: List[BaseMessage] = [response]
         if not response.tool_calls:  # If LLM didn't respect the tool_choice
@@ -6192,26 +6193,20 @@ def run_enrichment_agent(connectionId, requestId, query):
             default=None,
         )
 
-    def reflect(state: State, config):
-        """Validate the quality of the data enrichment agent's output.
-        This asynchronous function performs the following steps:
-        1. Prepares the initial prompt using the main prompt template.
-        2. Constructs a message history for the model.
-        3. Prepares a checker prompt to evaluate the presumed info.
-        4. Initializes and configures a language model with structured output.
-        5. Invokes the model to assess the quality of the gathered information.
-        6. Processes the model's response and determines if the info is satisfactory.
-        """
+    def reflect_node(state: State, config):
         p = MAIN_PROMPT.format(
             info=json.dumps(state.extraction_schema, indent=2), topic=state.topic
         )
 
         last_message = state.messages[-1]
+        print('last_message: ', last_message)
+        
         if not isinstance(last_message, AIMessage):
             raise ValueError(
-                f"{reflect.__name__} expects the last message in the state to be an AI message with tool calls."
+                f"{reflect_node.__name__} expects the last message in the state to be an AI message with tool calls."
                 f" Got: {type(last_message)}"
             )
+
         messages = [HumanMessage(content=p)] + state.messages[:-1]
 
         presumed_info = state.info
@@ -6223,23 +6218,21 @@ def run_enrichment_agent(connectionId, requestId, query):
             "If you don't think it is good, you should be very specific about what could be improved."
 
             "{presumed_info}"
-        )
-        
+        )        
         p1 = checker_prompt.format(presumed_info=json.dumps(presumed_info or {}, indent=2))
         
         messages.append(HumanMessage(content=p1))
+        print('messages: ', messages)
         
         for attempt in range(5):
-            chat = get_chat()
-        
-            structured_llm = chat.with_structured_output(InfoIsSatisfactory)
-        
+            chat = get_chat()        
+            structured_llm = chat.with_structured_output(InfoIsSatisfactory)    
             info = structured_llm.invoke(messages)
             print(f'attempt: {attempt}, info: {info}')
         
             if not info['parsed'] == None:
                 parsed_info = info['parsed']
-        
+                print('parsed_info: ', parsed_info)        
                 if parsed_info.is_satisfactory and presumed_info:
                     return {
                         "info": presumed_info,
@@ -6299,11 +6292,10 @@ def run_enrichment_agent(connectionId, requestId, query):
     tool_node = ToolNode(tools)
     
     def buildEnrichmentAgent():
-        workflow = StateGraph(
-            State, input=InputState, output=OutputState, config_schema=Configuration
-        )
+        workflow = StateGraph(State, input=InputState, output=OutputState, config_schema=Configuration)
+        
         workflow.add_node("call_agent_model", call_agent_model)
-        workflow.add_node("reflect", reflect)
+        workflow.add_node("reflect", reflect_node)
         workflow.add_node("tools", tool_node)
         
         workflow.add_edge(START, "call_agent_model")
@@ -6328,10 +6320,10 @@ def run_enrichment_agent(connectionId, requestId, query):
             }
         )
 
-        graph = workflow.compile()        
-        graph.name = "ResearchTopic"
+        app = workflow.compile()
+        app.name = "ResearchTopic"
                 
-        return workflow.compile()
+        return app
     
     app = buildEnrichmentAgent()
     
@@ -6355,7 +6347,346 @@ def run_enrichment_agent(connectionId, requestId, query):
     msg = readStreamMsg(connectionId, requestId, message.content)
     
     return msg
+
+
+####################### LangGraph #######################
+# data enrichment agent
+#########################################################
+
+def run_data_enrichment_agent(connectionId, requestId, text):
+    class State(InputState):
+        messages: Annotated[List[BaseMessage],add_messages]=field(default_factory=list)
+        loop_step: Annotated[int,operator.add]=field(default=0)
+
+    class InputState:
+        topic: str
+        extraction_schema: dict[str, Any]
+        info: Optional[dict[str, Any]] = field(default=None)
+        
+    class OutputState:
+        info: dict[str, Any]
     
+    max_search_results = 10
+    max_info_tool_calls = 3
+    max_loops = 6
+    
+    _INFO_PROMPT = """You are doing web research on behalf of a user. You are trying to find out this information:
+
+        <info>
+        {info}
+        </info>
+
+        You just scraped the following website: {url}
+
+        Based on the website content below, jot down some notes about the website.
+
+        <Website content>
+        {content}
+        </Website content>"""
+
+    async def search(
+        query: str, *, config: Annotated[RunnableConfig, InjectedToolArg]
+    ) -> Optional[list[dict[str, Any]]]:
+        wrapped = TavilySearchResults(max_results=max_search_results)
+        result = await wrapped.ainvoke({"query": query})
+        return cast(list[dict[str, Any]], result)
+    
+    async def scrape_website(
+        url: str,
+        *,
+        state: Annotated[State, InjectedState],
+        config: Annotated[RunnableConfig, InjectedToolArg],
+    ) -> str:        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                content = await response.text()
+
+        p = _INFO_PROMPT.format(
+            info=json.dumps(state.extraction_schema, indent=2),
+            url=url,
+            content=content[:40_000],
+        )
+        
+        chat = get_chat()
+        result = await chat.ainvoke(p)
+        print('result of scrape_website: ', result)
+        
+        return str(result.content)
+
+    tools = [search, scrape_website]
+    tool_node = ToolNode(tools)
+    
+    MAIN_PROMPT = (
+        "You are doing web research on behalf of a user. You are trying to figure out this information:"
+        "<info>"
+        "{info}"
+        "</info>"
+
+        "You have access to the following tools:"
+        "- `Search`: call a search tool and get back some results"
+        "- `ScrapeWebsite`: scrape a website and get relevant notes about the given request. This will update the notes above."
+        "- `Info`: call this when you are done and have gathered all the relevant info:"
+
+        "Here is the information you have about the topic you are researching:"
+
+        "Topic: {topic}"
+    )
+        
+    async def call_agent_model(state: State) -> Dict[str, Any]:
+        info_tool = {
+            "name": "Info",
+            "description": "Call this when you have gathered all the relevant info",
+            "parameters": state.extraction_schema,
+        }
+        print('topic: ', state.topic)
+        print('schema: ', json.dumps(state.extraction_schema))
+        print('state.messages: ', state.messages)
+
+        p = MAIN_PROMPT.format(
+            info=json.dumps(state.extraction_schema, indent=2), 
+            topic=state.topic
+        )
+
+        messages = [HumanMessage(content=p)] + state.messages
+
+        chat = get_chat() 
+        tools = [scrape_website, search, info_tool]
+        model = chat.bind_tools(tools, tool_choice="any")
+        result = await model.ainvoke(messages)
+        print('result of call_model: ', result)
+        
+        response = cast(AIMessage, result)
+        print('response of call_model: ', response)
+
+        info = None
+        if response.tool_calls:
+            for tool_call in response.tool_calls:
+                if tool_call["name"] == "Info":
+                    info = tool_call["args"]
+                    print('info: ', info)                    
+                    break
+                
+        if info is not None:  # The agent is submitting their answer
+            response.tool_calls = [
+                next(tc for tc in response.tool_calls if tc["name"] == "Info")
+            ]
+            print('response.tool_calls: ', response.tool_calls)
+
+        response_messages: List[BaseMessage] = [response]
+        if not response.tool_calls:  
+            response_messages.append(
+                HumanMessage(content="Please respond by calling one of the provided tools.")
+            )
+        
+        return {
+            "messages": response_messages,
+            "info": info,
+            # Add 1 to the step count
+            "loop_step": 1,
+        }
+
+    class InfoIsSatisfactory(BaseModel):
+        """Validate whether the current extracted info is satisfactory and complete."""
+
+        reason: List[str] = Field(
+            description="First, provide reasoning for why this is either good or bad as a final result. Must include at least 3 reasons."
+        )
+        is_satisfactory: bool = Field(
+            description="After providing your reasoning, provide a value indicating whether the result is satisfactory. If not, you will continue researching."
+        )
+        improvement_instructions: Optional[str] = Field(
+            description="If the result is not satisfactory, provide clear and specific instructions on what needs to be improved or added to make the information satisfactory."
+            " This should include details on missing information, areas that need more depth, or specific aspects to focus on in further research.",
+            default=None,
+        )
+
+    async def reflect_node(state: State) -> Dict[str, Any]:
+        p = MAIN_PROMPT.format(
+            info=json.dumps(state.extraction_schema, indent=2), topic=state.topic
+        )
+        
+        last_message = state.messages[-1]
+        if not isinstance(last_message, AIMessage):
+            raise ValueError(
+                f"{reflect_node.__name__} expects the last message in the state to be an AI message with tool calls."
+                f" Got: {type(last_message)}"
+            )
+        
+        messages = [HumanMessage(content=p)] + state.messages[:-1]
+        presumed_info = state.info
+        
+        checker_prompt = (
+            "I am thinking of calling the info tool with the info below."
+            "Is this good? Give your reasoning as well."
+            "You can encourage the Assistant to look at specific URLs if that seems relevant, or do more searches."
+            "If you don't think it is good, you should be very specific about what could be improved."
+
+            "{presumed_info}"
+        )        
+        p1 = checker_prompt.format(presumed_info=json.dumps(presumed_info or {}, indent=2))
+        
+        messages.append(HumanMessage(content=p1))
+        print('messages: ', messages)
+        
+        #raw_model = init_model(config)
+        chat = get_chat()
+        structured_llm = chat.with_structured_output(InfoIsSatisfactory)
+        
+        info = await structured_llm.ainvoke(messages)
+        print('info: ', info)
+        
+        response = cast(InfoIsSatisfactory, info)
+        print('response of InfoIsSatisfactory: ', response)
+        
+        if response.is_satisfactory and presumed_info:
+            return {
+                "info": presumed_info,
+                "messages": [
+                    ToolMessage(
+                        tool_call_id=last_message.tool_calls[0]["id"],
+                        content="\n".join(response.reason),
+                        name="Info",
+                        additional_kwargs={"artifact": response.model_dump()},
+                        status="success",
+                    )
+                ],
+            }
+        else:
+            return {
+                "messages": [
+                    ToolMessage(
+                        tool_call_id=last_message.tool_calls[0]["id"],
+                        content=f"Unsatisfactory response:\n{response.improvement_instructions}",
+                        name="Info",
+                        additional_kwargs={"artifact": response.model_dump()},
+                        status="error",
+                    )
+                ]
+            }
+
+    def route_after_agent(state: State) -> Literal["reflect", "tools", "call_agent_model", "__end__"]:
+        last_message = state.messages[-1]
+        print('last_message: ', last_message)
+        
+        if not isinstance(last_message, AIMessage):
+            return "call_agent_model"
+        if last_message.tool_calls and last_message.tool_calls[0]["name"] == "Info":
+            return "reflect"
+        else:
+            return "tools"
+
+    def route_after_checker(state: State, config: Optional[RunnableConfig]) -> Literal["end", "call_agent_model"]:
+        last_message = state.messages[-1]
+        print('last_message: ', last_message)
+        
+        if state.loop_step < max_loops:
+            if not state.info:
+                return "call_agent_model"
+            
+            if not isinstance(last_message, ToolMessage):
+                raise ValueError(
+                    f"{route_after_checker.__name__} expected a tool messages. Received: {type(last_message)}."
+                )
+            
+            if last_message.status == "error":
+                return "call_agent_model"  # Research deemed unsatisfactory           
+            return "end"   # It's great!
+        
+        else:
+            return "end"
+
+    def build_data_enrichment_agent():
+        workflow = StateGraph(State, input=InputState, output=OutputState)
+        
+        workflow.add_node("call_agent_model", call_agent_model)
+        workflow.add_node("reflect", reflect_node)
+        workflow.add_node("tools", tool_node)
+        
+        # Set entry point
+        workflow.set_entry_point("call_agent_model")
+        
+        workflow.add_conditional_edges(
+            "call_agent_model", 
+            route_after_agent,
+            {
+                "call_agent_model": "call_agent_model",
+                "reflect": "reflect",
+                "tools": "tools"
+            }
+        )
+        
+        workflow.add_edge("tools", "call_agent_model")
+        workflow.add_conditional_edges(
+            "reflect", 
+            route_after_checker,
+            {
+                "call_agent_model": "call_agent_model",
+                "end": END
+            }
+        )
+
+        return workflow.compile()        
+
+    app = build_data_enrichment_agent()
+    
+    isTyping(connectionId, requestId, "")
+    
+    schema = {
+        "type": "object",
+        "properties": {
+            "companies": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "Company name"},
+                        "technologies": {
+                            "type": "string",
+                            "description": "Brief summary of key technologies used by the company",
+                        },
+                        "market_share": {
+                            "type": "string",
+                            "description": "Overview of market share for this company",
+                        },
+                        "future_outlook": {
+                            "type": "string",
+                            "description": "Brief summary of future prospects and developments in the field for this company",
+                        },
+                        "key_powers": {
+                            "type": "string",
+                            "description": "Which of the 7 Powers (Scale Economies, Network Economies, Counter Positioning, Switching Costs, Branding, Cornered Resource, Process Power) best describe this company's competitive advantage",
+                        },
+                    },
+                    "required": ["name", "technologies", "market_share", "future_outlook"],
+                },
+                "description": "List of companies",
+            }
+        },
+        "required": ["companies"],
+    }
+    
+    inputs={
+        "topic": text,
+        "extraction_schema": schema
+    }    
+    config = {
+        "recursion_limit": 50,
+        "max_loops": max_loops,
+        "requestId": requestId,
+        "connectionId": connectionId
+    }
+    
+    message = ""
+    for event in app.stream(inputs, config, stream_mode="values"):
+        # print('event: ', event)
+        
+        message = event["messages"][-1]
+        # print('message: ', message)
+
+    msg = readStreamMsg(connectionId, requestId, message.content)
+    
+    return msg
+        
 #########################################################
 def traslation(chat, text, input_language, output_language):
     system = (
@@ -6966,6 +7297,9 @@ def getResponse(connectionId, jsonBody):
 
                 elif convType == 'rag-with-transformation':  # rag-with-transformation
                     msg = run_rag_with_transformation(connectionId, requestId, text)
+                
+                elif convType == 'data-enrichment-agent': 
+                    msg = run_data_enrichment_agent(connectionId, requestId, text)
                     
                 elif convType == "translation":
                     msg = translate_text(chat, text) 
