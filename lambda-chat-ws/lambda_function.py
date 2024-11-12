@@ -6216,18 +6216,21 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     def reflect_node(state: State) -> Dict[str, Any]:
         print("###### reflect_node ######")
         
-        p = MAIN_PROMPT.format(
-            info=json.dumps(state['extraction_schema'], indent=2), topic=state["topic"]
-        )
-        
         last_message = state["messages"][-1]
+        print('last_message: ', last_message)
+        
         if not isinstance(last_message, AIMessage):
             raise ValueError(
                 f"{reflect_node.__name__} expects the last message in the state to be an AI message with tool calls."
                 f" Got: {type(last_message)}"
             )
-        
+            
+        p = MAIN_PROMPT.format(
+            info=json.dumps(state['extraction_schema'], indent=2), topic=state["topic"]
+        )
         messages = [HumanMessage(content=p)] + state["messages"][:-1]
+        print('messages: ', messages)
+        
         presumed_info = state["info"]
         print('presumed_info: ', presumed_info)
         
@@ -6244,15 +6247,18 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         messages.append(HumanMessage(content=p1))
         print('messages: ', messages)
         
-        #raw_model = init_model(config)
-        chat = get_chat()
-        structured_llm = chat.with_structured_output(InfoIsSatisfactory)
+        response = ""
+        for attempt in range(5):
+            chat = get_chat()
+            structured_llm = chat.with_structured_output(InfoIsSatisfactory)
+            
+            info = structured_llm.invoke(messages)
+            print(f'attempt: {attempt}, info: {info}')
         
-        info = structured_llm.invoke(messages)
-        print('info: ', info)
-        
-        response = cast(InfoIsSatisfactory, info)
-        print('response of InfoIsSatisfactory: ', response)
+            if not info['parsed'] == None:
+                response = cast(InfoIsSatisfactory, info)
+                print('response of InfoIsSatisfactory: ', response)                
+                break                
         
         if response.is_satisfactory and presumed_info:
             return {
