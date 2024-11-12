@@ -6383,8 +6383,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         #    if len(event["messages"]) > 1:
         #        msg = readStreamMsg(connectionId, requestId, event["messages"][-1].content)
         #        message += msg
-        message = event["messages"][-1]
-        print('message: ', message)
+        #message = event["messages"][-1]
+        #print('message: ', message)
 
     #msg = readStreamMsg(connectionId, requestId, message.content)
     #print('output: ', output)
