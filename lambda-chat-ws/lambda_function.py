@@ -44,7 +44,8 @@ from langgraph.prebuilt import ToolNode
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import tools_condition
 from pydantic.v1 import BaseModel, Field
-from typing import Any, Annotated, List, Tuple, Dict, Optional, cast, TypedDict, Literal, Sequence, Union
+from typing import Any, List, Tuple, Dict, Optional, cast, Literal, Sequence, Union
+from typing_extensions import Annotated, TypedDict
 from langchain_aws import AmazonKnowledgeBasesRetriever
 from tavily import TavilyClient  
 
