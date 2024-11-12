@@ -6057,7 +6057,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         # print('result of search: ', result)
         
         output = cast(list[dict[str, Any]], result)
-        print('output of search: ', output)
+        print('output of search: ', json.dumps(output))
         return output
     
     # async def scrape_website(
@@ -6100,26 +6100,29 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         Returns:
             str: A summary of the scraped content, tailored to the extraction schema.
         """
-        print("###### [tool] scrape_website ######")
+        print(f"###### [tool] scrape_website: {url} ######")
         
         response = requests.get(url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, "html.parser")
             content = soup.get_text()
             print('soup result: ', content)
-                
-
-        p = _INFO_PROMPT.format(
-            info=json.dumps(state['extraction_schema'], indent=2),
-            url=url,
-            content=content[:40_000],
-        )
+            
+            p = _INFO_PROMPT.format(
+                info=json.dumps(state['extraction_schema'], indent=2),
+                url=url,
+                content=content[:40_000],
+            )            
+            chat = get_chat()
+            result = chat.invoke(p)
+            print('result of scrape_website: ', result)
+            output = str(result.content)
+        else:
+            content = "Failed to retrieve the webpage. Status code: " + str(response.status_code)
+            print(content)
+            output = ""
         
-        chat = get_chat()
-        result = chat.invoke(p)
-        print('result of scrape_website: ', result)
-        
-        return str(result.content)
+        return output
 
     tools = [search, scrape_website]
     tool_node = ToolNode(tools)
@@ -6150,7 +6153,6 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         }
         #print('topic: ', state["topic"])
         #print('schema: ', json.dumps(state["extraction_schema"]))
-        print('state["messages"]: ', state["messages"])
 
         p = MAIN_PROMPT.format(
             info=json.dumps(state["extraction_schema"], indent=2), 
@@ -6158,6 +6160,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         )
 
         messages = [HumanMessage(content=p)] + state["messages"]
+        print('messages: ', messages)
 
         chat = get_chat() 
         tools = [scrape_website, search, info_tool]
@@ -6244,7 +6247,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         chat = get_chat()
         structured_llm = chat.with_structured_output(InfoIsSatisfactory)
         
-        info = await structured_llm.ainvoke(messages)
+        info = structured_llm.invoke(messages)
         print('info: ', info)
         
         response = cast(InfoIsSatisfactory, info)
