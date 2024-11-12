@@ -6030,18 +6030,6 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         {content}
         </Website content>"""
 
-    # async def search(        
-    #     query: str, *, config: Annotated[RunnableConfig, InjectedToolArg]
-    # ) -> Optional[list[dict[str, Any]]]:
-    #     """Query a search engine.
-
-    #     This function queries the web to fetch comprehensive, accurate, and trusted results. It's particularly useful
-    #     for answering questions about current events. Provide as much context in the query as needed to ensure high recall.
-    #     """        
-    #     wrapped = TavilySearchResults(max_results=max_search_results)
-    #     result = await wrapped.ainvoke({"query": query})
-    #     return cast(list[dict[str, Any]], result)
-    
     def search(        
         query: str, *, config: Annotated[RunnableConfig, InjectedToolArg]
     ) -> Optional[list[dict[str, Any]]]:
@@ -6068,7 +6056,6 @@ def run_data_enrichment_agent(connectionId, requestId, text):
                     'url': re["url"],
                     'from': 'tavily'
                 }
-                #metadata=to_metadata
             )
             reference_docs.append(doc)
         
@@ -6225,12 +6212,13 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         print('presumed_info: ', presumed_info)
         
         topic = state["topic"]
-        if isKorean(topic):
+        # print('topic: ', topic)
+        if isKorean(topic)==True:
             system = (
                 "아래 정보로 info tool을 호출하려고 합니다."
                 "이것이 좋습니까? 그 이유도 설명해 주세요."
-                "이것이당신은 특정 URL을 살펴보거나 더 많은 검색을 하도록 어시스턴트에게 권장할 수 있습니다."
-                "만약 좋지 않다고 생각한다면, 무엇이 개선될 수 있는지 구체적으로 제사합니다."
+                "당신은 특정 URL을 살펴보거나 더 많은 검색을 하도록 어시스턴트에게 요청할 수 있습니다."
+                "만약 이것이 좋지 않다고 생각한다면, 어떻게 개선해야할 지 구체적으로 제사합니다."
                 "최종 답변에 <result> tag를 붙여주세요."
             )
         else:
@@ -6254,7 +6242,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             }
         )
         result = response.content
-        print('result of checker_prompt: ', result)
+        # print('result of checker_prompt: ', result)
         output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
         print('output of checker_prompt: ', output)
         
@@ -6486,6 +6474,11 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     
     # final = markdown_output(text, result["info"])
     final = text_output(result["info"])
+    
+    if isKorean(text)==True:
+        chat = get_chat()
+        final = traslation(chat, final, "English", "Korean")
+        
     return final
         
 #########################################################
