@@ -6197,11 +6197,16 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             # Add 1 to the step count
             "loop_step": 1,
         }
+        
+    class Reason(BaseModel):
+        values: List[str] = Field(
+            description="a list of reasons"
+        )
 
     class InfoIsSatisfactory(BaseModel):
         """Validate whether the current extracted info is satisfactory and complete."""
 
-        reason: List[str] = Field(
+        reason: Reason = Field(
             description="First, provide reasoning for why this is either good or bad as a final result. Must include at least 3 reasons."
         )
         is_satisfactory: bool = Field(
