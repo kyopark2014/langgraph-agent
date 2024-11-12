@@ -6363,7 +6363,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         # print('message: ', message)
 
     #msg = readStreamMsg(connectionId, requestId, message.content)
-    output = app.invoke(inputs, config)
+    output = app.ainvoke(inputs, config)
     print('output: ', output)
     
     return output
