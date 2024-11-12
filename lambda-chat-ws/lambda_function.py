@@ -6243,16 +6243,17 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             "{presumed_info}"
         )        
         p1 = checker_prompt.format(presumed_info=json.dumps(presumed_info or {}, indent=2))
+        print('p1: ', p1)
         
-        messages.append(HumanMessage(content=p1))
-        print('messages: ', messages)
+        #messages.append(HumanMessage(content=p1))
+        #print('messages: ', messages)
         
         response = ""
         for attempt in range(5):
             chat = get_chat()
             structured_llm = chat.with_structured_output(InfoIsSatisfactory)
             
-            info = structured_llm.invoke(messages)
+            info = structured_llm.invoke(p1)
             print(f'attempt: {attempt}, info: {info}')
         
             if not info['parsed'] == None:
