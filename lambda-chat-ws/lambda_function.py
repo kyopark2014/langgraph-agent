@@ -6264,8 +6264,9 @@ def run_data_enrichment_agent(connectionId, requestId, text):
             }
         )
         result = response.content
+        print('result of checker_prompt: ', result)
         output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
-        print('result of checker_prompt: ', output)
+        print('output of checker_prompt: ', output)
         
         #chat = get_chat()
         #result = checker_prompt.invoke({
@@ -6280,7 +6281,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         response = ""
         for attempt in range(5):
             chat = get_chat()
-            structured_llm = chat.with_structured_output(InfoIsSatisfactory)
+            structured_llm = chat.with_structured_output(InfoIsSatisfactory, include_raw=True)
             
             info = structured_llm.invoke(output)
             print(f'attempt: {attempt}, info: {info}')
