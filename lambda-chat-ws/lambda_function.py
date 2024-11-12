@@ -6058,37 +6058,22 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         
         output = cast(list[dict[str, Any]], result)
         print('output of search: ', json.dumps(output))
+        
+        global reference_docs
+        for re in result:  # reference
+            doc = Document(
+                page_content=re["content"],
+                metadata={
+                    'name': 'WWW',
+                    'url': re["url"],
+                    'from': 'tavily'
+                }
+                #metadata=to_metadata
+            )
+            reference_docs.append(doc)
+        
         return output
-    
-    # async def scrape_website(
-    #     url: str,
-    #     *,
-    #     state: Annotated[State, InjectedState],
-    #     config: Annotated[RunnableConfig, InjectedToolArg],
-    # ) -> str:        
-    #     """Scrape and summarize content from a given URL.
-
-    #     Returns:
-    #         str: A summary of the scraped content, tailored to the extraction schema.
-    #     """
-    #     print("###### [tool] scrape_website ######")
         
-    #     async with aiohttp.ClientSession() as session:
-    #         async with session.get(url) as response:
-    #             content = await response.text()
-
-    #     p = _INFO_PROMPT.format(
-    #         info=json.dumps(state['extraction_schema'], indent=2),
-    #         url=url,
-    #         content=content[:40_000],
-    #     )
-        
-    #     chat = get_chat()
-    #     result = await chat.ainvoke(p)
-    #     print('result of scrape_website: ', result)
-        
-    #     return str(result.content)
-    
     def scrape_website(
         url: str,
         *,
@@ -6404,6 +6389,23 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     ---
     """
         return markdown_text
+    
+    def text_output(result):
+        text = ""
+
+        for i, company in enumerate(result["companies"]):
+            text += f"""
+    {i+1}: {company['name']}
+
+    - Key Technologies: {company['technologies']}
+
+    - Market Share: {company['market_share']}
+
+    - Key Powers: {company.get('key_powers', 'Not specified')}
+
+    - Future Outlook: {company['future_outlook']}
+    """
+        return text
 
     app = build_data_enrichment_agent()
     
@@ -6471,7 +6473,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     result = app.invoke(inputs, config)
     print('result: ', result)
     
-    final = markdown_output(text, result["info"])
+    # final = markdown_output(text, result["info"])
+    final = text_output(result["info"])
     return final
         
 #########################################################
