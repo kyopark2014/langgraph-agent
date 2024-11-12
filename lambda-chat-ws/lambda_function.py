@@ -6224,13 +6224,24 @@ def run_data_enrichment_agent(connectionId, requestId, text):
         presumed_info = state["info"]
         print('presumed_info: ', presumed_info)
         
-        system = (
-            "I am thinking of calling the info tool with the info below."
-            "Is this good? Give your reasoning as well."
-            "You can encourage the Assistant to look at specific URLs if that seems relevant, or do more searches."
-            "If you don't think it is good, you should be very specific about what could be improved."
-            "Put it in <result> tags."
-        )
+        topic = state["topic"]
+        if isKorean(topic):
+            system = (
+                "아래 정보로 info tool을 호출하려고 합니다."
+                "이것이 좋습니까? 그 이유도 설명해 주세요."
+                "이것이당신은 특정 URL을 살펴보거나 더 많은 검색을 하도록 어시스턴트에게 권장할 수 있습니다."
+                "만약 좋지 않다고 생각한다면, 무엇이 개선될 수 있는지 구체적으로 제사합니다."
+                "최종 답변에 <result> tag를 붙여주세요."
+            )
+        else:
+            system = (                
+                "I am thinking of calling the info tool with the info below."
+                "Is this good? Give your reasoning as well."
+                "You can encourage the Assistant to look at specific URLs if that seems relevant, or do more searches."
+                "If you don't think it is good, you should be very specific about what could be improved."
+                "Put it in <result> tags."
+            )
+            
         human = "{presumed_info}"
         
         chat = get_chat()
