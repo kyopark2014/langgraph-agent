@@ -6386,10 +6386,10 @@ def run_data_enrichment_agent(connectionId, requestId, text):
 
         return workflow.compile()        
        
-    def format_llm_chip_info(data):
-        markdown_text = "# Top 5 Chip Providers for LLM Training\n\n"
+    def markdown_output(query, result):
+        markdown_text = f"# {query}\n\n"
 
-        for company in data["companies"]:
+        for company in result["companies"]:
             markdown_text += f"""
     ## {company['name']}
 
@@ -6471,8 +6471,8 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     result = app.invoke(inputs, config)
     print('result: ', result)
     
-    #return output
-    return ""
+    final = markdown_output(text, result["info"])
+    return final
         
 #########################################################
 def traslation(chat, text, input_language, output_language):
