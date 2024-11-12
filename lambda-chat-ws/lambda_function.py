@@ -47,7 +47,6 @@ from pydantic.v1 import BaseModel, Field
 from typing import Any, Annotated, List, Tuple, Dict, Optional, cast, TypedDict, Literal, Sequence, Union
 from langchain_aws import AmazonKnowledgeBasesRetriever
 from tavily import TavilyClient  
-from IPython.display import Markdown, display
      
 s3 = boto3.client('s3')
 s3_bucket = os.environ.get('s3_bucket') # bucket name
@@ -6645,7 +6644,7 @@ def run_data_enrichment_agent(connectionId, requestId, text):
 
     ---
     """
-        return Markdown(markdown_text)
+        return markdown_text
 
     app = build_data_enrichment_agent()
     
