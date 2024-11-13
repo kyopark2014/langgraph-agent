@@ -958,7 +958,12 @@ def search_by_tavily(keyword: str) -> str:
     global reference_docs    
     answer = ""
     
-    if tavily_api_key:
+    api_key = tavily_api_key[selected_tavily]
+    selected_tavily = selected_tavily + 1
+    if selected_tavily == len(tavily_api_key):
+        selected_tavily = 0
+    
+    if api_key:
         keyword = keyword.replace('\'','')
         
         search = TavilySearchResults(
@@ -966,7 +971,8 @@ def search_by_tavily(keyword: str) -> str:
             include_answer=True,
             include_raw_content=True,
             search_depth="advanced", # "basic"
-            include_domains=["google.com", "naver.com"]
+            include_domains=["google.com", "naver.com"],
+            api_key=api_key 
         )
                     
         try: 
