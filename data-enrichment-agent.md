@@ -10,3 +10,6 @@ LangGraph의 [LangGraph Data Enrichment Template](https://github.com/langchain-a
 
 ![noname](https://github.com/user-attachments/assets/eda83e20-2efc-42d8-92c7-2234b9fcf717)
 
+이때의 LangSmith 로그를 보면 아래와 같습니다.
+
+![image](https://github.com/user-attachments/assets/3e7b3871-608d-4aab-b397-8bd3a489f3ca)
