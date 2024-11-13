@@ -154,6 +154,13 @@ Workflow에서 Human의 interation을 구현하기 위한 checkpoint를 활용�
 
 <img src="https://github.com/user-attachments/assets/e69f19d3-49e9-435c-bf5f-99fb9a78b2da" width="400">
 
+### Data Enrichment 
+
+[data-enrichment-agent.md](./data-enrichment-agent.md)에서는 schema를 이용해 웹에서 필요한 정보를 수집하는 agent에 대해 설명합니다.
+
+![noname](https://github.com/user-attachments/assets/91415efe-ad2e-478f-9ae1-49bd7f5f4eed)
+
+
 
 ## Reference
 
