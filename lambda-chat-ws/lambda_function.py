@@ -6490,9 +6490,9 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     # final = markdown_output(text, result["info"])
     final = text_output(result["info"])
     
-    if isKorean(text)==True:
-        chat = get_chat()
-        final = traslation(chat, final, "English", "Korean")
+    # if isKorean(text)==True:
+    #     chat = get_chat()
+    #     final = traslation(chat, final, "English", "Korean")
         
     return final
         
