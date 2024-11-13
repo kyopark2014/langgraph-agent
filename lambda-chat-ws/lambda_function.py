@@ -961,7 +961,13 @@ def search_by_tavily(keyword: str) -> str:
     if tavily_api_key:
         keyword = keyword.replace('\'','')
         
-        search = TavilySearchResults(max_results=3)
+        search = TavilySearchResults(
+            max_results=3,
+            include_answer=True,
+            include_raw_content=True,
+            search_depth="advanced", # "basic"
+            include_domains=["google.com", "naver.com"]
+        )
                     
         try: 
             output = search.invoke(keyword)
