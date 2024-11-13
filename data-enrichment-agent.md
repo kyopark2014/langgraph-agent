@@ -1,6 +1,6 @@
 # Data Enrichment Agent 
 
-LangGraph의 [LangGraph Data Enrichment Template](https://github.com/langchain-ai/data-enrichment)와 [Data Enrichment Agent](https://www.youtube.com/watch?v=mNxAM1ETBvs&t=10s)을 참조합니다.
+Tool use와 Reflection 패턴들을 활용하여 주어진 schema에 따라 데이터를 수집할 수 있습니다. 여기에서는 LangGraph의 [LangGraph Data Enrichment Template](https://github.com/langchain-ai/data-enrichment)와 [Data Enrichment Agent](https://www.youtube.com/watch?v=mNxAM1ETBvs&t=10s)을 참조하여 코드를 재구성하였습니다.
 
 <img src="https://github.com/user-attachments/assets/232f0b86-7663-4355-bb30-fcefd65b6876" width="700">
 
