@@ -6408,18 +6408,31 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     def text_output(result):
         text = ""
 
-        for i, company in enumerate(result["companies"]):
-            text += f"""
-    {i+1}. {company['name']}
+        if isKorean(result)==True:
+            for i, company in enumerate(result["companies"]):
+                text += f"""
+{i+1}. {company['name']}
 
-    - Key Technologies: {company['technologies']}
+- 주요 기술: {company['technologies']}
 
-    - Market Share: {company['market_share']}
+- 시장 점유율: {company['market_share']}
 
-    - Key Powers: {company.get('key_powers', 'Not specified')}
+- 핵심 경쟁력: {company.get('key_powers', 'Not specified')}
 
-    - Future Outlook: {company['future_outlook']}
-    """
+- 미래 전망: {company['future_outlook']}"""
+        else:
+            for i, company in enumerate(result["companies"]):
+                text += f"""
+{i+1}. {company['name']}
+
+- Key Technologies: {company['technologies']}
+
+- Market Share: {company['market_share']}
+
+- Key Powers: {company.get('key_powers', 'Not specified')}
+
+- Future Outlook: {company['future_outlook']}"""
+
         return text
 
     app = build_data_enrichment_agent()
