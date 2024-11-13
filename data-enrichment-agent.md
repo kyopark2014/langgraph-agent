@@ -20,4 +20,4 @@ LangGraph의 [LangGraph Data Enrichment Template](https://github.com/langchain-a
 
 이때의 LangSmith 로그는 아래와 같습니다.
 
-![image](https://github.com/user-attachments/assets/3a59621a-544f-4677-b64b-f0e6f547e4ed)
+![image](https://github.com/user-attachments/assets/013499c8-ea57-4831-8fb6-092669140d12)
