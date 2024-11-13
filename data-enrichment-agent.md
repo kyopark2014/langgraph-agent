@@ -4,6 +4,11 @@ LangGraph의 [LangGraph Data Enrichment Template](https://github.com/langchain-a
 
 <img src="https://github.com/user-attachments/assets/232f0b86-7663-4355-bb30-fcefd65b6876" width="700">
 
+이때의 activity diagram은 아래와 같습니다.
+
+![noname](https://github.com/user-attachments/assets/91415efe-ad2e-478f-9ae1-49bd7f5f4eed)
+
+
 ## 상세 구현
 
 아래와 같이 state를 정의합니다.
