@@ -177,4 +177,6 @@ parsed_info.steps
  'Response: The hometown of the 2024 Australian Open winner is [their hometown/birthplace].']
 ```
 
+## Reference 
 
+[How to return structured output with a ReAct style agent](https://langchain-ai.github.io/langgraph/how-tos/react-agent-structured-output/)
