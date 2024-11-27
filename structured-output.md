@@ -177,6 +177,31 @@ parsed_info.steps
  'Response: The hometown of the 2024 Australian Open winner is [their hometown/birthplace].']
 ```
 
+### Simple Multiply
+
+```python
+from pydantic import BaseModel
+from typing import Type
+from langchain_core.tools import StructuredTool
+
+class MultiplyArgsSchema(BaseModel):
+    a: int
+    b: int
+
+class MultiplyTool(StructuredTool):
+    name: str = "multiply"
+    description: str = "Multiply two numbers."
+    args_schema: Type[BaseModel] = MultiplyArgsSchema
+
+    def _run(self, a: int, b: int) -> int:
+        return a * b
+```
+
+# Example usage
+tool = MultiplyTool()
+result = tool._run(a=3, b=4)
+print(result)
+
 ## Structured output with a ReAct style 
 
 [How to return structured output with a ReAct style agent](https://langchain-ai.github.io/langgraph/how-tos/react-agent-structured-output/)은 좋은 레퍼런스입니다.
