@@ -29,7 +29,8 @@ from multiprocessing import Process, Pipe
 from langchain_aws import BedrockEmbeddings
 from langchain_community.vectorstores.faiss import FAISS
 
-from langchain.agents import tool
+# from langchain.agents import tool
+from langchain_core.tools import tool
 from bs4 import BeautifulSoup
 from pytz import timezone
 from langchain_community.tools.tavily_search import TavilySearchResults
