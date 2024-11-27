@@ -195,11 +195,8 @@ class MultiplyTool(StructuredTool):
 
     def _run(self, a: int, b: int) -> int:
         return a * b
-```
 
 # Example usage
-
-```python
 tool = MultiplyTool()
 result = tool._run(a=3, b=4)
 print(result)
