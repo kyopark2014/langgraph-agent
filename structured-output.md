@@ -198,9 +198,12 @@ class MultiplyTool(StructuredTool):
 ```
 
 # Example usage
+
+```python
 tool = MultiplyTool()
 result = tool._run(a=3, b=4)
 print(result)
+```
 
 ## Structured output with a ReAct style 
 
