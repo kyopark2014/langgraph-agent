@@ -51,14 +51,27 @@ const claude3_sonnet = [
   }
 ];
 
-const claude3_5_sonnet = [
-  {
-    "bedrock_region": "us-west-2", // Oregon
-    "model_type": "claude3.5",
-    "max_tokens": 4096,
-    "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
-  }
-];
+// const claude3_5_sonnet = [
+//   {
+//     "bedrock_region": "us-west-2", // Oregon
+//     "model_type": "claude3.5",
+//     "max_tokens": 4096,
+//     "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+//   }
+// ];
+const claude3_5_sonnet = [  
+   {
+     "bedrock_region": "ap-northeast-2", 
+     "model_type": "claude3.5",
+     "model_id": "apac.anthropic.claude-3-5-sonnet-20240620-v1:0"  
+   },
+   {
+     "bedrock_region": "us-east-1", 
+     "model_type": "claude3.5",
+     "model_id": "us.anthropic.claude-3-5-sonnet-20240620-v1:0"  
+   }
+ ];
+ 
 
 const claude3_haiku = [
   {
@@ -114,7 +127,7 @@ const titan_embedding_v2 = [  // dimension = 1024
   }
 ];
 
-const LLM_for_chat = claude3_5_haiku; 
+const LLM_for_chat = claude3_5_sonnet; 
 const LLM_for_multimodal = claude3_sonnet;
 const LLM_embedding = titan_embedding_v2;
 
