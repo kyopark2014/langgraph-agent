@@ -63,11 +63,10 @@ const claude3_5_sonnet = [
    {
      "bedrock_region": "us-east-1", 
      "model_type": "claude3.5",
-     "model_id": "ap.anthropic.claude-3-sonnet-20240229-v1:0"  
+     "model_id": "ap.anthropic.claude-3-5-sonnet-20240620-v1:0"  
    }
  ];
  
-
 const claude3_haiku = [
   {
     "bedrock_region": "us-west-2", // Oregon
