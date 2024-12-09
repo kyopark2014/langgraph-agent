@@ -46,7 +46,6 @@ const claude3_sonnet = [
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "claude3",
-    "max_tokens": 4096,
     "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
   }
 ];
@@ -71,7 +70,6 @@ const claude3_haiku = [
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "claude3",
-    "max_tokens": 4096,
     "model_id": "anthropic.claude-3-haiku-20240307-v1:0"
   }
 ];  
@@ -80,7 +78,6 @@ const claude3_5_haiku = [
   {
     "bedrock_region": "us-west-2", // Oregon
     "model_type": "claude3.5",
-    "max_tokens": 4096,
     "model_id": "us.anthropic.claude-3-5-haiku-20241022-v1:0"
   }
 ];  

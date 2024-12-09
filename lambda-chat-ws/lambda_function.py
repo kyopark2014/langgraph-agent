@@ -94,25 +94,21 @@ multi_region_models = [  # claude sonnet 3.5
     {
         "bedrock_region": "us-west-2", # Oregon
         "model_type": "claude3.5",
-        "max_tokens": 4096,
         "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
     },
     {
         "bedrock_region": "us-east-1", # N.Virginia
         "model_type": "claude3.5",
-        "max_tokens": 4096,
         "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
     },
     {
         "bedrock_region": "eu-central-1", # Frankfurt
         "model_type": "claude3.5",
-        "max_tokens": 4096,
         "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
     },
     {
         "bedrock_region": "ap-northeast-1", # Tokyo
         "model_type": "claude3.5",
-        "max_tokens": 4096,
         "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0"
     }
 ]
@@ -122,31 +118,26 @@ multi_region_models = [   # claude sonnet 3.0
     {   
         "bedrock_region": "us-west-2", # Oregon
         "model_type": "claude3",
-        "max_tokens": 4096,
         "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
     },
     {
         "bedrock_region": "us-east-1", # N.Virginia
         "model_type": "claude3",
-        "max_tokens": 4096,
         "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
     },
     {
         "bedrock_region": "ca-central-1", # Canada
         "model_type": "claude3",
-        "max_tokens": 4096,
         "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
     },
     {
         "bedrock_region": "eu-west-2", # London
         "model_type": "claude3",
-        "max_tokens": 4096,
         "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
     },
     {
         "bedrock_region": "sa-east-1", # Sao Paulo
         "model_type": "claude3",
-        "max_tokens": 4096,
         "model_id": "anthropic.claude-3-sonnet-20240229-v1:0"
     }
 ]
