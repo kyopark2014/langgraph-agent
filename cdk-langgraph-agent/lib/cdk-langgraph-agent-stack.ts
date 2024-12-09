@@ -63,12 +63,7 @@ const claude3_5_sonnet = [
    {
      "bedrock_region": "ap-northeast-2", 
      "model_type": "claude3.5",
-     "model_id": "ap.anthropic.claude-3-5-sonnet-20240620-v1:0"  
-   },
-   {
-     "bedrock_region": "us-east-1", 
-     "model_type": "claude3.5",
-     "model_id": "us.anthropic.claude-3-5-sonnet-20240620-v1:0"  
+     "model_id": "ap.anthropic.claude-3-sonnet-20240229-v1:0"  
    }
  ];
  
