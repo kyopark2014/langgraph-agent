@@ -12,7 +12,6 @@ import base64
 import operator
 import uuid
 import functools
-import aiohttp
 
 from botocore.config import Config
 from botocore.exceptions import ClientError
@@ -193,7 +192,7 @@ if langsmith_api_key:
     os.environ["LANGCHAIN_PROJECT"] = langchain_project
     
 # api key to use Tavily Search
-tavily_api_key = ""
+tavily_api_key = []
 try:
     get_tavily_api_secret = secretsmanager.get_secret_value(
         SecretId=f"tavilyapikey-{projectName}"
@@ -209,62 +208,53 @@ except Exception as e:
 
 def check_tavily_secret(tavily_api_key):
     query = 'what is LangGraph'
-    valid_keys = []
-    for key in tavily_api_key:
+    valid_keys = ""
+
+    for i, key in enumerate(tavily_api_key):
         try:
             tavily_client = TavilyClient(api_key=key)
             response = tavily_client.search(query, max_results=1)
             # print('tavily response: ', response)
             
             if 'results' in response and len(response['results']):
-                valid_keys.append(key)
+                print('the valid tavily api keys: ', i)
+                valid_keys = key
+                break
         except Exception as e:
             print('Exception: ', e)
     # print('valid_keys: ', valid_keys)
     
     return valid_keys
 
-tavily_api_key = check_tavily_secret(tavily_api_key)
+tavily_key = check_tavily_secret(tavily_api_key)
 # print('tavily_api_key: ', tavily_api_key)
-print('The number of valid tavily api keys: ', len(tavily_api_key))
-
-selected_tavily = -1
-if len(tavily_api_key):
-    os.environ["TAVILY_API_KEY"] = tavily_api_key[0]
-    selected_tavily = 0
+os.environ["TAVILY_API_KEY"] = tavily_key
       
 def tavily_search(query, k):
-    global selected_tavily
     docs = []
-    
-    if selected_tavily != -1:
-        selected_tavily = selected_tavily + 1
-        if selected_tavily == len(tavily_api_key):
-            selected_tavily = 0
+    try:
+        tavily_client = TavilyClient(api_key=tavily_key)
+        response = tavily_client.search(query, max_results=k)
+        # print('tavily response: ', response)
+            
+        for r in response["results"]:
+            name = r.get("title")
+            if name is None:
+                name = 'WWW'
+            
+            docs.append(
+                Document(
+                    page_content=r.get("content"),
+                    metadata={
+                        'name': name,
+                        'url': r.get("url"),
+                        'from': 'tavily'
+                    },
+                )
+            )                   
+    except Exception as e:
+        print('Exception: ', e)
 
-        try:
-            tavily_client = TavilyClient(api_key=tavily_api_key[selected_tavily])
-            response = tavily_client.search(query, max_results=k)
-            # print('tavily response: ', response)
-            
-            for r in response["results"]:
-                name = r.get("title")
-                if name is None:
-                    name = 'WWW'
-            
-                docs.append(
-                    Document(
-                        page_content=r.get("content"),
-                        metadata={
-                            'name': name,
-                            'url': r.get("url"),
-                            'from': 'tavily'
-                        },
-                    )
-                )   
-                
-        except Exception as e:
-            print('Exception: ', e)
     return docs
 
 # result = tavily_search('what is LangChain', 2)
@@ -656,7 +646,7 @@ def general_conversation(connectionId, requestId, chat, query):
 def get_answer_using_opensearch(connectionId, requestId, chat, text):    
     # retrieve
     isTyping(connectionId, requestId, "retrieving...")
-    relevant_docs = retrieval_documents(text)
+    relevant_docs = retrieve_documents_from_opensearch(text, top_k=4)
     
     # grade
     isTyping(connectionId, requestId, "grading...")    
@@ -665,16 +655,14 @@ def get_answer_using_opensearch(connectionId, requestId, chat, text):
             
     # generate
     isTyping(connectionId, requestId, "generating...")  
-    msg = generate_answer(connectionId, requestId, chat, filtered_docs, text)
+    msg = generate_answer_with_stream(connectionId, requestId, chat, filtered_docs, text)
                
     return msg
 
-def retrieval_documents(query):
-    print("###### retrieval_documents ######")
+def retrieve_documents_from_opensearch(query, top_k=4):
+    print("###### retrieve_documents_from_opensearch ######")
 
-    top_k = 4
-    bedrock_embedding = get_embedding()
-       
+    bedrock_embedding = get_embedding()       
     vectorstore_opensearch = OpenSearchVectorSearch(
         index_name = index_name,
         is_aoss = False,
@@ -747,7 +735,7 @@ def retrieval_documents(query):
     else: 
         print("###### similarity_search_with_score ######")
         relevant_documents = vectorstore_opensearch.similarity_search_with_score(
-            query = text,
+            query = query,
             k = top_k
         )
         
@@ -771,7 +759,7 @@ def retrieval_documents(query):
     # print('the number of docs (vector search): ', len(relevant_docs))
             
     if enableHybridSearch == 'true':
-        relevant_docs += lexical_search(text, top_k)    
+        relevant_docs += lexical_search(query, top_k)    
 
     return relevant_docs
 
@@ -994,78 +982,11 @@ def search_by_opensearch(keyword: str) -> str:
     keyword = keyword.replace('\n','')
     print('modified keyword: ', keyword)
     
-    bedrock_embedding = get_embedding()
-        
-    vectorstore_opensearch = OpenSearchVectorSearch(
-        index_name = index_name,
-        is_aoss = False,
-        ef_search = 1024, # 512(default)
-        m=48,
-        #engine="faiss",  # default: nmslib
-        embedding_function = bedrock_embedding,
-        opensearch_url=opensearch_url,
-        http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
-    )     
-    top_k = 2
-    
-    relevant_docs = [] 
-    if enableParentDocumentRetrival == 'true': # parent/child chunking
-        relevant_documents = retrieval_documents(vectorstore_opensearch, keyword, top_k)
-                        
-        for i, document in enumerate(relevant_documents):
-            #print(f'## Document(opensearch-vector) {i+1}: {document}')
-            
-            parent_doc_id = document[0].metadata['parent_doc_id']
-            doc_level = document[0].metadata['doc_level']
-            #print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
-            
-            excerpt, name, url = get_parent_content(parent_doc_id) # use pareant document
-            #print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, url: {url}, content: {excerpt}")
-            
-            relevant_docs.append(
-                Document(
-                    page_content=excerpt,
-                    metadata={
-                        'name': name,
-                        'url': url,
-                        'doc_level': doc_level,
-                        'from': 'vector'
-                    },
-                )
-            )
-    else: 
-        relevant_documents = vectorstore_opensearch.similarity_search_with_score(
-            query = keyword,
-            k = top_k,
-        )
-
-        for i, document in enumerate(relevant_documents):
-            #print(f'## Document(opensearch-vector) {i+1}: {document}')
-            
-            excerpt = document[0].page_content
-            
-            url = ""
-            if "url" in document[0].metadata:
-                url = document[0].metadata['url']
-                
-            name = document[0].metadata['name']
-            
-            relevant_docs.append(
-                Document(
-                    page_content=excerpt,
-                    metadata={
-                        'name': name,
-                        'url': url,
-                        'from': 'vector'
-                    },
-                )
-            )
-    
-    if enableHybridSearch == 'true':
-        relevant_docs += lexical_search(keyword, top_k)
-    
+    # retrieve
+    relevant_docs = retrieve_documents_from_opensearch(keyword, top_k=2)                        
     print('relevant_docs length: ', len(relevant_docs))
-                
+
+    # grade
     filtered_docs = grade_documents(keyword, relevant_docs)
         
     for i, doc in enumerate(filtered_docs):
@@ -1076,13 +997,13 @@ def search_by_opensearch(keyword: str) -> str:
             
         print(f"filtered doc[{i}]: {text}, metadata:{doc.metadata}")
        
-    relevant_docs = "" 
+    relevant_context = "" 
     for doc in filtered_docs:
         content = doc.page_content
         
-        relevant_docs = relevant_docs + f"{content}\n\n"
+        relevant_context = relevant_context + f"{content}\n\n"
         
-    return relevant_docs
+    return relevant_context
 
 def lexical_search(query, top_k):
     # lexical search (keyword)
@@ -1536,75 +1457,6 @@ def get_references(docs):
         else:
             reference = reference + f"{i+1}. <a href={url} target=_blank>{name}</a>, {sourceType}, <a href=\"#\" onClick=\"alert(`{excerpt}`)\">관련문서</a>\n"
     return reference
-
-def retrieve(question):
-    # Retrieval
-    bedrock_embedding = get_embedding()
-        
-    vectorstore_opensearch = OpenSearchVectorSearch(
-        index_name = index_name,
-        is_aoss = False,
-        ef_search = 1024, # 512(default)
-        m=48,
-        #engine="faiss",  # default: nmslib
-        embedding_function = bedrock_embedding,
-        opensearch_url=opensearch_url,
-        http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
-    ) 
-    
-    top_k = 4
-    docs = []    
-    if enableParentDocumentRetrival == 'true':
-        relevant_documents = retrieval_documents(vectorstore_opensearch, question, top_k)
-
-        for i, document in enumerate(relevant_documents):
-            print(f'## Document(opensearch-vector) {i+1}: {json.dumps(document)}')
-            
-            parent_doc_id = document[0].metadata['parent_doc_id']
-            doc_level = document[0].metadata['doc_level']
-            print(f"child: parent_doc_id: {parent_doc_id}, doc_level: {doc_level}")
-                
-            excerpt, name, url = get_parent_content(parent_doc_id) # use pareant document
-            print(f"parent_doc_id: {parent_doc_id}, doc_level: {doc_level}, url: {url}, content: {excerpt}")
-            
-            docs.append(
-                Document(
-                    page_content=excerpt,
-                    metadata={
-                        'name': name,
-                        'url': url,
-                        'doc_level': doc_level,
-                        'from': 'vector'
-                    },
-                )
-            )
-    else: 
-        relevant_documents = vectorstore_opensearch.similarity_search_with_score(
-            query = question,
-            k = top_k,
-        )
-
-        for i, document in enumerate(relevant_documents):
-            print(f'## Document(opensearch-vector) {i+1}: {document}')
-            
-            excerpt = document[0].page_content        
-            url = document[0].metadata['url']
-                            
-            docs.append(
-                Document(
-                    page_content=excerpt,
-                    metadata={
-                        'name': name,
-                        'url': url,
-                        'from': 'vector'
-                    },
-                )
-            )    
-    
-    if enableHybridSearch=='true':
-        docs += lexical_search(question, top_k)
-    
-    return docs
 
 def web_search(question, documents):
     global reference_docs
@@ -2262,7 +2114,7 @@ def run_corrective_rag(connectionId, requestId, query):
         print("###### retrieve ######")
         question = state["question"]
         
-        docs = retrieve(question)
+        docs = retrieve_documents_from_opensearch(question, top_k=4)
         
         return {"documents": docs, "question": question}
 
@@ -2448,7 +2300,7 @@ def run_self_rag(connectionId, requestId, query):
         
         update_state_message("retrieving...", config)
         
-        docs = retrieve(question)
+        docs = retrieve_documents_from_opensearch(question, top_k=4)
         
         return {"documents": docs, "question": question}
     
@@ -2663,7 +2515,7 @@ def run_self_corrective_rag(connectionId, requestId, query):
         
         update_state_message("retrieving...", config)
         
-        docs = retrieve(question)
+        docs = retrieve_documents_from_opensearch(question, top_k=4)
         
         return {"documents": docs, "question": question, "web_fallback": True}
 
@@ -4906,60 +4758,6 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 ####################### Knowledge Base #######################
 # Knowledge Base
 ##############################################################
-def generate_answer(connectionId, requestId, chat, relevant_docs, question):        
-    relevant_context = ""
-    msg = ""    
-    for i, document in enumerate(relevant_docs):
-        # print(f"{i}: {document}")
-        if document.page_content:
-            content = document.page_content
-            
-        relevant_context = relevant_context + content + "\n\n"
-    # print('relevant_context: ', relevant_context)
-                
-    if isKorean(question)==True:
-        system = (
-            """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
-            
-            <context>
-            {context}
-            </context>"""
-        )
-    else: 
-        system = (
-            """Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
-            
-            <context>
-            {context}
-            </context>"""
-        )
-    
-    human = "{input}"
-    
-    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
-    # print('prompt: ', prompt)
-                   
-    chain = prompt | chat
-    
-    try: 
-        stream = chain.invoke(
-            {
-                "context": relevant_context,
-                "input": question,
-            }
-        )
-        msg = readStreamMsg(connectionId, requestId, stream.content)    
-        print('msg: ', msg)
-        
-    except Exception:
-        err_msg = traceback.format_exc()
-        print('error message: ', err_msg)        
-            
-        sendErrorMessage(connectionId, requestId, err_msg)    
-        raise Exception ("Not able to request to LLM")
-
-    return msg
-
 def get_reference_of_knoweledge_base(docs, path, doc_prefix):
     reference = "\n\nFrom\n"
     #print('path: ', path)
@@ -5033,7 +4831,7 @@ def get_answer_using_knowledge_base(chat, text, connectionId, requestId):
         #    print('selected_relevant_docs: ', json.dumps(selected_relevant_docs))
         
     isTyping(connectionId, requestId, "generating...")  
-    msg = generate_answer(connectionId, requestId, chat, relevant_docs, revised_question)
+    msg = generate_answer_with_stream(connectionId, requestId, chat, relevant_docs, revised_question)
     
     if len(relevant_docs):
         reference = get_reference_of_knoweledge_base(relevant_docs, path, doc_prefix)  
@@ -6496,6 +6294,101 @@ def run_data_enrichment_agent(connectionId, requestId, text):
     return final
         
 #########################################################
+def generate_answer_with_stream(connectionId, requestId, chat, relevant_docs, question):        
+    relevant_context = ""
+    msg = ""    
+    for i, document in enumerate(relevant_docs):
+        # print(f"{i}: {document}")
+        if document.page_content:
+            content = document.page_content
+            
+        relevant_context = relevant_context + content + "\n\n"
+    # print('relevant_context: ', relevant_context)
+                
+    if isKorean(question)==True:
+        system = (
+            """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    else: 
+        system = (
+            """Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    
+    human = "{input}"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    # print('prompt: ', prompt)
+                   
+    chain = prompt | chat    
+    try: 
+        stream = chain.invoke(
+            {
+                "context": relevant_context,
+                "input": question,
+            }
+        )
+        msg = readStreamMsg(connectionId, requestId, stream.content)    
+        print('msg: ', msg)
+        
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)        
+            
+        sendErrorMessage(connectionId, requestId, err_msg)    
+        raise Exception ("Not able to request to LLM")
+
+    return msg
+
+def generate_answer(chat, relevant_docs, question):        
+    relevant_context = ""
+    msg = ""    
+    for i, document in enumerate(relevant_docs):
+        # print(f"{i}: {document}")
+        if document.page_content:
+            content = document.page_content
+            
+        relevant_context = relevant_context + content + "\n\n"
+    # print('relevant_context: ', relevant_context)
+                
+    if isKorean(question)==True:
+        system = (
+            """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    else: 
+        system = (
+            """Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+            
+            <context>
+            {context}
+            </context>"""
+        )
+    
+    human = "{input}"
+    
+    prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+    # print('prompt: ', prompt)
+                   
+    chain = prompt | chat    
+    response = chain.invoke({
+        "context": relevant_context,
+        "input": question,
+    })
+    print('response.content: ', response.content)
+
+    return msg
+
 def traslation(chat, text, input_language, output_language):
     system = (
         "You are a helpful assistant that translates {input_language} to {output_language} in <article> tags. Put it in <result> tags."
@@ -6569,25 +6462,29 @@ def revise_question(connectionId, requestId, chat, query):
     isTyping(connectionId, requestId, "revising...")
         
     if isKorean(query)==True :      
-        system = (
-            ""
-        )  
-        human = """이전 대화를 참조하여, 다음의 <question>의 뜻을 명확히 하는 새로운 질문을 한국어로 생성하세요. 새로운 질문은 원래 질문의 중요한 단어를 반드시 포함합니다. 결과는 <result> tag를 붙여주세요.
+        human = (
+            "이전 대화를 참조하여, 다음의 <question>의 뜻을 명확히 하는 새로운 질문을 한국어로 생성하세요." 
+            "새로운 질문은 원래 질문의 중요한 단어를 반드시 포함합니다." 
+            "결과는 <result> tag를 붙여주세요."
         
-        <question>            
-        {question}
-        </question>"""
+            "<question>"
+            "{question}"
+            "</question>"
+        )
         
     else: 
-        system = (
-            ""
+        human = (
+            "Rephrase the follow up <question> to be a standalone question." 
+            "Put it in <result> tags."
+            "<question>"
+            "{question}"
+            "</question>"
         )
-        human = """Rephrase the follow up <question> to be a standalone question. Put it in <result> tags.
-        <question>            
-        {question}
-        </question>"""
             
-    prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
+    prompt = ChatPromptTemplate.from_messages([
+        MessagesPlaceholder(variable_name="history"), 
+        ("human", human)]
+    )
     # print('prompt: ', prompt)
     
     history = memory_chain.load_memory_variables({})["chat_history"]
@@ -6822,7 +6719,8 @@ def check_grammer(chat, text):
         )
     else: 
         system = (
-            "Here is pieces of article, contained in <article> tags. Find the error in the sentence and explain it, and add the corrected sentence at the end of your answer."
+            "Here is pieces of article, contained in <article> tags." 
+            "Find the error in the sentence and explain it, and add the corrected sentence at the end of your answer."
         )
         
     human = "<article>{text}</article>"
