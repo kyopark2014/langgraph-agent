@@ -653,11 +653,26 @@ def general_conversation(connectionId, requestId, chat, query):
     
     return msg
 
-def get_answer_using_opensearch(chat, text, connectionId, requestId):    
-    msg = ""
-    top_k = 4
-    relevant_docs = []
+def get_answer_using_opensearch(connectionId, requestId, chat, text):    
+    # retrieve
+    isTyping(connectionId, requestId, "retrieving...")
+    relevant_docs = retrieval_documents(text)
     
+    # grade
+    isTyping(connectionId, requestId, "grading...")    
+    filtered_docs = grade_documents(text, relevant_docs) # grading    
+    filtered_docs = check_duplication(filtered_docs) # check duplication
+            
+    # generate
+    isTyping(connectionId, requestId, "generating...")  
+    msg = generate_answer(connectionId, requestId, chat, filtered_docs, text)
+               
+    return msg
+
+def retrieval_documents(query):
+    print("###### retrieval_documents ######")
+
+    top_k = 4
     bedrock_embedding = get_embedding()
        
     vectorstore_opensearch = OpenSearchVectorSearch(
@@ -669,14 +684,44 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
         embedding_function = bedrock_embedding,
         opensearch_url=opensearch_url,
         http_auth=(opensearch_account, opensearch_passwd), # http_auth=awsauth,
-    )  
+    ) 
     
-    isTyping(connectionId, requestId, "retrieving...")
-    print('multi_region: ', multi_region)
-    
-    if multi_region == 'enable':  # parallel processing
-        relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, text, top_k)
+    relevant_docs = []
+    if enableParentDocumentRetrival == 'enable':  
+        result = vectorstore_opensearch.similarity_search_with_score(
+            query = query,
+            k = top_k*2,  
+            search_type="script_scoring",
+            pre_filter={"term": {"metadata.doc_level": "child"}}
+        )
+        print('result: ', result)
+                
+        relevant_documents = []
+        docList = []
+        for re in result:
+            if 'parent_doc_id' in re[0].metadata:
+                parent_doc_id = re[0].metadata['parent_doc_id']
+                doc_level = re[0].metadata['doc_level']
+                print(f"doc_level: {doc_level}, parent_doc_id: {parent_doc_id}")
                         
+                if doc_level == 'child':
+                    if parent_doc_id in docList:
+                        print('duplicated!')
+                    else:
+                        relevant_documents.append(re)
+                        docList.append(parent_doc_id)
+                        
+                        if len(relevant_documents)>=top_k:
+                            break
+                                    
+        # print('relevant_documents: ', relevant_documents)    
+        for i, doc in enumerate(relevant_documents):
+            if len(doc[0].page_content)>=100:
+                text = doc[0].page_content[:100]
+            else:
+                text = doc[0].page_content            
+            print(f"--> vector search doc[{i}]: {text}, metadata:{doc[0].metadata}")
+    
         for i, document in enumerate(relevant_documents):
             print(f'## Document(opensearch-vector) {i+1}: {document}')
             
@@ -698,6 +743,7 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
                     },
                 )
             )
+    
     else: 
         print("###### similarity_search_with_score ######")
         relevant_documents = vectorstore_opensearch.similarity_search_with_score(
@@ -726,65 +772,8 @@ def get_answer_using_opensearch(chat, text, connectionId, requestId):
             
     if enableHybridSearch == 'true':
         relevant_docs += lexical_search(text, top_k)    
-        
-    isTyping(connectionId, requestId, "grading...")
-    
-    filtered_docs = grade_documents(text, relevant_docs) # grading
-    
-    filtered_docs = check_duplication(filtered_docs) # check duplication
-            
-    relevant_context = ""
-    for i, document in enumerate(filtered_docs):
-        # print(f"{i}: {document}")
-        if document.page_content:
-            content = document.page_content
-            
-        relevant_context = relevant_context + content + "\n\n"
-        
-    # print('relevant_context: ', relevant_context)
 
-    msg = query_using_RAG_context(connectionId, requestId, chat, relevant_context, text)
-               
-    return msg
-
-def get_documents_from_opensearch(vectorstore_opensearch, query, top_k):
-    print("###### get_documents_from_opensearch ######")
-    
-    result = vectorstore_opensearch.similarity_search_with_score(
-        query = query,
-        k = top_k*2,  
-        search_type="script_scoring",
-        pre_filter={"term": {"metadata.doc_level": "child"}}
-    )
-    print('result: ', result)
-            
-    relevant_documents = []
-    docList = []
-    for re in result:
-        if 'parent_doc_id' in re[0].metadata:
-            parent_doc_id = re[0].metadata['parent_doc_id']
-            doc_level = re[0].metadata['doc_level']
-            print(f"doc_level: {doc_level}, parent_doc_id: {parent_doc_id}")
-                    
-            if doc_level == 'child':
-                if parent_doc_id in docList:
-                    print('duplicated!')
-                else:
-                    relevant_documents.append(re)
-                    docList.append(parent_doc_id)
-                    
-                    if len(relevant_documents)>=top_k:
-                        break
-                                
-    # print('relevant_documents: ', relevant_documents)    
-    for i, doc in enumerate(relevant_documents):
-        if len(doc[0].page_content)>=100:
-            text = doc[0].page_content[:100]
-        else:
-            text = doc[0].page_content            
-        print(f"--> vector search doc[{i}]: {text}, metadata:{doc[0].metadata}")
-    
-    return relevant_documents
+    return relevant_docs
 
 def get_parent_content(parent_doc_id):
     response = os_client.get(
@@ -1021,7 +1010,7 @@ def search_by_opensearch(keyword: str) -> str:
     
     relevant_docs = [] 
     if enableParentDocumentRetrival == 'true': # parent/child chunking
-        relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, keyword, top_k)
+        relevant_documents = retrieval_documents(vectorstore_opensearch, keyword, top_k)
                         
         for i, document in enumerate(relevant_documents):
             #print(f'## Document(opensearch-vector) {i+1}: {document}')
@@ -1566,7 +1555,7 @@ def retrieve(question):
     top_k = 4
     docs = []    
     if enableParentDocumentRetrival == 'true':
-        relevant_documents = get_documents_from_opensearch(vectorstore_opensearch, question, top_k)
+        relevant_documents = retrieval_documents(vectorstore_opensearch, question, top_k)
 
         for i, document in enumerate(relevant_documents):
             print(f'## Document(opensearch-vector) {i+1}: {json.dumps(document)}')
@@ -4917,11 +4906,18 @@ def run_long_form_writing_agent(connectionId, requestId, query):
 ####################### Knowledge Base #######################
 # Knowledge Base
 ##############################################################
-
-def query_using_RAG_context(connectionId, requestId, chat, context, revised_question):    
-    isTyping(connectionId, requestId, "generating...")  
+def generate_answer(connectionId, requestId, chat, relevant_docs, question):        
+    relevant_context = ""
+    msg = ""    
+    for i, document in enumerate(relevant_docs):
+        # print(f"{i}: {document}")
+        if document.page_content:
+            content = document.page_content
+            
+        relevant_context = relevant_context + content + "\n\n"
+    # print('relevant_context: ', relevant_context)
                 
-    if isKorean(revised_question)==True:
+    if isKorean(question)==True:
         system = (
             """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
             
@@ -4948,8 +4944,8 @@ def query_using_RAG_context(connectionId, requestId, chat, context, revised_ques
     try: 
         stream = chain.invoke(
             {
-                "context": context,
-                "input": revised_question,
+                "context": relevant_context,
+                "input": question,
             }
         )
         msg = readStreamMsg(connectionId, requestId, stream.content)    
@@ -5036,17 +5032,8 @@ def get_answer_using_knowledge_base(chat, text, connectionId, requestId):
         #    selected_relevant_docs = priority_search(revised_question, relevant_docs, minDocSimilarity)
         #    print('selected_relevant_docs: ', json.dumps(selected_relevant_docs))
         
-    relevant_context = ""
-    for i, document in enumerate(relevant_docs):
-        print(f"{i}: {document}")
-        if document.page_content:
-            content = document.page_content
-            
-        relevant_context = relevant_context + content + "\n\n"
-        
-    print('relevant_context: ', relevant_context)
-
-    msg = query_using_RAG_context(connectionId, requestId, chat, relevant_context, revised_question)
+    isTyping(connectionId, requestId, "generating...")  
+    msg = generate_answer(connectionId, requestId, chat, relevant_docs, revised_question)
     
     if len(relevant_docs):
         reference = get_reference_of_knoweledge_base(relevant_docs, path, doc_prefix)  
@@ -7045,12 +7032,12 @@ def getResponse(connectionId, jsonBody):
                     msg = general_conversation(connectionId, requestId, chat, text)
                     
                 elif convType == 'rag-opensearch':   # RAG - Vector
-                    msg = get_answer_using_opensearch(chat, text, connectionId, requestId)                    
+                    msg = get_answer_using_opensearch(connectionId, requestId, chat, text)                    
 
                 elif convType == 'rag-opensearch-chat':   # RAG - Vector
                     revised_question = revise_question(connectionId, requestId, chat, text)     
                     print('revised_question: ', revised_question)
-                    msg = get_answer_using_opensearch(chat, revised_question, connectionId, requestId)                    
+                    msg = get_answer_using_opensearch(connectionId, requestId, chat, text)      
 
                 elif convType == 'agent-executor':
                     msg = run_agent_executor(connectionId, requestId, text)
