@@ -306,8 +306,10 @@ def get_chat():
     
     if multi_region == 'enable':
         profile = multi_region_models[selected_chat]
+        length_of_models = len(multi_region_models)
     else:
         profile = LLM_for_chat[selected_chat]
+        length_of_models = 1
         
     bedrock_region =  profile['bedrock_region']
     modelId = profile['model_id']
@@ -4186,7 +4188,6 @@ def run_long_form_writing_agent(connectionId, requestId, query):
             revise_template = (
                 "You are an excellent writing assistant." 
                 "Revise this draft using the critique and additional information."
-                # "Provide the final answer using Korean with <result> tag."
                 "Provide the final answer with <result> tag."
                             
                 "<draft>"
@@ -4289,9 +4290,9 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         
         if isKorean(instruction):
             planner_template = (
-                "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."
-                "이번 글쓰기는 20,000 단어 이상의 장편을 목표로 합니다."
+                "당신은 장문 작성에 능숙한 유능한 글쓰기 도우미입니다."                
                 "당신은 글쓰기 지시 사항을 여러 개의 하위 작업으로 나눌 것입니다."
+                "글쓰기 계획은 5단계 이하로 작성합니다."
                 "각 하위 작업은 에세이의 한 단락 작성을 안내할 것이며, 해당 단락의 주요 내용과 단어 수 요구 사항을 포함해야 합니다."
 
                 "글쓰기 지시 사항:"
@@ -4311,8 +4312,8 @@ def run_long_form_writing_agent(connectionId, requestId, query):
         else:
             planner_template = (
                 "You are a helpful assistant highly skilled in long-form writing."
-                "This writing aims for a novel of over 20,000 words."
                 "You will break down the writing instruction into multiple subtasks."
+                "Writing plans are created in five steps or less."
                 "Each subtask will guide the writing of one paragraph in the essay, and should include the main points and word count requirements for that paragraph."
 
                 "The writing instruction is as follows:"
