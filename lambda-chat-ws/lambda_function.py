@@ -602,18 +602,25 @@ def isKorean(text):
         return False
 
 def general_conversation(connectionId, requestId, chat, query):
-    if isKorean(query)==True :
+    if isKorean(query)==True:
         system = (
-            "다음의 Human과 Assistant의 친근한 이전 대화입니다. Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+            "당신의 이름은 서연이고, 질문에 대해 친절하게 답변하는 사려깊은 인공지능 도우미입니다."
+            "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다." 
+            "모르는 질문을 받으면 솔직히 모른다고 말합니다."
         )
     else: 
         system = (
-            "Using the following conversation, answer friendly for the newest question. If you don't know the answer, just say that you don't know, don't try to make up an answer. You will be acting as a thoughtful advisor."
+            "You will be acting as a thoughtful advisor."
+            "Using the following conversation, answer friendly for the newest question." 
+            "If you don't know the answer, just say that you don't know, don't try to make up an answer." 
         )
     
     human = "{input}"
     
-    prompt = ChatPromptTemplate.from_messages([("system", system), MessagesPlaceholder(variable_name="history"), ("human", human)])
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system), 
+        MessagesPlaceholder(variable_name="history"), 
+        ("human", human)])
     # print('prompt: ', prompt)
     
     history = memory_chain.load_memory_variables({})["chat_history"]
@@ -764,6 +771,46 @@ def retrieve_documents_from_opensearch(query, top_k=4):
         relevant_docs += lexical_search(query, top_k)    
 
     return relevant_docs
+
+def retrieve_documents_from_tavily(query, top_k):
+    print("###### retrieve_documents_from_tavily ######")
+
+    relevant_documents = []
+    search = TavilySearchResults(
+        max_results=top_k,
+        include_answer=True,
+        include_raw_content=True,
+        search_depth="advanced", 
+        include_domains=["google.com", "naver.com"]
+    )
+                    
+    try: 
+        output = search.invoke(query)
+        # print('tavily output: ', output)
+            
+        for result in output:
+            print('result of tavily: ', result)
+            if result:
+                content = result.get("content")
+                url = result.get("url")
+                
+                relevant_documents.append(
+                    Document(
+                        page_content=content,
+                        metadata={
+                            'name': 'WWW',
+                            'url': url,
+                            'from': 'tavily'
+                        },
+                    )
+                )                
+    
+    except Exception:
+        err_msg = traceback.format_exc()
+        print('error message: ', err_msg)                    
+        # raise Exception ("Not able to request to tavily")   
+
+    return relevant_documents 
 
 def get_parent_content(parent_doc_id):
     response = os_client.get(
@@ -1503,20 +1550,25 @@ def web_search(question, documents):
 def get_reg_chain(langMode):
     if langMode:
         system = (
-        """다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다. Assistant의 이름은 서연이고, 모르는 질문을 받으면 솔직히 모른다고 말합니다.
-
-        <context>
-        {context}
-        </context>""")
+            "다음의 <context> tag안의 참고자료를 이용하여 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다." 
+            "모르는 질문을 받으면 솔직히 모른다고 말합니다."   
+        )
     else: 
         system = (
-        """Here is pieces of context, contained in <context> tags. Provide a concise answer to the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+            "Here is pieces of context, contained in <context> tags." 
+            "Provide a concise answer to the question at the end." 
+            "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+        )
         
-        <context>
-        {context}
-        </context>""")
-        
-    human = "{question}"
+    human = (
+        "<question>"
+        "{question}"
+        "</question>"
+
+        "<context>"
+        "{context}"
+        "</context>"
+    )
         
     prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
                     
@@ -1669,9 +1721,9 @@ def init_enhanced_search():
             
         if isKorean(question[0].content)==True:
             system = (
-                "Assistant는 질문에 답변하기 위한 정보를 수집하는 연구원입니다."
-                "Assistant은 상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
-                "Assistant는 모르는 질문을 받으면 솔직히 모른다고 말합니다."
+                "당신은 질문에 답변하기 위한 정보를 수집하는 연구원입니다."
+                "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
+                "모르는 질문을 받으면 솔직히 모른다고 말합니다."
                 "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
             )
         else: 
@@ -1778,17 +1830,12 @@ def run_agent_executor(connectionId, requestId, query):
                 "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
                 "모르는 질문을 받으면 솔직히 모른다고 말합니다."
                 "최종 답변에는 조사한 내용을 반드시 포함합니다."
-                # "최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요." 
             )
         else: 
             system = (            
                 "You are a conversational AI designed to answer in a friendly way to a question."
                 "If you don't know the answer, just say that you don't know, don't try to make up an answer."
                 "You will be acting as a thoughtful advisor."    
-                #"Put it in <result> tags."
-                # "Answer friendly for the newest question using the following conversation"
-                #"You should always answer in jokes."
-                #"You should always answer in rhymes."            
             )
             
         prompt = ChatPromptTemplate.from_messages(
@@ -1863,7 +1910,7 @@ def run_agent_executor2(connectionId, requestId, query):
 
     tool_node = ToolNode(tools)
             
-    def create_agent(chat, tools, system_message: str):        
+    def create_agent(chat, tools: str):        
         tool_names = ", ".join([tool.name for tool in tools])
         print("tool_names: ", tool_names)
         
@@ -1871,16 +1918,11 @@ def run_agent_executor2(connectionId, requestId, query):
             "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
             "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
             "모르는 질문을 받으면 솔직히 모른다고 말합니다."
-            "최종 답변에는 조사한 내용을 반드시 포함합니다."
-            #"최종 답변에는 조사한 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."         
-            "You are a helpful AI assistant, collaborating with other assistants."
+
             "Use the provided tools to progress towards answering the question."
             "If you are unable to fully answer, that's OK, another assistant with different tools "
             "will help where you left off. Execute what you can to make progress."
-            #"If you or any of the other assistants have the final answer or deliverable,"
-            #"prefix your response with FINAL ANSWER so the team knows to stop."
             "You have access to the following tools: {tool_names}."
-            "{system_message}"
         )
 
         prompt = ChatPromptTemplate.from_messages(
@@ -1890,7 +1932,6 @@ def run_agent_executor2(connectionId, requestId, query):
             ]
         )
         
-        prompt = prompt.partial(system_message=system_message)
         prompt = prompt.partial(tool_names=tool_names)
         
         return prompt | chat.bind_tools(tools)
@@ -1914,9 +1955,8 @@ def run_agent_executor2(connectionId, requestId, query):
         }
     
     chat = get_chat()
-    #system_message = "You should provide accurate data for the chart_generator to use."
-    system_message = "You should provide accurate data for the questione."
-    execution_agent = create_agent(chat, tools, system_message)
+
+    execution_agent = create_agent(chat, tools)
     
     execution_agent_node = functools.partial(agent_node, agent=execution_agent, name="execution_agent")
     
@@ -1987,16 +2027,16 @@ def run_reflection_agent(connectionId, requestId, query):
     def generation_node(state: State, config):    
         print("###### generation ######")      
         update_state_message("generating...", config)
-          
+        
+        system = (
+            "당신은 5문단의 에세이 작성을 돕는 작가이고 이름은 서연입니다"
+            "사용자의 요청에 대해 최고의 에세이를 작성하세요."
+            "사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요."
+            "최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
+        )
         prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    "system",
-                    "당신은 5문단의 에세이 작성을 돕는 작가이고 이름은 서연입니다"
-                    "사용자의 요청에 대해 최고의 에세이를 작성하세요."
-                    "사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요."
-                    "최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
-                ),
+                ("system",system),
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )
@@ -2013,15 +2053,15 @@ def run_reflection_agent(connectionId, requestId, query):
         
         update_state_message("reflecting...", config)
         
+        system = (
+            "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
+            "이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다."
+            #"특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다"
+            "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.",
+        )
         reflection_prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    "system",
-                    "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
-                    "이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다."
-                    #"특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다"
-                    "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.",
-                ),
+                ("system", system),
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )
@@ -2757,7 +2797,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         prompt = ChatPromptTemplate.from_messages([
             (
                 "system", (
-                    "당신의 이름은 서연이고, 질문에 친근한 방식으로 대답하도록 설계된 대화형 AI입니다."
+                    "당신의 이름은 서연이고, 질문에 대해 친절하게 답변하는 사려깊은 인공지능 도우미입니다."
                     "상황에 맞는 구체적인 세부 정보를 충분히 제공합니다."
                     "모르는 질문을 받으면 솔직히 모른다고 말합니다."
                     "결과는 <result> tag를 붙여주세요."
@@ -2803,13 +2843,19 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             "Make sure that each step has all the information needed - do not skip steps."
 
             "Your objective was this:"
+            "<input>"
             "{input}"
-
+            "</input>"
+                        
             "Your original plan was this:"
+            "<plan>"
             "{plan}"
+            "</plan>"
 
             "You have currently done the follow steps:"
+            "<past_steps>"
             "{past_steps}"
+            "</past_steps>"
 
             "Update your plan accordingly."
             "If no more steps are needed and you can return to the user, then respond with that."
@@ -2874,7 +2920,7 @@ def run_plan_and_exeucute(connectionId, requestId, query):
         
         if isKorean(query)==True:
             system = (
-                "Assistant의 이름은 서연이고, 질문에 대해 친절하게 답변하는 도우미입니다."
+                "당신의 이름은 서연이고, 질문에 대해 친절하게 답변하는 사려깊은 인공지능 도우미입니다."
                 "다음의 <context> tag안의 참고자료를 이용하여 질문에 대한 답변합니다."
                 "답변의 이유를 풀어서 명확하게 설명합니다."
                 "결과는 <result> tag를 붙여주세요."
@@ -2913,6 +2959,289 @@ def run_plan_and_exeucute(connectionId, requestId, query):
             )
             result = response.content
             output = result[result.find('<result>')+8:len(result)-9] # remove <result> tag
+            print('output: ', output)
+            
+        except Exception:
+            err_msg = traceback.format_exc()
+            print('error message: ', err_msg)      
+            
+        return {"answer": output}  
+
+    def buildPlanAndExecute():
+        workflow = StateGraph(State)
+        workflow.add_node("planner", plan_node)
+        workflow.add_node("executor", execute_node)
+        workflow.add_node("replaner", replan_node)
+        workflow.add_node("final_answer", final_answer)
+        
+        workflow.set_entry_point("planner")
+        workflow.add_edge("planner", "executor")
+        workflow.add_edge("executor", "replaner")
+        workflow.add_conditional_edges(
+            "replaner",
+            should_end,
+            {
+                "continue": "executor",
+                "end": "final_answer",
+            },
+        )
+        workflow.add_edge("final_answer", END)
+
+        return workflow.compile()
+
+    app = buildPlanAndExecute()    
+    
+    isTyping(connectionId, requestId, "")
+    
+    inputs = {"input": query}
+    config = {
+        "recursion_limit": 50,
+        "requestId": requestId,
+        "connectionId": connectionId
+    }
+    
+    for output in app.stream(inputs, config):   
+        for key, value in output.items():
+            print(f"Finished: {key}")
+            #print("value: ", value)            
+    print('value: ', value)
+    
+    readStreamMsg(connectionId, requestId, value["answer"])
+        
+    return value["answer"]
+
+####################### LangGraph #######################
+# Planning (Advanced CoT)
+#########################################################
+def run_planning(connectionId, requestId, query):
+    class State(TypedDict):
+        input: str
+        plan: list[str]
+        past_steps: Annotated[List[Tuple], operator.add]
+        info: Annotated[List[Tuple], operator.add]
+        answer: str
+
+    def plan_node(state: State, config):
+        print("###### plan ######")
+        print('input: ', state["input"])
+        
+        update_state_message("planning...", config)
+                
+        system = (
+            "당신은 user의 question을 해결하기 위해 step by step plan을 생성하는 AI agent입니다."                
+            
+            "문제를 충분히 이해하고, 문제 해결을 위한 계획을 다음 형식으로 4단계 이하의 계획을 세웁니다."                
+            "각 단계는 반드시 한줄의 문장으로 AI agent가 수행할 내용을 명확히 나타냅니다."
+            "1. [질문을 해결하기 위한 단계]"
+            "2. [질문을 해결하기 위한 단계]"
+            "..."                
+        )
+        
+        human = (
+            "{question}"
+        )
+                            
+        planner_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                ("human", human),
+            ]
+        )
+        chat = get_chat()
+        planner = planner_prompt | chat
+        response = planner.invoke({
+            "question": state["input"]
+        })
+        print('response.content: ', response.content)
+        result = response.content
+        
+        #output = result[result.find('<result>')+8:result.find('</result>')]
+        output = result
+        
+        plan = output.strip().replace('\n\n', '\n')
+        planning_steps = plan.split('\n')
+        print('planning_steps: ', planning_steps)
+        
+        return {
+            "input": state["input"],
+            "plan": planning_steps
+        }
+        
+    def execute_node(state: State, config):
+        print("###### execute ######")
+        print('input: ', state["input"])
+        plan = state["plan"]
+        print('plan: ', plan) 
+        
+        update_state_message("executing...", config)
+        chat = get_chat()
+
+        requestId = config.get("configurable", {}).get("requestId", "")
+        print('requestId: ', requestId)
+        connectionId = config.get("configurable", {}).get("connectionId", "")
+        print('connectionId: ', connectionId)
+
+        # retrieve
+        isTyping(connectionId, requestId, "retrieving...")
+        relevant_docs = retrieve_documents_from_opensearch(plan[0], top_k=4)
+        relevant_docs += retrieve_documents_from_tavily(plan[0], top_k=4)
+            
+        # grade
+        isTyping(connectionId, requestId, "grading...")    
+        filtered_docs = grade_documents(plan[0], relevant_docs) # grading    
+        filtered_docs = check_duplication(filtered_docs) # check duplication
+                
+        # generate
+        isTyping(connectionId, requestId, "generating...")                  
+        result = generate_answer(chat, relevant_docs, plan[0])
+        
+        print('task: ', plan[0])
+        print('executor output: ', result)
+        
+        # print('plan: ', state["plan"])
+        # print('past_steps: ', task)        
+        return {
+            "input": state["input"],
+            "plan": state["plan"],
+            "info": [result],
+            "past_steps": [plan[0]],
+        }
+            
+    def replan_node(state: State, config):
+        print('#### replan ####')
+        print('state of replan node: ', state)
+        
+        update_state_message("replanning...", config)
+
+        system = (
+            "당신은 복잡한 문제를 해결하기 위해 step by step plan을 생성하는 AI agent입니다."
+            "당신은 다음의 Question에 대한 적절한 답변을 얻고자합니다."
+        )        
+        human = (
+            "<question>"
+            "{input}"
+            "</question>"            
+                        
+            "당신의 원래 계획은 아래와 같습니다." 
+            "<plan>"
+            "{plan}"
+            "</plan>"
+            
+            "완료한 단계는 아래와 같습니다."
+            "<past_steps>"
+            "{past_steps}"
+            "</past_steps>"
+            
+            "당신은 Original Plan의 원래 계획을 상황에 맞게 수정하세요."
+            "계획에 아직 해야 할 단계만 추가하세요. 이전에 완료한 단계는 계획에 포함하지 마세요."                
+            "수정된 계획에는 <plan> tag를 붙여주세요."
+            "만약 더 이상 계획을 세우지 않아도 Question의 주어진 질문에 답변할 있다면, 최종 결과로 Question에 대한 답변을 <result> tag를 붙여 전달합니다."
+            
+            "수정된 계획의 형식은 아래와 같습니다."
+            "각 단계는 반드시 한줄의 문장으로 AI agent가 수행할 내용을 명확히 나타냅니다."
+            "1. [질문을 해결하기 위한 단계]"
+            "2. [질문을 해결하기 위한 단계]"
+            "..."         
+        )                   
+        
+        replanner_prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system),
+                ("human", human),
+            ]
+        )     
+        
+        chat = get_chat()
+        replanner = replanner_prompt | chat
+        
+        response = replanner.invoke({
+            "input": state["input"],
+            "plan": state["plan"],
+            "past_steps": state["past_steps"]
+        })
+        print('replanner output: ', response.content)
+        result = response.content
+
+        if result.find('<plan>') == -1:
+            return {"response":response.content}
+        else:
+            output = result[result.find('<plan>')+6:result.find('</plan>')]
+            print('plan output: ', output)
+
+            plans = output.strip().replace('\n\n', '\n')
+            planning_steps = plans.split('\n')
+            print('planning_steps: ', planning_steps)
+
+            return {"plan": planning_steps}
+        
+    def should_end(state: State) -> Literal["continue", "end"]:
+        print('#### should_end ####')
+        # print('state: ', state)
+        
+        if "response" in state and state["response"]:
+            print('response: ', state["response"])            
+            next = "end"
+        else:
+            print('plan: ', state["plan"])
+            next = "continue"
+        print(f"should_end response: {next}")
+        
+        return next
+        
+    def final_answer(state: State) -> str:
+        print('#### final_answer ####')
+        
+        # get final answer
+        context = state['info']
+        print('context: ', context)
+        
+        query = state['input']
+        print('query: ', query)
+        
+        if isKorean(query)==True:
+            system = (
+                "당신의 이름은 서연이고, 질문에 대해 친절하게 답변하는 사려깊은 인공지능 도우미입니다."
+                "다음의 Reference texts을 이용하여 user의 질문에 답변합니다."
+                "답변의 이유를 풀어서 명확하게 설명합니다."
+                "결과는 <result> tag를 붙여주세요."
+            )
+        else: 
+            system = (
+                "Here is pieces of context, contained in <context> tags."
+                "Provide a concise answer to the question at the end."
+                "Explains clearly the reason for the answer."
+                "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+                "Put it in <result> tags."
+            )
+    
+        human = (
+            "{input}"
+
+            "<context>"
+            "{context}"
+            "</context>"
+        )
+        
+        prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+        # print('prompt: ', prompt)
+                    
+        chat = get_chat()
+        chain = prompt | chat
+        
+        try: 
+            response = chain.invoke(
+                {
+                    "context": context,
+                    "input": query,
+                }
+            )
+            result = response.content
+
+            if result.find('<result>')==-1:
+                output = result
+            else:
+                output = result[result.find('<result>')+8:result.find('</result>')]
+                
             print('output: ', output)
             
         except Exception:
