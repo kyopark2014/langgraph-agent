@@ -1971,7 +1971,12 @@ def run_agent_executor2(connectionId, requestId, query):
             print("--- END ---")
             return "end"
         else:      
-            print(f"tool_calls: ", last_message.tool_calls)            
+            print(f"tool_calls: ", last_message.tool_calls)
+
+            for message in last_message.tool_calls:
+                print(f"tool name: {message['name']}, args: {message['args']}")
+                update_state_message(f"calling... {message['name']}", config)
+
             print(f"--- CONTINUE: {last_message.tool_calls[-1]['name']} ---")
             return "continue"
 
@@ -1980,6 +1985,7 @@ def run_agent_executor2(connectionId, requestId, query):
 
         workflow.add_node("agent", execution_agent_node)
         workflow.add_node("action", tool_node)
+        
         workflow.add_edge(START, "agent")
         workflow.add_conditional_edges(
             "agent",
@@ -6806,6 +6812,7 @@ def revise_question(connectionId, requestId, chat, query):
         human = (
             "Rephrase the follow up <question> to be a standalone question." 
             "Put it in <result> tags."
+
             "<question>"
             "{question}"
             "</question>"
