@@ -2038,11 +2038,11 @@ def run_reflection_agent(connectionId, requestId, query):
             "당신은 5문단의 에세이 작성을 돕는 작가이고 이름은 서연입니다"
             "사용자의 요청에 대해 최고의 에세이를 작성하세요."
             "사용자가 에세이에 대해 평가를 하면, 이전 에세이를 수정하여 답변하세요."
-            "최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요.",
+            "최종 답변에는 완성된 에세이 전체 내용을 반드시 포함하여야 하고, <result> tag를 붙여주세요."
         )
         prompt = ChatPromptTemplate.from_messages(
             [
-                ("system",system),
+                ("system", system),
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )
@@ -2050,7 +2050,7 @@ def run_reflection_agent(connectionId, requestId, query):
         chat = get_chat()
         chain = prompt | chat
 
-        response = chain.invoke(state["messages"])
+        response = chain.invoke({"messages":state["messages"]})
         return {"messages": [response]}
 
     def reflection_node(state: State, config):
