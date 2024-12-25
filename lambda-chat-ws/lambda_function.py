@@ -2063,7 +2063,7 @@ def run_reflection_agent(connectionId, requestId, query):
             "당신은 교사로서 학셍의 에세이를 평가하삽니다. 비평과 개선사항을 친절하게 설명해주세요."
             "이때 장점, 단점, 길이, 깊이, 스타일등에 대해 충분한 정보를 제공합니다."
             #"특히 주제에 맞는 적절한 예제가 잘 반영되어있는지 확인합니다"
-            "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다.",
+            "각 문단의 길이는 최소 200자 이상이 되도록 관련된 예제를 충분히 포함합니다."
         )
         reflection_prompt = ChatPromptTemplate.from_messages(
             [
